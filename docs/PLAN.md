@@ -16,24 +16,24 @@ This document set breaks the HLD into actionable sprint plans. The architecture 
 
 ## 2. Architecture Snapshot
 
-| # | Service | Owns | Datastore |
-|---|---|---|---|
-| 1 | Keycloak | Identity, OAuth2/OIDC, roles | PostgreSQL (`keycloak_db`) |
-| 2 | API Gateway | Edge routing, JWT validation, rate limit | — (stateless) |
-| 3 | Web BFF | Frontend aggregation | — (stateless) |
-| 4 | User Service | Profiles, follow-user | PostgreSQL (`user_db`) |
-| 5 | Tag Service | Tag catalog, follow-tag | PostgreSQL (`tag_db`) |
-| 6 | Question Service | Questions, watchers | PostgreSQL (`question_db`) |
-| 7 | Answer Service | Answers, accepted state | PostgreSQL (`answer_db`) |
-| 8 | Comment Service | Comments | PostgreSQL (`comment_db`) |
-| 9 | Vote Service | Votes (idempotent) | PostgreSQL (`vote_db`) |
-| 10 | Notification Service | Notifications + realtime fanout | PostgreSQL (`notification_db`) + Redis |
-| 11 | Search Service | Search query API | OpenSearch (read) |
-| 12 | Indexer Service | Build search documents from events | OpenSearch (write) |
-| 13 | Feed Service | Home/tag feed read API | MongoDB (`feed_read_db`) + Redis |
-| 14 | Feed Projector Service | Materialize feed documents from events | MongoDB (`feed_read_db`) |
-| 15 | Media Service | Attachment metadata + objects | PostgreSQL (`media_db`) + MinIO |
-| 16 | Moderation Service | Reports, close/reopen, audit | PostgreSQL (`moderation_db`) |
+| #   | Service                | Owns                                     | Datastore                              |
+| --- | ---------------------- | ---------------------------------------- | -------------------------------------- |
+| 1   | Keycloak               | Identity, OAuth2/OIDC, roles             | PostgreSQL (`keycloak_db`)             |
+| 2   | API Gateway            | Edge routing, JWT validation, rate limit | — (stateless)                          |
+| 3   | Web BFF                | Frontend aggregation                     | — (stateless)                          |
+| 4   | User Service           | Profiles, follow-user                    | PostgreSQL (`user_db`)                 |
+| 5   | Tag Service            | Tag catalog, follow-tag                  | PostgreSQL (`tag_db`)                  |
+| 6   | Question Service       | Questions, watchers                      | PostgreSQL (`question_db`)             |
+| 7   | Answer Service         | Answers, accepted state                  | PostgreSQL (`answer_db`)               |
+| 8   | Comment Service        | Comments                                 | PostgreSQL (`comment_db`)              |
+| 9   | Vote Service           | Votes (idempotent)                       | PostgreSQL (`vote_db`)                 |
+| 10  | Notification Service   | Notifications + realtime fanout          | PostgreSQL (`notification_db`) + Redis |
+| 11  | Search Service         | Search query API                         | OpenSearch (read)                      |
+| 12  | Indexer Service        | Build search documents from events       | OpenSearch (write)                     |
+| 13  | Feed Service           | Home/tag feed read API                   | MongoDB (`feed_read_db`) + Redis       |
+| 14  | Feed Projector Service | Materialize feed documents from events   | MongoDB (`feed_read_db`)               |
+| 15  | Media Service          | Attachment metadata + objects            | PostgreSQL (`media_db`) + MinIO        |
+| 16  | Moderation Service     | Reports, close/reopen, audit             | PostgreSQL (`moderation_db`)           |
 
 Async backbone: **Kafka** (domain events). Cache + ephemeral state: **Redis**. Object storage: **MinIO**. Observability: **OpenTelemetry → Jaeger / Prometheus → Grafana**.
 
@@ -41,35 +41,35 @@ Async backbone: **Kafka** (domain events). Cache + ephemeral state: **Redis**. O
 
 ## 3. Tech Stack Decisions
 
-| Concern | Choice |
-|---|---|
-| Language / Runtime | **Node.js 20 LTS** + **TypeScript 5.x** |
-| Application framework | **NestJS 10** (per service) |
-| Monorepo tooling | **pnpm workspaces** |
-| Relational DB | **PostgreSQL 16** (one server, logical DB per service, separate DB users) |
-| Document DB | **MongoDB 8** (feed read model only) |
-| Cache / ephemeral | **Redis 7** |
-| Event bus | **Apache Kafka 3.7** (Bitnami image, Zookeeper for now) |
-| Search | **OpenSearch 2.19** + Dashboards |
-| Identity | **Keycloak 26** |
-| Object storage | **MinIO** (S3-compatible) |
-| API Gateway | **NestJS-based gateway** (recommended for stack consistency; Kong remains a fallback) |
-| Telemetry | OpenTelemetry SDK → otel-collector → Jaeger (traces), Prometheus (metrics), Grafana (dashboards) |
-| Container | Docker + Docker Compose for local; Kubernetes is post-class scope |
-| Testing | Jest (unit), Testcontainers (integration), compose-based E2E |
-| Migrations | Decision deferred to [00-foundation.md](planning/00-foundation.md) (TypeORM vs Prisma vs Knex) |
+| Concern               | Choice                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| Language / Runtime    | **Node.js 20 LTS** + **TypeScript 5.x**                                                          |
+| Application framework | **NestJS 10** (per service)                                                                      |
+| Monorepo tooling      | **pnpm workspaces**                                                                              |
+| Relational DB         | **PostgreSQL 16** (one server, logical DB per service, separate DB users)                        |
+| Document DB           | **MongoDB 8** (feed read model only)                                                             |
+| Cache / ephemeral     | **Redis 7**                                                                                      |
+| Event bus             | **Apache Kafka 3.7** (Bitnami image, Zookeeper for now)                                          |
+| Search                | **OpenSearch 2.19** + Dashboards                                                                 |
+| Identity              | **Keycloak 26**                                                                                  |
+| Object storage        | **MinIO** (S3-compatible)                                                                        |
+| API Gateway           | **NestJS-based gateway** (recommended for stack consistency; Kong remains a fallback)            |
+| Telemetry             | OpenTelemetry SDK → otel-collector → Jaeger (traces), Prometheus (metrics), Grafana (dashboards) |
+| Container             | Docker + Docker Compose for local; Kubernetes is post-class scope                                |
+| Testing               | Jest (unit), Testcontainers (integration), compose-based E2E                                     |
+| Migrations            | Decision deferred to [00-foundation.md](planning/00-foundation.md) (TypeORM vs Prisma vs Knex)   |
 
 ---
 
 ## 4. Sprint Roadmap
 
-| Sprint | Theme | Services delivered | Detail | Status |
-|---|---|---|---|---|
-| 0 | Foundation / pre-work | Monorepo, shared libs, infra wiring, CI | [00-foundation.md](planning/00-foundation.md) | ⏳ Not started |
-| 1 | Identity + core write services | Keycloak, Gateway, BFF, User, Tag, Question, Answer | [01-sprint1-identity-and-core.md](planning/01-sprint1-identity-and-core.md) | ⏳ Not started |
-| 2 | Interactions + async backbone | Comment, Vote, Notification, Redis, Kafka, event publishers | [02-sprint2-interactions-and-events.md](planning/02-sprint2-interactions-and-events.md) | ⏳ Not started |
-| 3 | Read-side projections | OpenSearch, Indexer, Search, MongoDB, Feed Projector, Feed | [03-sprint3-search-and-feed.md](planning/03-sprint3-search-and-feed.md) | ⏳ Not started |
-| 4 | Phase-2 services + hardening | Media + MinIO, Moderation, full Observability stack, perf, demo | [04-sprint4-moderation-media-and-hardening.md](planning/04-sprint4-moderation-media-and-hardening.md) | ⏳ Not started |
+| Sprint | Theme                          | Services delivered                                              | Detail                                                                                                | Status         |
+| ------ | ------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------- |
+| 0      | Foundation / pre-work          | Monorepo, shared libs, infra wiring, CI                         | [00-foundation.md](planning/00-foundation.md)                                                         | ⏳ Not started |
+| 1      | Identity + core write services | Keycloak, Gateway, BFF, User, Tag, Question, Answer             | [01-sprint1-identity-and-core.md](planning/01-sprint1-identity-and-core.md)                           | ⏳ Not started |
+| 2      | Interactions + async backbone  | Comment, Vote, Notification, Redis, Kafka, event publishers     | [02-sprint2-interactions-and-events.md](planning/02-sprint2-interactions-and-events.md)               | ⏳ Not started |
+| 3      | Read-side projections          | OpenSearch, Indexer, Search, MongoDB, Feed Projector, Feed      | [03-sprint3-search-and-feed.md](planning/03-sprint3-search-and-feed.md)                               | ⏳ Not started |
+| 4      | Phase-2 services + hardening   | Media + MinIO, Moderation, full Observability stack, perf, demo | [04-sprint4-moderation-media-and-hardening.md](planning/04-sprint4-moderation-media-and-hardening.md) | ⏳ Not started |
 
 Status legend: ⏳ Not started · 🟡 In progress · ✅ Done · ⛔ Blocked
 

@@ -23,6 +23,7 @@ Mirrors HLD §18 Sprint 4.
 ### Media
 
 #### S4-MINIO-01 — MinIO buckets + policies
+
 - Depends on: S0-INFRA-01
 - Deliverable:
   - MinIO healthy (already in compose); `mc` init container creates buckets `media-uploads` (private), `media-public` (read-only public for avatars)
@@ -32,6 +33,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-MEDIA-01 — Media Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: table `media_metadata` (id, owner_user_id, bucket, object_key, content_type, size_bytes, sha256, status enum [pending|scanned|rejected], scan_result jsonb nullable, created_at). Indexes on `(owner_user_id)`, `(sha256)` for dedup.
 - Definition of done: migration runs
@@ -39,6 +41,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-MEDIA-02 — Media Service API + signed URLs
+
 - Depends on: S4-MEDIA-01, S4-MINIO-01, S0-LIB-03, S2-LIB-01
 - Deliverable:
   - `POST /media/uploads` { contentType, size } → returns presigned PUT URL + `mediaId`; row inserted with `status=pending`
@@ -50,6 +53,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-MEDIA-03 — Virus-scan hook stub
+
 - Depends on: S4-MEDIA-02
 - Deliverable: pluggable interface `VirusScanner.scan(objectRef): Promise<ScanResult>`; default `NoopScanner` returns clean and is logged. Document where ClamAV (or equivalent) would plug in.
 - Definition of done: interface exists; switching implementations is a one-line change
@@ -59,6 +63,7 @@ Mirrors HLD §18 Sprint 4.
 ### Moderation
 
 #### S4-MOD-01 — Moderation Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `reports` (id, reporter_user_id, target_type enum [question|answer|comment|user], target_id, reason enum, details, status enum [open|resolved|dismissed], created_at, resolved_at nullable, resolved_by_user_id nullable), `moderation_actions` (id, moderator_user_id, action enum [close|reopen|delete|undelete|warn|ban], target_type, target_id, reason, created_at). Indexes on `(status, created_at)`, `(target_type, target_id)`.
 - Definition of done: migration runs
@@ -66,6 +71,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-MOD-02 — Moderation API + role gating
+
 - Depends on: S4-MOD-01, S0-LIB-03
 - Deliverable:
   - `POST /reports` (any authenticated user)
@@ -80,6 +86,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-MOD-03 — Indexer + Feed Projector consume `moderation.action.created`
+
 - Depends on: S4-MOD-02, S3-INDEXER-01, S3-FEEDPROJ-01
 - Deliverable:
   - Indexer: on `delete` action, removes the document (or sets `status: deleted` and the search query already filters it out)
@@ -91,6 +98,7 @@ Mirrors HLD §18 Sprint 4.
 ### Observability
 
 #### S4-OBS-01 — otel-collector configured
+
 - Depends on: S0-LIB-05, S0-INFRA-01
 - Deliverable: `infra/otel/collector-config.yaml` with OTLP gRPC receiver, processors (batch, memory_limiter), exporters (Jaeger for traces, Prometheus for metrics, file/stdout for logs in dev). Mounted into the `otel-collector` container.
 - Definition of done: traces emitted by any service appear in Jaeger; metrics scraped by Prometheus
@@ -98,6 +106,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-OBS-02 — Prometheus scrape config
+
 - Depends on: S4-OBS-01
 - Deliverable: `infra/prometheus/prometheus.yml` scraping `/metrics` on every NestJS service (static targets in dev) and otel-collector's exposed Prometheus endpoint
 - Definition of done: every service appears in `Targets` as `up`; service-emitted custom metrics visible in PromQL
@@ -105,6 +114,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-OBS-03 — Grafana dashboards (provisioned)
+
 - Depends on: S4-OBS-02
 - Deliverable: `infra/grafana/provisioning/datasources/` (Prometheus + Jaeger) and `infra/grafana/provisioning/dashboards/` with JSON dashboards for HLD §14:
   - `api-latency.json` — p50/p95/p99 latency by service + endpoint
@@ -119,6 +129,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-OBS-04 — Standard service metrics + log fields
+
 - Depends on: S0-LIB-02, S0-LIB-05
 - Deliverable: enforce in every service:
   - HTTP server metrics (count, latency, status)
@@ -134,6 +145,7 @@ Mirrors HLD §18 Sprint 4.
 ### Security hardening
 
 #### S4-SEC-01 — Security hardening pass
+
 - Depends on: every Sprint 1–3 service
 - Deliverable: checklist completed and committed under `docs/security/checklist.md`:
   - TLS-ready config (gateway accepts TLS termination; internal mTLS noted as post-class scope)
@@ -150,6 +162,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-SEC-02 — Dependency + image scanning in CI
+
 - Depends on: S0-CI-01
 - Deliverable: CI step running `npm audit --audit-level=high` (fails on high/critical) + Trivy scan on every image build. Findings tracked in [risks-and-tradeoffs.md](risks-and-tradeoffs.md).
 - Definition of done: CI fails on a deliberately-introduced vulnerable dependency
@@ -159,6 +172,7 @@ Mirrors HLD §18 Sprint 4.
 ### Performance + demo
 
 #### S4-PERF-01 — Seed dataset + load script
+
 - Depends on: every Sprint 1–3 service
 - Deliverable:
   - `tools/seed/` script that creates ~50 users, ~30 tags, ~500 questions, ~1500 answers, ~5000 votes, ~3000 comments using realistic distributions
@@ -168,6 +182,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-DEMO-01 — Demo scenario script
+
 - Depends on: S4-PERF-01, S4-OBS-03
 - Deliverable: `docs/demo/scenario.md` walking through HLD §21 deliverables:
   1. Service boundary diagram (link from HLD §7)
@@ -184,6 +199,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-DEMO-02 — Recorded walkthrough
+
 - Depends on: S4-DEMO-01
 - Deliverable: ~5 minute screen recording covering the demo scenario; stored under `docs/demo/walkthrough.mp4` (or external link)
 - Definition of done: recording exists and is referenced from PLAN.md
@@ -191,6 +207,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-COMPOSE-01 — Final compose pass
+
 - Depends on: S4-MEDIA-02, S4-MOD-02, S4-OBS-03
 - Deliverable: every service in HLD §16 present, healthy, joined to the right networks; `docker compose up -d` from a clean clone reaches healthy in < 3 minutes on a developer laptop
 - Definition of done: cold-start time captured in `docs/perf/baseline.md`
@@ -198,6 +215,7 @@ Mirrors HLD §18 Sprint 4.
 - Status: ⏳
 
 #### S4-E2E-01 — Final regression suite
+
 - Depends on: S4-COMPOSE-01
 - Deliverable: `tests/e2e/` covers Sprints 1–4 in one suite: identity, ask/answer/accept, votes, comments, notifications (REST + websocket), search, feed (home + tag), media upload + fetch, moderator close + downstream visibility removal
 - Definition of done: suite green in CI; total runtime < 5 minutes
