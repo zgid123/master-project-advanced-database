@@ -57,7 +57,7 @@ Async backbone: **Kafka** (domain events). Cache + ephemeral state: **Redis**. O
 | Telemetry             | OpenTelemetry SDK → otel-collector → Jaeger (traces), Prometheus (metrics), Grafana (dashboards) |
 | Container             | Docker + Docker Compose for local; Kubernetes is post-class scope                                |
 | Testing               | Jest (unit), Testcontainers (integration), compose-based E2E                                     |
-| Migrations            | Decision deferred to [00-foundation.md](planning/00-foundation.md) (TypeORM vs Prisma vs Knex)   |
+| Migrations            | **Prisma Migrate** ([ADR 0001](adr/0001-migration-tool.md))                                      |
 
 ---
 

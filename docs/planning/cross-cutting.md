@@ -76,7 +76,7 @@ Every service under `packages/services/<name>/` looks like:
 ├── tsconfig.json                      # extends ../../../tsconfig.base.json
 ├── Dockerfile
 ├── openapi.yaml                       # generated from controllers
-├── prisma/ (or migrations/)           # per S0-REPO-03 decision
+├── prisma/                            # Prisma schema + migrations per ADR 0001
 ├── src/
 │   ├── main.ts                        # boot: telemetry → config → app
 │   ├── app.module.ts
