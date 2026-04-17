@@ -1,0 +1,320 @@
+# Working Docker Compose for local DevQ&A infrastructure.
+# This promotes the design compose into a runnable infra stack.
+#
+# Application services are intentionally left commented out until each package
+# exists. Sprint 1+ will uncomment and wire them to real build contexts.
+
+services:
+  postgres-core:
+    image: postgres:16
+    container_name: devqa-postgres-core
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-platform}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-platform}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [data-net]
+    labels:
+      architecture.note: one postgres server with separate logical DBs and credentials per service
+
+  # Keycloak uses the bootstrap Postgres database for now.
+  # S0-INFRA-02 + S1-KC-01 will move it to keycloak_db with its own DB user.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.0
+    container_name: devqa-keycloak
+    command: ['start-dev']
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-core:5432/${POSTGRES_DB:-platform}
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+    ports:
+      - '8081:8080'
+    networks: [app-net, data-net]
+
+  mongo-feed:
+    image: mongo:8
+    container_name: devqa-mongo-feed
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks: [data-net]
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: devqa-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [data-net]
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: devqa-zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
+    networks: [data-net]
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: devqa-kafka
+    environment:
+      KAFKA_CFG_BROKER_ID: '1'
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+    ports:
+      - '9092:9092'
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks: [data-net, app-net]
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    container_name: devqa-opensearch
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: 'true'
+      OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - '9200:9200'
+      - '9600:9600'
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks: [data-net]
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.19.0
+    container_name: devqa-opensearch-dashboards
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: 'true'
+    ports:
+      - '5601:5601'
+    depends_on:
+      - opensearch
+    networks: [data-net]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-18T16-25-55Z
+    container_name: devqa-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio123}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    networks: [data-net]
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.123.0
+    container_name: devqa-otel-collector
+    command: ['--config=/etc/otelcol/config.yaml']
+    volumes:
+      - ./infra/otel/collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+    networks: [observability-net]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.64.0
+    container_name: devqa-jaeger
+    ports:
+      - '16686:16686'
+    networks: [observability-net]
+
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: devqa-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - '9090:9090'
+    networks: [observability-net]
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: devqa-grafana
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks: [observability-net]
+
+  # Future application services. Uncomment when the package exists.
+  #
+  # api-gateway:
+  #   build:
+  #     context: ./packages/services/api-gateway
+  #   container_name: devqa-api-gateway
+  #   ports:
+  #     - '8080:8080'
+  #   depends_on:
+  #     - keycloak
+  #     - web-bff
+  #   networks: [edge-net, app-net, observability-net]
+  #
+  # web-bff:
+  #   build:
+  #     context: ./packages/services/web-bff
+  #   container_name: devqa-web-bff
+  #   depends_on:
+  #     - user-service
+  #     - tag-service
+  #     - question-service
+  #     - answer-service
+  #     - comment-service
+  #     - vote-service
+  #     - notification-service
+  #     - search-service
+  #     - feed-service
+  #     - moderation-service
+  #     - media-service
+  #   networks: [app-net, observability-net]
+  #
+  # user-service:
+  #   build:
+  #     context: ./packages/services/user-service
+  #   container_name: devqa-user-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # tag-service:
+  #   build:
+  #     context: ./packages/services/tag-service
+  #   container_name: devqa-tag-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # question-service:
+  #   build:
+  #     context: ./packages/services/question-service
+  #   container_name: devqa-question-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # answer-service:
+  #   build:
+  #     context: ./packages/services/answer-service
+  #   container_name: devqa-answer-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # comment-service:
+  #   build:
+  #     context: ./packages/services/comment-service
+  #   container_name: devqa-comment-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # vote-service:
+  #   build:
+  #     context: ./packages/services/vote-service
+  #   container_name: devqa-vote-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # notification-service:
+  #   build:
+  #     context: ./packages/services/notification-service
+  #   container_name: devqa-notification-service
+  #   depends_on: [postgres-core, kafka, redis]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # search-service:
+  #   build:
+  #     context: ./packages/services/search-service
+  #   container_name: devqa-search-service
+  #   depends_on: [opensearch]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # indexer-service:
+  #   build:
+  #     context: ./packages/services/indexer-service
+  #   container_name: devqa-indexer-service
+  #   depends_on: [kafka, opensearch]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # feed-service:
+  #   build:
+  #     context: ./packages/services/feed-service
+  #   container_name: devqa-feed-service
+  #   depends_on: [mongo-feed, redis]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # feed-projector-service:
+  #   build:
+  #     context: ./packages/services/feed-projector-service
+  #   container_name: devqa-feed-projector-service
+  #   depends_on: [kafka, mongo-feed]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # media-service:
+  #   build:
+  #     context: ./packages/services/media-service
+  #   container_name: devqa-media-service
+  #   depends_on: [postgres-core, minio]
+  #   networks: [app-net, data-net, observability-net]
+  #
+  # moderation-service:
+  #   build:
+  #     context: ./packages/services/moderation-service
+  #   container_name: devqa-moderation-service
+  #   depends_on: [postgres-core, kafka]
+  #   networks: [app-net, data-net, observability-net]
+
+networks:
+  edge-net:
+  app-net:
+  data-net:
+  observability-net:
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  kafka_data:
+  opensearch_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
