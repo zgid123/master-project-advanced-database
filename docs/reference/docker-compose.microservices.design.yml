@@ -1,0 +1,354 @@
+# Design-only Docker Compose for DevQ&A microservices HLD.
+# This file is intentionally illustrative: infrastructure services are real images,
+# while application services are placeholder containers to express topology,
+# dependencies, ports, networks, and ownership boundaries.
+
+services:
+  api-gateway:
+    image: nginx:1.27-alpine
+    container_name: devqa-api-gateway
+    networks: [edge-net, app-net]
+    ports:
+      - "8080:80"
+    depends_on:
+      - keycloak
+      - web-bff
+    labels:
+      architecture.role: edge
+      architecture.note: public entry point, auth/routing/rate-limit
+
+  web-bff:
+    image: busybox:1.36
+    container_name: devqa-web-bff
+    command: ["sh", "-c", "sleep infinity"]
+    networks: [app-net]
+    depends_on:
+      - user-service
+      - tag-service
+      - question-service
+      - answer-service
+      - comment-service
+      - vote-service
+      - notification-service
+      - search-service
+      - feed-service
+      - moderation-service
+      - media-service
+    labels:
+      architecture.role: bff
+      architecture.note: frontend aggregation layer
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.0
+    container_name: devqa-keycloak
+    command: ["start-dev"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-core:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    networks: [app-net, data-net]
+    depends_on:
+      - postgres-core
+
+  postgres-core:
+    image: postgres:16
+    container_name: devqa-postgres-core
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./design/init-postgres:/docker-entrypoint-initdb.d
+    networks: [data-net]
+    labels:
+      architecture.note: one postgres server with separate logical DBs and credentials per service
+
+  mongo-feed:
+    image: mongo:8
+    container_name: devqa-mongo-feed
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks: [data-net]
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: devqa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks: [data-net]
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: devqa-zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    networks: [data-net]
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: devqa-kafka
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks: [data-net, app-net]
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    container_name: devqa-opensearch
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks: [data-net]
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.19.0
+    container_name: devqa-opensearch-dashboards
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+    ports:
+      - "5601:5601"
+    depends_on:
+      - opensearch
+    networks: [data-net]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-18T16-25-55Z
+    container_name: devqa-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks: [data-net]
+
+  user-service:
+    image: busybox:1.36
+    container_name: devqa-user-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: user-service
+      DB_NAME: user_db
+      DB_OWNER: user_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  tag-service:
+    image: busybox:1.36
+    container_name: devqa-tag-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: tag-service
+      DB_NAME: tag_db
+      DB_OWNER: tag_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  question-service:
+    image: busybox:1.36
+    container_name: devqa-question-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: question-service
+      DB_NAME: question_db
+      DB_OWNER: question_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  answer-service:
+    image: busybox:1.36
+    container_name: devqa-answer-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: answer-service
+      DB_NAME: answer_db
+      DB_OWNER: answer_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  comment-service:
+    image: busybox:1.36
+    container_name: devqa-comment-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: comment-service
+      DB_NAME: comment_db
+      DB_OWNER: comment_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  vote-service:
+    image: busybox:1.36
+    container_name: devqa-vote-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: vote-service
+      DB_NAME: vote_db
+      DB_OWNER: vote_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  notification-service:
+    image: busybox:1.36
+    container_name: devqa-notification-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: notification-service
+      DB_NAME: notification_db
+      DB_OWNER: notification_service
+      REDIS_HOST: redis
+    depends_on: [postgres-core, kafka, redis]
+    networks: [app-net, data-net, observability-net]
+
+  search-service:
+    image: busybox:1.36
+    container_name: devqa-search-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: search-service
+      OPENSEARCH_URL: http://opensearch:9200
+    depends_on: [opensearch]
+    networks: [app-net, data-net, observability-net]
+
+  indexer-service:
+    image: busybox:1.36
+    container_name: devqa-indexer-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: indexer-service
+      KAFKA_BROKERS: kafka:9092
+      OPENSEARCH_URL: http://opensearch:9200
+    depends_on: [kafka, opensearch]
+    networks: [app-net, data-net, observability-net]
+
+  feed-service:
+    image: busybox:1.36
+    container_name: devqa-feed-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: feed-service
+      MONGO_URL: mongodb://mongo-feed:27017/feed_read_db
+      REDIS_HOST: redis
+    depends_on: [mongo-feed, redis]
+    networks: [app-net, data-net, observability-net]
+
+  feed-projector-service:
+    image: busybox:1.36
+    container_name: devqa-feed-projector-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: feed-projector-service
+      KAFKA_BROKERS: kafka:9092
+      MONGO_URL: mongodb://mongo-feed:27017/feed_read_db
+    depends_on: [kafka, mongo-feed]
+    networks: [app-net, data-net, observability-net]
+
+  media-service:
+    image: busybox:1.36
+    container_name: devqa-media-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: media-service
+      DB_NAME: media_db
+      DB_OWNER: media_service
+      S3_ENDPOINT: http://minio:9000
+    depends_on: [postgres-core, minio]
+    networks: [app-net, data-net, observability-net]
+
+  moderation-service:
+    image: busybox:1.36
+    container_name: devqa-moderation-service
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      SERVICE_NAME: moderation-service
+      DB_NAME: moderation_db
+      DB_OWNER: moderation_service
+    depends_on: [postgres-core, kafka]
+    networks: [app-net, data-net, observability-net]
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.123.0
+    container_name: devqa-otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./design/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    networks: [observability-net]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.64.0
+    container_name: devqa-jaeger
+    ports:
+      - "16686:16686"
+    networks: [observability-net]
+
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: devqa-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./design/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks: [observability-net]
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: devqa-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on: [prometheus]
+    networks: [observability-net]
+
+networks:
+  edge-net:
+  app-net:
+  data-net:
+  observability-net:
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  kafka_data:
+  opensearch_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
