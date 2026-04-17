@@ -23,6 +23,7 @@ Mirrors HLD §18 Sprint 3.
 ### Search side
 
 #### S3-OS-01 — OpenSearch + Dashboards operational
+
 - Depends on: S0-INFRA-01
 - Deliverable: OpenSearch 2.19 + Dashboards healthy in compose; security plugin disabled in dev (matches design compose); persistent volume; `OPENSEARCH_JAVA_OPTS` tuned for dev (~512m heap)
 - Definition of done: `curl http://localhost:9200` returns cluster info; Dashboards reachable on `http://localhost:5601`
@@ -30,6 +31,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-OS-02 — Index mapping for `questions`
+
 - Depends on: S3-OS-01
 - Deliverable: `infra/opensearch/mappings/questions.json` with:
   - `title` — text, analyzer `standard`, fields `.keyword` (256) for sorting
@@ -45,6 +47,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-INDEXER-01 — Indexer Service (consumer pipeline)
+
 - Depends on: S3-OS-02, S2-LIB-01
 - Deliverable: `packages/services/indexer-service` consuming:
   - `question.created` → index full document (denormalize tags + author from inline payload)
@@ -61,6 +64,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-INDEXER-02 — Reindex CLI
+
 - Depends on: S3-INDEXER-01, S1-QUESTION-02
 - Deliverable: `pnpm --filter indexer-service reindex` command that:
   - Pulls all questions from Question Service (paged)
@@ -72,6 +76,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-SEARCH-01 — Search Service API
+
 - Depends on: S3-INDEXER-01, S0-LIB-03
 - Deliverable: `packages/services/search-service` exposing:
   - `GET /search?q=...&tags=...&accepted=...&unanswered=...&sort=relevance|newest|top&page=...&size=...`
@@ -88,6 +93,7 @@ Mirrors HLD §18 Sprint 3.
 ### Feed side
 
 #### S3-MONGO-01 — MongoDB operational + indexes
+
 - Depends on: S0-INFRA-01
 - Deliverable: MongoDB 8 healthy in compose; `feed_read_db` created; collection `feed_items` with indexes:
   - `{ "tags": 1, "rankSignals.hotScore": -1 }` — tag feed
@@ -99,6 +105,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-FEEDPROJ-01 — Feed Projector consumers (global + tag timelines)
+
 - Depends on: S3-MONGO-01, S2-LIB-01
 - Deliverable: `packages/services/feed-projector-service` consuming:
   - `question.created` → upsert feed item (denormalize title, excerpt, tags, author, counters init)
@@ -114,6 +121,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-FEEDPROJ-02 — Personalized timeline materialization
+
 - Depends on: S3-FEEDPROJ-01, S2-PROD-TAG, S2-PROD-USER
 - Deliverable: consumer pipeline that maintains `user_personalized_timeline`:
   - `tag.followed` → add user's interest in tag; backfill recent items for that tag into the user's timeline (bounded, e.g. top 50)
@@ -124,6 +132,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-FEED-01 — Feed Service read API
+
 - Depends on: S3-FEEDPROJ-01, S3-FEEDPROJ-02, S0-LIB-03, S2-INFRA-01
 - Deliverable: `packages/services/feed-service`:
   - `GET /feed/home?cursor=...&limit=...` — reads `user_personalized_timeline`; falls back to global hot feed if user has no follows
@@ -137,6 +146,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-FEED-02 — Ranking formula implementation
+
 - Depends on: S3-FEEDPROJ-01
 - Deliverable: shared utility `computeHotScore({ upvotes, downvotes, answers, accepted, ageHours, followedTagMatch, watchedQuestionMatch })`. Implementation per HLD §10:
   ```
@@ -155,6 +165,7 @@ Mirrors HLD §18 Sprint 3.
 ### Glue
 
 #### S3-COMPOSE-01 — Wire all Sprint 3 services into compose
+
 - Depends on: S3-INDEXER-01, S3-SEARCH-01, S3-FEEDPROJ-01, S3-FEED-01
 - Deliverable: build contexts, dependencies on `kafka`, `opensearch`, `mongo-feed`, `redis`; gateway routes for `/api/search/*` and `/api/feed/*`
 - Definition of done: full stack healthy under `docker compose up`
@@ -162,6 +173,7 @@ Mirrors HLD §18 Sprint 3.
 - Status: ⏳
 
 #### S3-E2E-01 — Smoke E2E: ask → search → tag feed → home feed
+
 - Depends on: S3-COMPOSE-01, S2-E2E-01
 - Deliverable: `tests/e2e/sprint3.spec.ts`:
   1. `alice` follows tag `nestjs`

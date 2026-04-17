@@ -9,7 +9,7 @@ services:
     container_name: devqa-api-gateway
     networks: [edge-net, app-net]
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - keycloak
       - web-bff
@@ -20,7 +20,7 @@ services:
   web-bff:
     image: busybox:1.36
     container_name: devqa-web-bff
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     networks: [app-net]
     depends_on:
       - user-service
@@ -41,7 +41,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.0
     container_name: devqa-keycloak
-    command: ["start-dev"]
+    command: ['start-dev']
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres-core:5432/keycloak_db
@@ -50,7 +50,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "8081:8080"
+      - '8081:8080'
     networks: [app-net, data-net]
     depends_on:
       - postgres-core
@@ -63,7 +63,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: platform
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./design/init-postgres:/docker-entrypoint-initdb.d
@@ -75,7 +75,7 @@ services:
     image: mongo:8
     container_name: devqa-mongo-feed
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
     networks: [data-net]
@@ -84,7 +84,7 @@ services:
     image: redis:7.4-alpine
     container_name: devqa-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks: [data-net]
@@ -93,7 +93,7 @@ services:
     image: bitnami/zookeeper:3.9
     container_name: devqa-zookeeper
     environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
     networks: [data-net]
 
   kafka:
@@ -101,11 +101,11 @@ services:
     container_name: devqa-kafka
     environment:
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
       KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
       KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
     ports:
-      - "9092:9092"
+      - '9092:9092'
     depends_on:
       - zookeeper
     volumes:
@@ -117,15 +117,15 @@ services:
     container_name: devqa-opensearch
     environment:
       discovery.type: single-node
-      plugins.security.disabled: "true"
-      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      plugins.security.disabled: 'true'
+      OPENSEARCH_JAVA_OPTS: '-Xms512m -Xmx512m'
     ulimits:
       memlock:
         soft: -1
         hard: -1
     ports:
-      - "9200:9200"
-      - "9600:9600"
+      - '9200:9200'
+      - '9600:9600'
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     networks: [data-net]
@@ -135,9 +135,9 @@ services:
     container_name: devqa-opensearch-dashboards
     environment:
       OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
-      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: 'true'
     ports:
-      - "5601:5601"
+      - '5601:5601'
     depends_on:
       - opensearch
     networks: [data-net]
@@ -150,8 +150,8 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio_data:/data
     networks: [data-net]
@@ -159,7 +159,7 @@ services:
   user-service:
     image: busybox:1.36
     container_name: devqa-user-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: user-service
       DB_NAME: user_db
@@ -170,7 +170,7 @@ services:
   tag-service:
     image: busybox:1.36
     container_name: devqa-tag-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: tag-service
       DB_NAME: tag_db
@@ -181,7 +181,7 @@ services:
   question-service:
     image: busybox:1.36
     container_name: devqa-question-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: question-service
       DB_NAME: question_db
@@ -192,7 +192,7 @@ services:
   answer-service:
     image: busybox:1.36
     container_name: devqa-answer-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: answer-service
       DB_NAME: answer_db
@@ -203,7 +203,7 @@ services:
   comment-service:
     image: busybox:1.36
     container_name: devqa-comment-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: comment-service
       DB_NAME: comment_db
@@ -214,7 +214,7 @@ services:
   vote-service:
     image: busybox:1.36
     container_name: devqa-vote-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: vote-service
       DB_NAME: vote_db
@@ -225,7 +225,7 @@ services:
   notification-service:
     image: busybox:1.36
     container_name: devqa-notification-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: notification-service
       DB_NAME: notification_db
@@ -237,7 +237,7 @@ services:
   search-service:
     image: busybox:1.36
     container_name: devqa-search-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: search-service
       OPENSEARCH_URL: http://opensearch:9200
@@ -247,7 +247,7 @@ services:
   indexer-service:
     image: busybox:1.36
     container_name: devqa-indexer-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: indexer-service
       KAFKA_BROKERS: kafka:9092
@@ -258,7 +258,7 @@ services:
   feed-service:
     image: busybox:1.36
     container_name: devqa-feed-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: feed-service
       MONGO_URL: mongodb://mongo-feed:27017/feed_read_db
@@ -269,7 +269,7 @@ services:
   feed-projector-service:
     image: busybox:1.36
     container_name: devqa-feed-projector-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: feed-projector-service
       KAFKA_BROKERS: kafka:9092
@@ -280,7 +280,7 @@ services:
   media-service:
     image: busybox:1.36
     container_name: devqa-media-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: media-service
       DB_NAME: media_db
@@ -292,7 +292,7 @@ services:
   moderation-service:
     image: busybox:1.36
     container_name: devqa-moderation-service
-    command: ["sh", "-c", "sleep infinity"]
+    command: ['sh', '-c', 'sleep infinity']
     environment:
       SERVICE_NAME: moderation-service
       DB_NAME: moderation_db
@@ -303,7 +303,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector:0.123.0
     container_name: devqa-otel-collector
-    command: ["--config=/etc/otelcol/config.yaml"]
+    command: ['--config=/etc/otelcol/config.yaml']
     volumes:
       - ./design/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
     networks: [observability-net]
@@ -312,26 +312,26 @@ services:
     image: jaegertracing/all-in-one:1.64.0
     container_name: devqa-jaeger
     ports:
-      - "16686:16686"
+      - '16686:16686'
     networks: [observability-net]
 
   prometheus:
     image: prom/prometheus:v3.3.1
     container_name: devqa-prometheus
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
+      - '--config.file=/etc/prometheus/prometheus.yml'
     volumes:
       - ./design/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - '9090:9090'
     networks: [observability-net]
 
   grafana:
     image: grafana/grafana:11.6.0
     container_name: devqa-grafana
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on: [prometheus]

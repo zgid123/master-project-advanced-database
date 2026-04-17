@@ -9,8 +9,37 @@
   "scripts": {
     "build": "corepack pnpm -r run build",
     "test": "corepack pnpm -r run test",
-    "lint": "corepack pnpm -r run lint",
+    "lint": "corepack pnpm exec eslint . && corepack pnpm -r run lint",
+    "lint:fix": "corepack pnpm exec eslint . --fix",
     "typecheck": "corepack pnpm -r run typecheck",
-    "format": "corepack pnpm -r run format"
+    "format": "corepack pnpm exec prettier --check .",
+    "format:write": "corepack pnpm exec prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,cjs,mjs,ts,mts,cts}": [
+      "corepack pnpm exec eslint --fix",
+      "corepack pnpm exec prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "corepack pnpm exec prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "20.5.0",
+    "@commitlint/config-conventional": "20.5.0",
+    "@darraghor/eslint-plugin-nestjs-typed": "7.0.2",
+    "@eslint/js": "9.39.4",
+    "@types/node": "20.19.39",
+    "@typescript-eslint/parser": "8.58.2",
+    "class-validator": "0.15.1",
+    "eslint": "9.39.4",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.5.0",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
+    "prettier": "3.8.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.58.2"
   }
 }

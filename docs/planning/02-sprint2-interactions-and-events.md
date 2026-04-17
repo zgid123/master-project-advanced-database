@@ -31,6 +31,7 @@ Mirrors HLD §18 Sprint 2.
 ### Async backbone
 
 #### S2-INFRA-01 — Redis wired to services
+
 - Depends on: S0-INFRA-01, S0-LIB-01
 - Deliverable:
   - Redis 7 healthy in compose
@@ -41,6 +42,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-INFRA-02 — Kafka + Zookeeper + topic provisioning
+
 - Depends on: S0-INFRA-01, S0-LIB-06
 - Deliverable:
   - Kafka 3.7 + Zookeeper healthy in compose
@@ -53,6 +55,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-LIB-01 — Verify `@devqa/kafka` end-to-end with real Kafka
+
 - Depends on: S0-LIB-06, S2-INFRA-02
 - Deliverable: replace any local-only test stubs with full kafkajs path; integration test in CI uses Testcontainers Kafka
 - Definition of done: produce → consume round-trip in CI; idempotency dedupe verified by replaying the same `eventId` twice (handler runs once)
@@ -62,6 +65,7 @@ Mirrors HLD §18 Sprint 2.
 ### New domain services
 
 #### S2-COMMENT-01 — Comment Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: table `comments` (id, target_type enum [question|answer], target_id, author_id, body_md, status enum [active|deleted|edited], parent_comment_id nullable, depth int check ≤ 2, created_at, updated_at). Indexes on `(target_type, target_id, created_at)`, `(author_id)`.
 - Definition of done: migration runs; depth constraint rejects deeply-nested comments at the DB level
@@ -69,6 +73,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-COMMENT-02 — Comment Service API + events
+
 - Depends on: S2-COMMENT-01, S0-LIB-03, S2-LIB-01
 - Deliverable:
   - `POST /comments` { targetType, targetId, body, parentCommentId? }
@@ -81,6 +86,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-VOTE-01 — Vote Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: table `votes` (id, user_id, target_type enum [question|answer], target_id, value smallint check in (-1, 1), created_at, updated_at). Indexes: unique `(user_id, target_type, target_id)`, `(target_type, target_id)`.
 - Definition of done: migration runs; unique constraint enforces one vote per user per target
@@ -88,6 +94,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-VOTE-02 — Vote Service API (idempotent transitions) + events
+
 - Depends on: S2-VOTE-01, S0-LIB-03, S2-LIB-01, S2-INFRA-01
 - Deliverable:
   - `PUT /votes` { targetType, targetId, value: 1 | -1 | 0 } — idempotent: setting same value is a no-op; switching value updates row; value=0 deletes row
@@ -99,6 +106,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-NOTIF-01 — Notification Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `notifications` (id, recipient_user_id, type, title, body, payload jsonb, source_event_id, created_at, read_at nullable), `notification_delivery_log` (notification_id, channel enum [websocket|email|none], delivered_at, status enum [delivered|failed|skipped], error). Indexes on `(recipient_user_id, created_at desc)`, `(recipient_user_id, read_at)` partial index where `read_at is null`.
 - Definition of done: migration runs; `source_event_id` column has unique index for idempotent ingestion
@@ -106,6 +114,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-NOTIF-02 — Notification Service consumers + recipient resolution
+
 - Depends on: S2-NOTIF-01, S2-LIB-01, S1-QUESTION-02, S1-USER-02
 - Deliverable: Kafka consumers for:
   - `answer.created` → notify question author + watchers
@@ -123,6 +132,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-NOTIF-03 — Realtime fanout (websocket/SSE) + Redis online registry
+
 - Depends on: S2-NOTIF-02, S2-INFRA-01
 - Deliverable:
   - WebSocket gateway at `/ws/notifications` (NestJS `@WebSocketGateway`) authenticating via JWT in connection params
@@ -136,6 +146,7 @@ Mirrors HLD §18 Sprint 2.
 ### Wire existing services as producers
 
 #### S2-PROD-USER — User Service publishes events
+
 - Depends on: S2-LIB-01, S1-USER-02
 - Deliverable: emits `user.profile.updated` on profile patch, `user.followed` on follow/unfollow
 - Definition of done: events visible in Kafka via `kafka-console-consumer`; envelope correct
@@ -143,6 +154,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-PROD-TAG — Tag Service publishes events
+
 - Depends on: S2-LIB-01, S1-TAG-02
 - Deliverable: emits `tag.created` on creation, `tag.followed` on follow/unfollow
 - Definition of done: same as above
@@ -150,6 +162,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-PROD-Q — Question Service publishes events
+
 - Depends on: S2-LIB-01, S1-QUESTION-02
 - Deliverable: emits `question.created`, `question.updated`, `question.deleted`, `question.watched`, `question.closed`
 - Definition of done: every state-changing endpoint produces exactly one event in the same logical action (use a transactional outbox pattern — see [risks-and-tradeoffs.md](risks-and-tradeoffs.md))
@@ -157,6 +170,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-PROD-A — Answer Service publishes events
+
 - Depends on: S2-LIB-01, S1-ANSWER-02
 - Deliverable: emits `answer.created`, `answer.updated`, `answer.accepted`
 - Definition of done: same as above
@@ -164,6 +178,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-OUTBOX-01 — Transactional outbox pattern (shared)
+
 - Depends on: S2-LIB-01, S0-REPO-03
 - Deliverable: table template `outbox_events` (id, aggregate_type, aggregate_id, event_type, payload, created_at, published_at nullable) included in each producing service's migrations; background dispatcher publishes pending rows to Kafka and marks `published_at`. Implemented as a reusable NestJS module in `@devqa/kafka`.
 - Definition of done: killing the service immediately after a DB commit and before Kafka ack still results in the event being published when the service restarts
@@ -173,6 +188,7 @@ Mirrors HLD §18 Sprint 2.
 ### Glue
 
 #### S2-GW-01 — Move gateway rate-limit to Redis
+
 - Depends on: S2-INFRA-01, S1-GW-01
 - Deliverable: replace in-memory limiter with Redis-backed sliding-window limiter (per IP + per token)
 - Definition of done: limit applied across multiple gateway replicas (verify by `docker compose up --scale api-gateway=2`)
@@ -180,6 +196,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-COMPOSE-01 — Wire all Sprint 2 services into compose
+
 - Depends on: S2-COMMENT-02, S2-VOTE-02, S2-NOTIF-03, S2-PROD-USER, S2-PROD-TAG, S2-PROD-Q, S2-PROD-A
 - Deliverable: build contexts, env vars, Kafka brokers, Redis URL wired for new services; topic-init service runs before consumers start
 - Definition of done: full Sprint 2 stack healthy under `docker compose up`
@@ -187,6 +204,7 @@ Mirrors HLD §18 Sprint 2.
 - Status: ⏳
 
 #### S2-E2E-01 — Smoke E2E: ask → answer → notification
+
 - Depends on: S2-COMPOSE-01
 - Deliverable: `tests/e2e/sprint2.spec.ts`:
   1. `alice` watches her question

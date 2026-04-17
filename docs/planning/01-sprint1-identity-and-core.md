@@ -38,6 +38,7 @@ Mirrors HLD §18 Sprint 1.
 ### Identity layer
 
 #### S1-KC-01 — Boot Keycloak with `keycloak_db`
+
 - Depends on: S0-INFRA-01, S0-INFRA-02
 - Deliverable: Keycloak 26 connected to Postgres via `KC_DB_URL=jdbc:postgresql://postgres-core:5432/keycloak_db` with its own DB user
 - Definition of done: Keycloak admin console reachable on `http://localhost:8081`; database survives container restart
@@ -45,6 +46,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-KC-02 — `devqa` realm + roles + seed users (scripted)
+
 - Depends on: S1-KC-01
 - Deliverable:
   - `infra/keycloak/realm-export.json` defining the `devqa` realm, public client `devqa-web`, confidential client `devqa-bff`, roles `user` / `moderator` / `admin`
@@ -57,6 +59,7 @@ Mirrors HLD §18 Sprint 1.
 ### Edge layer
 
 #### S1-GW-01 — API Gateway service (NestJS)
+
 - Depends on: S1-KC-02, S0-LIB-03, S0-LIB-05
 - Deliverable: `packages/services/api-gateway` exposing port 8080 with:
   - JWT validation against Keycloak JWKS
@@ -69,6 +72,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-BFF-01 — Web BFF skeleton
+
 - Depends on: S1-GW-01
 - Deliverable: `packages/services/web-bff` with placeholder aggregation endpoints:
   - `GET /api/me` — joins User Service profile + Tag Service follow list
@@ -80,6 +84,7 @@ Mirrors HLD §18 Sprint 1.
 ### Domain services
 
 #### S1-USER-01 — User Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `users` (id, keycloak_sub, username, email, created_at), `profiles` (user_id, display_name, bio, avatar_url, reputation), `user_followers` (follower_id, followee_id, created_at) with appropriate indexes
 - Definition of done: migration runs in CI; ER diagram committed under `packages/services/user-service/docs/`
@@ -87,6 +92,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-USER-02 — User Service API (CRUD + public profile)
+
 - Depends on: S1-USER-01, S0-LIB-03, S0-LIB-04
 - Deliverable:
   - `POST /users` (called from a Keycloak event-listener or first-login hook to provision local profile)
@@ -99,6 +105,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-TAG-01 — Tag Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `tags` (id, slug, name, description, created_at), `tag_aliases` (tag_id, alias), `user_tag_subscriptions` (user_id, tag_id, created_at). Indexes: unique `(slug)`, unique `(user_id, tag_id)`
 - Definition of done: migration runs; seed script loads ~30 starter tags (`javascript`, `typescript`, `nestjs`, `postgres`, `redis`, `kafka`, `opensearch`, `docker`, `mongodb`, etc.)
@@ -106,6 +113,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-TAG-02 — Tag Service API
+
 - Depends on: S1-TAG-01, S0-LIB-03
 - Deliverable:
   - `GET /tags` (search by prefix, paginated)
@@ -118,6 +126,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-QUESTION-01 — Question Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `questions` (id, author_id, title, body_md, status enum [open|closed|deleted], created_at, updated_at), `question_tags` (question_id, tag_id), `question_watchers` (question_id, user_id, created_at). Indexes on `(author_id)`, `(status, created_at desc)`, `(question_id)` in junction tables.
 - Definition of done: migration runs; FK to tags is **logical only** (tag_id is a uuid; cross-service joins are forbidden — see [cross-cutting.md](cross-cutting.md))
@@ -125,6 +134,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-QUESTION-02 — Question Service API
+
 - Depends on: S1-QUESTION-01, S0-LIB-03, S0-LIB-04
 - Deliverable:
   - `POST /questions` — body `{ title, body, tagSlugs[] }`. Validates tag existence by calling Tag Service `GET /tags?slugs=...` (sync HTTP call; no events yet)
@@ -138,6 +148,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-ANSWER-01 — Answer Service schema + migrations
+
 - Depends on: S0-INFRA-02, S0-REPO-03
 - Deliverable: tables `answers` (id, question_id, author_id, body_md, status enum [active|deleted], created_at, updated_at, accepted_at nullable), `accepted_answer_audit` (question_id, accepted_answer_id, accepted_by_user_id, accepted_at). Indexes on `(question_id, status)`, unique `(question_id) where accepted_at is not null` (partial unique).
 - Definition of done: migration runs; partial-unique constraint prevents two accepted answers per question
@@ -145,6 +156,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-ANSWER-02 — Answer Service API
+
 - Depends on: S1-ANSWER-01, S1-QUESTION-02, S0-LIB-03
 - Deliverable:
   - `POST /questions/:questionId/answers` — body `{ body }`. Validates question exists + is `open` via Question Service sync call
@@ -159,6 +171,7 @@ Mirrors HLD §18 Sprint 1.
 ### Compose + glue
 
 #### S1-COMPOSE-01 — Wire all Sprint 1 services into compose
+
 - Depends on: S1-GW-01, S1-BFF-01, S1-USER-02, S1-TAG-02, S1-QUESTION-02, S1-ANSWER-02
 - Deliverable: each service has a build context in `docker-compose.yml`, env vars wired, depends_on set, joined to the right networks (`edge-net`, `app-net`, `data-net`, `observability-net`)
 - Definition of done: `docker compose up` brings the full Sprint 1 stack to healthy in < 90 seconds
@@ -166,6 +179,7 @@ Mirrors HLD §18 Sprint 1.
 - Status: ⏳
 
 #### S1-E2E-01 — Smoke E2E: register → ask → answer → accept
+
 - Depends on: S1-COMPOSE-01
 - Deliverable: `tests/e2e/sprint1.spec.ts` (Jest + supertest) that:
   1. Logs in `alice` via Keycloak
