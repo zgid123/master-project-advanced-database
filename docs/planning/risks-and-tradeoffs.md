@@ -90,7 +90,7 @@ Architectural risks (carried forward from HLD §19) and implementation-specific 
 ### I10. Migration tool lock-in
 
 - **Risk:** [S0-REPO-03](00-foundation.md#s0-repo-03--decide-and-document-migration-tool) picks once for the whole repo; switching mid-project is expensive.
-- **Mitigation:** ADR makes the choice explicit and reviewable. Recommendation: Prisma (best NestJS DX), with TypeORM as fallback.
+- **Mitigation:** [ADR 0001](../adr/0001-migration-tool.md) makes the choice explicit and reviewable. Prisma is the repo standard; unsupported edge cases use customized SQL inside Prisma-generated migrations.
 
 ### I11. OpenSearch reindex coordination
 
