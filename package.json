@@ -1,0 +1,16 @@
+{
+  "name": "devqa-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": "20.x",
+    "pnpm": "9.x"
+  },
+  "scripts": {
+    "build": "corepack pnpm -r run build",
+    "test": "corepack pnpm -r run test",
+    "lint": "corepack pnpm -r run lint",
+    "typecheck": "corepack pnpm -r run typecheck",
+    "format": "corepack pnpm -r run format"
+  }
+}
