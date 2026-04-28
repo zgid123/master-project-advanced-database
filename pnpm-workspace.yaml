@@ -1,0 +1,7 @@
+packages:
+  - '@types/**'
+  - packages/**
+  - workspaces/**
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook

@@ -1,0 +1,89 @@
+# OSX
+#
+.DS_Store
+#
+# node.js
+#
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+#
+# next.js
+#
+.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+#
+# dependencies
+#
+.pnp
+.pnp.js
+#
+# local env files
+#
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+#
+# vercel
+#
+.vercel
+#
+# vitejs
+#
+dist
+dist-ssr
+*.local
+#
+# nestjs
+#
+# Logs
+#
+logs
+*.log
+#
+# Tests
+#
+coverage
+/.nyc_output
+#
+# common
+#
+lib
+ssh
+#
+# turborepo
+#
+.turbo
+.next/**
+#
+# storybook
+#
+*storybook.log
+storybook-static
+#
+# tanstack start
+#
+count.txt
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+todos.json
+__unconfig*
+#
+# editor
+#
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

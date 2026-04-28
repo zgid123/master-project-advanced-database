@@ -1,0 +1,7 @@
+{
+  "extends": "@alphacifer/tsconfig/tanstack-start-app",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
+}
