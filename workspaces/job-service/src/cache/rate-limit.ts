@@ -1,5 +1,8 @@
 import { HttpError } from '../domain/errors.js';
+import { logger } from '../observability/logger.js';
 import { getRedis } from './redis.js';
+
+let warnedRateLimitFailure = false;
 
 export async function rateLimitApply(
   userId: string,
@@ -21,5 +24,9 @@ export async function rateLimitApply(
     }
   } catch (error) {
     if (error instanceof HttpError) throw error;
+    if (!warnedRateLimitFailure) {
+      warnedRateLimitFailure = true;
+      logger.warn({ error }, 'redis rate limit failed open');
+    }
   }
 }

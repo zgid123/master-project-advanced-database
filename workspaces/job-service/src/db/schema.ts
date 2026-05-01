@@ -40,7 +40,7 @@ export const jobType = pgEnum('job_type', [
 ]);
 
 export const jobs = pgTable('jobs', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey(),
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedAlwaysAsIdentity(),
   publicUid: uuid('public_uid').notNull(),
   postedByUserId: bigint('posted_by_user_id', { mode: 'bigint' }).notNull(),
   name: text('name').notNull(),
@@ -63,7 +63,7 @@ export const jobs = pgTable('jobs', {
 });
 
 export const jobApplications = pgTable('job_applications', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey(),
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedAlwaysAsIdentity(),
   jobId: bigint('job_id', { mode: 'bigint' }).notNull(),
   applicantUserId: bigint('applicant_user_id', { mode: 'bigint' }).notNull(),
   status: applicationStatus('status').notNull().default('submitted'),
@@ -77,7 +77,7 @@ export const jobApplications = pgTable('job_applications', {
 });
 
 export const eventOutbox = pgTable('event_outbox', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey(),
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedAlwaysAsIdentity(),
   eventType: text('event_type').notNull(),
   payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),

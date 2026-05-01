@@ -22,7 +22,7 @@ const jwt = __ENV.JWT;
 const jobId = __ENV.JOB_ID ?? '1';
 
 export default function () {
-  const idem = `k6-${__VU}-${__ITER}`;
+  const idem = `k6-${__VU}-${__ITER}-${Date.now()}`;
   const res = http.post(
     `${baseUrl}/v1/jobs/${jobId}/applications`,
     JSON.stringify({

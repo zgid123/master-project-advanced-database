@@ -22,6 +22,10 @@ pnpm --filter job-service build
 
 Migration commands use `DIRECT_DB_URL` and connect directly to PostgreSQL on port `5432`. Runtime traffic uses `DATABASE_URL` through PgBouncer on port `6432`.
 
+## Auth
+
+Local development uses `JWT_SECRET` with HS256. For integration with the Auth service, set either `JWT_PUBLIC_KEY` or `JWT_JWKS_URL`; the service will verify RS256 tokens and cache JWKS keys for `JWT_JWKS_CACHE_TTL_MS`.
+
 ## Benchmark Flow
 
 ```sh

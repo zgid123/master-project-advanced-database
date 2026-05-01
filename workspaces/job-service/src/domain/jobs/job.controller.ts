@@ -31,9 +31,12 @@ function getAuthenticatedUserId(request: FastifyRequest): string {
 export async function jobRoutes(app: FastifyInstance) {
   app.get('/v1/jobs', async (request) => {
     const query = listJobsQuerySchema.parse(request.query);
-    const cursor = decodeCursor(query.cursor);
 
     if (query.q) {
+      if (query.cursor) {
+        throw new HttpError(400, 'SEARCH_CURSOR_UNSUPPORTED', 'Search results do not support cursor pagination yet');
+      }
+
       return JobService.search(
         query.q,
         query.location ?? null,
@@ -42,6 +45,7 @@ export async function jobRoutes(app: FastifyInstance) {
       );
     }
 
+    const cursor = decodeCursor(query.cursor);
     return JobService.listOpen(cursor, query.limit);
   });
 
@@ -73,5 +77,10 @@ export async function jobRoutes(app: FastifyInstance) {
     const { id } = idParamSchema.parse(request.params);
     const body = updateJobSchema.parse(request.body);
     return JobService.update(id, body, getAuthenticatedUserId(request));
+  });
+
+  app.delete('/v1/jobs/:id', { preHandler: [app.authenticate] }, async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    return JobService.softDelete(id, getAuthenticatedUserId(request));
   });
 }

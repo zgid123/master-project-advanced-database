@@ -9,9 +9,12 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_SECRET: z.string().default('dev-secret'),
   JWT_PUBLIC_KEY: z.string().optional(),
+  JWT_JWKS_URL: z.string().url().optional(),
+  JWT_JWKS_CACHE_TTL_MS: z.coerce.number().int().positive().default(300_000),
   LOG_LEVEL: z.string().default('info'),
   PG_POOL_MAX: z.coerce.number().int().positive().default(20),
   PG_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
+  PG_POOL_MAX_USES: z.coerce.number().int().positive().default(7_500),
 });
 
 const env = envSchema.parse(process.env);
@@ -23,8 +26,12 @@ export const config = {
   databaseUrl: env.DATABASE_URL,
   directDatabaseUrl: env.DIRECT_DB_URL ?? env.DATABASE_URL,
   redisUrl: env.REDIS_URL,
-  jwtSecret: env.JWT_PUBLIC_KEY ?? env.JWT_SECRET,
+  jwtSecret: env.JWT_SECRET,
+  jwtPublicKey: env.JWT_PUBLIC_KEY,
+  jwtJwksUrl: env.JWT_JWKS_URL,
+  jwtJwksCacheTtlMs: env.JWT_JWKS_CACHE_TTL_MS,
   logLevel: env.LOG_LEVEL,
   pgPoolMax: env.PG_POOL_MAX,
   pgPoolMin: env.PG_POOL_MIN,
+  pgPoolMaxUses: env.PG_POOL_MAX_USES,
 } as const;

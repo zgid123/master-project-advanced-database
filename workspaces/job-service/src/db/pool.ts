@@ -12,6 +12,7 @@ export const pool = new Pool({
   min: config.pgPoolMin,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
+  maxUses: config.pgPoolMaxUses,
   statement_timeout: 30_000,
   application_name: 'job-service',
 });

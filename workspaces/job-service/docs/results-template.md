@@ -25,6 +25,8 @@ flowchart LR
 | JSONB metadata | PostgreSQL JSONB | Keeps metadata transactional with row data |
 | Hot reads | Redis cache-aside | Protects DB for job detail and applied checks |
 
+Note: the prototype migration uses PostgreSQL `simple` text search config. If Vietnamese stemming/diacritics become a primary search requirement, add `unaccent` and benchmark the changed `search_vector`.
+
 ## Latency Table
 
 | Scenario | Dataset | p50 | p95 | p99 | Notes |

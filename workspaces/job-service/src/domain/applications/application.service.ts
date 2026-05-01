@@ -36,7 +36,10 @@ function assertApplicationStatusTransition(
   from: ApplicationStatus,
   to: ApplicationStatus,
 ): void {
-  if (from === to) return;
+  if (from === to) {
+    throw new HttpError(400, 'NOOP_STATUS_TRANSITION', 'Application status is already set to that value');
+  }
+
   if (!allowedApplicationTransitions[from].includes(to)) {
     throw new HttpError(
       409,

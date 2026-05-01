@@ -1,5 +1,6 @@
 import { delKeys, getJson, setJson, singleFlight } from '../../cache/job-cache.js';
 import { withTransaction } from '../../db/pool.js';
+import { logger } from '../../observability/logger.js';
 import { HttpError } from '../errors.js';
 import type { KeysetCursor } from '../pagination.js';
 import { encodeCursor } from '../pagination.js';
@@ -63,7 +64,8 @@ export const JobService = {
         if (row) await setJson(cacheKey, row, 60);
         return row;
       });
-    } catch {
+    } catch (error) {
+      logger.warn({ error, id }, 'job cache single-flight failed; falling back to database');
       return JobRepo.findById(id);
     }
   },
@@ -75,7 +77,10 @@ export const JobService = {
 
   async search(q: string, location: string | null, type: string | null, limit: number) {
     const rows = await JobRepo.fullTextSearch(q, location, type, limit);
-    return pageResponse<JobSearchRow>(rows, limit);
+    return {
+      items: rows,
+      next_cursor: null,
+    };
   },
 
   async create(input: CreateJobInput): Promise<JobRow> {
@@ -113,6 +118,10 @@ export const JobService = {
         throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can update this job');
       }
 
+      if (patch.expected_status && target.status !== patch.expected_status) {
+        throw new HttpError(409, 'JOB_UPDATE_CONFLICT', 'Job status precondition failed');
+      }
+
       const row = await JobRepo.updateCAS(id, patch, client);
       if (!row) {
         throw new HttpError(409, 'JOB_UPDATE_CONFLICT', 'Job was not found or status precondition failed');
@@ -129,5 +138,34 @@ export const JobService = {
 
     await delKeys(`job:${id}`, `job:v2:${id}`);
     return updated;
+  },
+
+  async softDelete(id: string, actorUserId: string): Promise<JobRow> {
+    const deleted = await withTransaction(async (client) => {
+      const target = await JobRepo.findMutationTarget(id, client);
+      if (!target) {
+        throw new HttpError(404, 'NOT_FOUND', 'Job was not found');
+      }
+
+      if (target.posted_by_user_id !== actorUserId) {
+        throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can delete this job');
+      }
+
+      const row = await JobRepo.softDelete(id, client);
+      if (!row) {
+        throw new HttpError(404, 'NOT_FOUND', 'Job was not found');
+      }
+
+      await JobRepo.appendEvent(client, 'job.deleted', {
+        id: row.id,
+        posted_by_user_id: row.posted_by_user_id,
+        status: row.status,
+      });
+
+      return row;
+    });
+
+    await delKeys(`job:${id}`, `job:v2:${id}`);
+    return deleted;
   },
 };

@@ -9,6 +9,7 @@ type OutboxRow = {
 };
 
 type PublishOneResult = 'published' | 'empty' | 'failed';
+let shuttingDown = false;
 
 async function publishOne(redis: Awaited<ReturnType<typeof getRedis>>): Promise<PublishOneResult> {
   return withTransaction(async (client) => {
@@ -30,6 +31,9 @@ async function publishOne(redis: Awaited<ReturnType<typeof getRedis>>): Promise<
     try {
       await redis.xadd(
         'jobs.events',
+        'MAXLEN',
+        '~',
+        '100000',
         '*',
         'type',
         row.event_type,
@@ -75,21 +79,26 @@ async function publishBatch(limit = 100): Promise<number> {
 if (import.meta.url === `file://${process.argv[1]}`) {
   logger.info('starting outbox publisher');
 
-  for (;;) {
+  while (!shuttingDown) {
     const count = await publishBatch().catch((error: unknown) => {
       logger.error({ error }, 'outbox publish failed');
       return 0;
     });
 
-    if (count === 0) {
+    if (count === 0 && !shuttingDown) {
       await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
   }
+
+  await pool.end();
 }
 
 export { publishBatch };
 
 process.on('SIGTERM', async () => {
-  await pool.end();
-  process.exit(0);
+  shuttingDown = true;
+});
+
+process.on('SIGINT', async () => {
+  shuttingDown = true;
 });

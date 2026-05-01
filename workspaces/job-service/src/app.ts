@@ -1,6 +1,7 @@
 import jwt from '@fastify/jwt';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+import { jwtAlgorithms, resolveJwtSecret } from './auth/jwt-secret.js';
 import { config } from './config.js';
 import { HttpError } from './domain/errors.js';
 import { applicationRoutes } from './domain/applications/application.controller.js';
@@ -14,7 +15,10 @@ export async function buildApp() {
   });
 
   await app.register(jwt, {
-    secret: config.jwtSecret,
+    secret: resolveJwtSecret,
+    verify: {
+      algorithms: jwtAlgorithms(),
+    },
   });
 
   app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {

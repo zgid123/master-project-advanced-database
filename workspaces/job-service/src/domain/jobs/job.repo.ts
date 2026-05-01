@@ -175,9 +175,25 @@ export const JobRepo = {
     return result.rows[0] ?? null;
   },
 
+  async softDelete(id: string, client: PgClient): Promise<JobRow | null> {
+    const result = await client.query<JobRow>({
+      name: 'job-soft-delete',
+      text: `
+        UPDATE jobs
+        SET deleted_at = now()
+        WHERE id = $1
+          AND deleted_at IS NULL
+        RETURNING *
+      `,
+      values: [id],
+    });
+
+    return result.rows[0] ?? null;
+  },
+
   async appendEvent(
     client: PgClient,
-    eventType: 'job.created' | 'job.updated' | 'job.closed',
+    eventType: 'job.created' | 'job.updated' | 'job.closed' | 'job.deleted',
     payload: Record<string, unknown>,
   ): Promise<void> {
     await client.query({

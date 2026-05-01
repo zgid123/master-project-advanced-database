@@ -18,6 +18,8 @@ const applicationIdParamSchema = z.object({
   id: z.string().regex(/^\d+$/),
 });
 
+const idempotencyKeySchema = z.string().min(8).max(255);
+
 const listApplicationsQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
@@ -48,7 +50,12 @@ function getIdempotencyKey(request: FastifyRequest): string {
     throw new HttpError(400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key header is required');
   }
 
-  return value;
+  const parsed = idempotencyKeySchema.safeParse(value);
+  if (!parsed.success) {
+    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key must be 8-255 characters');
+  }
+
+  return parsed.data;
 }
 
 export async function applicationRoutes(app: FastifyInstance) {
