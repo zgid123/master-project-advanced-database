@@ -72,6 +72,6 @@ export async function jobRoutes(app: FastifyInstance) {
   app.patch('/v1/jobs/:id', { preHandler: [app.authenticate] }, async (request) => {
     const { id } = idParamSchema.parse(request.params);
     const body = updateJobSchema.parse(request.body);
-    return JobService.update(id, body);
+    return JobService.update(id, body, getAuthenticatedUserId(request));
   });
 }

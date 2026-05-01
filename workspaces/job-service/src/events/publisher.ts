@@ -8,51 +8,68 @@ type OutboxRow = {
   payload: Record<string, unknown>;
 };
 
-async function publishBatch(limit = 100): Promise<number> {
-  const redis = await getRedis();
+type PublishOneResult = 'published' | 'empty' | 'failed';
 
+async function publishOne(redis: Awaited<ReturnType<typeof getRedis>>): Promise<PublishOneResult> {
   return withTransaction(async (client) => {
     const result = await client.query<OutboxRow>({
-      name: 'outbox-fetch-unsent',
+      name: 'outbox-fetch-one-unsent',
       text: `
         SELECT id, event_type, payload
         FROM event_outbox
         WHERE sent_at IS NULL
         ORDER BY id
-        LIMIT $1
+        LIMIT 1
         FOR UPDATE SKIP LOCKED
       `,
-      values: [limit],
     });
 
-    for (const row of result.rows) {
-      try {
-        await redis.xadd(
-          'jobs.events',
-          '*',
-          'type',
-          row.event_type,
-          'id',
-          row.id,
-          'payload',
-          JSON.stringify(row.payload),
-          'ts',
-          Date.now().toString(),
-        );
-        await client.query('UPDATE event_outbox SET sent_at = now(), last_error = NULL WHERE id = $1', [
-          row.id,
-        ]);
-      } catch (error) {
-        await client.query('UPDATE event_outbox SET last_error = $2 WHERE id = $1', [
-          row.id,
-          error instanceof Error ? error.message : String(error),
-        ]);
-        throw error;
-      }
+    const row = result.rows[0];
+    if (!row) return 'empty';
+
+    try {
+      await redis.xadd(
+        'jobs.events',
+        '*',
+        'type',
+        row.event_type,
+        'id',
+        row.id,
+        'payload',
+        JSON.stringify(row.payload),
+        'ts',
+        Date.now().toString(),
+      );
+      await client.query('UPDATE event_outbox SET sent_at = now(), last_error = NULL WHERE id = $1', [
+        row.id,
+      ]);
+      return 'published';
+    } catch (error) {
+      await client.query('UPDATE event_outbox SET last_error = $2 WHERE id = $1', [
+        row.id,
+        error instanceof Error ? error.message : String(error),
+      ]);
+      return 'failed';
+    }
+  });
+}
+
+async function publishBatch(limit = 100): Promise<number> {
+  const redis = await getRedis();
+  let published = 0;
+
+  for (let index = 0; index < limit; index += 1) {
+    const result = await publishOne(redis);
+
+    if (result === 'published') {
+      published += 1;
+      continue;
     }
 
-    return result.rowCount ?? 0;
-  });
+    break;
+  }
+
+  return published;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

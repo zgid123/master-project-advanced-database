@@ -23,6 +23,20 @@ function slugify(value: string): string {
     .slice(0, 150);
 }
 
+function normalizeSlug(input: Pick<CreateJobInput, 'name' | 'slug'>): string {
+  const slug = input.slug ?? slugify(input.name);
+
+  if (!/^[a-z0-9-]{3,160}$/.test(slug)) {
+    throw new HttpError(
+      400,
+      'INVALID_SLUG',
+      'Derived slug is invalid; provide an explicit slug with 3-160 lowercase letters, numbers, or hyphens',
+    );
+  }
+
+  return slug;
+}
+
 function assertStatusTransition(from: JobStatus, to: JobStatus): void {
   if (from === to) return;
   if (!allowedJobTransitions[from].includes(to)) {
@@ -67,7 +81,7 @@ export const JobService = {
   async create(input: CreateJobInput): Promise<JobRow> {
     const normalizedInput = {
       ...input,
-      slug: input.slug ?? slugify(input.name),
+      slug: normalizeSlug(input),
     };
 
     return withTransaction(async (client) => {
@@ -81,7 +95,7 @@ export const JobService = {
     });
   },
 
-  async update(id: string, patch: UpdateJobInput): Promise<JobRow> {
+  async update(id: string, patch: UpdateJobInput, actorUserId: string): Promise<JobRow> {
     if (patch.status) {
       if (!patch.expected_status) {
         throw new HttpError(400, 'EXPECTED_STATUS_REQUIRED', 'expected_status is required for status updates');
@@ -90,6 +104,15 @@ export const JobService = {
     }
 
     const updated = await withTransaction(async (client) => {
+      const target = await JobRepo.findMutationTarget(id, client);
+      if (!target) {
+        throw new HttpError(404, 'NOT_FOUND', 'Job was not found');
+      }
+
+      if (target.posted_by_user_id !== actorUserId) {
+        throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can update this job');
+      }
+
       const row = await JobRepo.updateCAS(id, patch, client);
       if (!row) {
         throw new HttpError(409, 'JOB_UPDATE_CONFLICT', 'Job was not found or status precondition failed');

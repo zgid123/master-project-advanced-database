@@ -8,6 +8,10 @@ import type {
   UserApplicationRow,
 } from './application.types.js';
 
+type ApplicationMutationTarget = Pick<ApplicationRow, 'id' | 'job_id' | 'status'> & {
+  posted_by_user_id: string;
+};
+
 export const ApplicationRepo = {
   async findByIdempotency(
     applicantUserId: string,
@@ -30,7 +34,7 @@ export const ApplicationRepo = {
 
   async ensureOpenJob(client: PgClient, jobId: string): Promise<boolean> {
     const result = await client.query<{ id: string }>({
-      name: 'application-ensure-open-job',
+      name: 'application-ensure-open-job-locked',
       text: `
         SELECT id
         FROM jobs
@@ -39,6 +43,7 @@ export const ApplicationRepo = {
           AND deleted_at IS NULL
           AND (valid_to IS NULL OR valid_to > now())
         LIMIT 1
+        FOR UPDATE
       `,
       values: [jobId],
     });
@@ -71,16 +76,22 @@ export const ApplicationRepo = {
     return result.rows[0] as ApplicationRow;
   },
 
-  async incrementJobApplicationCount(client: PgClient, jobId: string): Promise<void> {
-    await client.query({
-      name: 'application-increment-job-count',
+  async incrementJobApplicationCount(client: PgClient, jobId: string): Promise<boolean> {
+    const result = await client.query<{ id: string }>({
+      name: 'application-increment-job-count-open',
       text: `
         UPDATE jobs
         SET application_count = application_count + 1
         WHERE id = $1
+          AND status = 'open'
+          AND deleted_at IS NULL
+          AND (valid_to IS NULL OR valid_to > now())
+        RETURNING id
       `,
       values: [jobId],
     });
+
+    return result.rowCount === 1;
   },
 
   async listForJob(
@@ -168,6 +179,23 @@ export const ApplicationRepo = {
         RETURNING *
       `,
       values: [id, nextStatus, expectedStatus],
+    });
+
+    return result.rows[0] ?? null;
+  },
+
+  async findStatusMutationTarget(id: string, client: PgClient): Promise<ApplicationMutationTarget | null> {
+    const result = await client.query<ApplicationMutationTarget>({
+      name: 'application-status-mutation-target',
+      text: `
+        SELECT a.id, a.job_id, a.status, j.posted_by_user_id
+        FROM job_applications a
+        JOIN jobs j ON j.id = a.job_id
+        WHERE a.id = $1
+          AND j.deleted_at IS NULL
+        FOR UPDATE OF a
+      `,
+      values: [id],
     });
 
     return result.rows[0] ?? null;

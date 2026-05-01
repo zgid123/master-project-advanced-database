@@ -77,7 +77,11 @@ export const ApplicationService = {
         }
 
         const created = await ApplicationRepo.createSubmitted(client, input);
-        await ApplicationRepo.incrementJobApplicationCount(client, input.job_id);
+        const counterUpdated = await ApplicationRepo.incrementJobApplicationCount(client, input.job_id);
+        if (!counterUpdated) {
+          throw new HttpError(409, 'JOB_NOT_OPEN', 'Job is not open for applications');
+        }
+
         await ApplicationRepo.appendEvent(client, 'application.submitted', {
           id: created.id,
           job_id: created.job_id,
@@ -125,10 +129,23 @@ export const ApplicationService = {
     return pageResponse<UserApplicationRow>(rows, limit);
   },
 
-  async updateStatus(id: string, input: UpdateApplicationStatusInput): Promise<ApplicationRow> {
+  async updateStatus(
+    id: string,
+    input: UpdateApplicationStatusInput,
+    actorUserId: string,
+  ): Promise<ApplicationRow> {
     assertApplicationStatusTransition(input.expected_status, input.status);
 
     const updated = await withTransaction(async (client) => {
+      const target = await ApplicationRepo.findStatusMutationTarget(id, client);
+      if (!target) {
+        throw new HttpError(404, 'NOT_FOUND', 'Application was not found');
+      }
+
+      if (target.posted_by_user_id !== actorUserId) {
+        throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can update application status');
+      }
+
       const row = await ApplicationRepo.updateStatusCAS(
         client,
         id,

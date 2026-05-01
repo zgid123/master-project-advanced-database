@@ -3,6 +3,8 @@ import { pool } from '../../db/pool.js';
 import type { KeysetCursor } from '../pagination.js';
 import type { CreateJobInput, JobListRow, JobRow, JobSearchRow, JobStatus, UpdateJobInput } from './job.types.js';
 
+type JobMutationTarget = Pick<JobRow, 'id' | 'posted_by_user_id' | 'status'>;
+
 const updateColumnMap = {
   name: 'name',
   slug: 'slug',
@@ -23,6 +25,22 @@ export const JobRepo = {
     const result = await client.query<JobRow>({
       name: 'job-by-id',
       text: 'SELECT * FROM jobs WHERE id = $1 AND deleted_at IS NULL',
+      values: [id],
+    });
+
+    return result.rows[0] ?? null;
+  },
+
+  async findMutationTarget(id: string, client: PgClient): Promise<JobMutationTarget | null> {
+    const result = await client.query<JobMutationTarget>({
+      name: 'job-mutation-target-for-update',
+      text: `
+        SELECT id, posted_by_user_id, status
+        FROM jobs
+        WHERE id = $1
+          AND deleted_at IS NULL
+        FOR UPDATE
+      `,
       values: [id],
     });
 

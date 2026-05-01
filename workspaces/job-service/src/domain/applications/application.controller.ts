@@ -92,6 +92,6 @@ export async function applicationRoutes(app: FastifyInstance) {
   app.patch('/v1/applications/:id/status', { preHandler: [app.authenticate] }, async (request) => {
     const { id } = applicationIdParamSchema.parse(request.params);
     const body = updateApplicationStatusSchema.parse(request.body);
-    return ApplicationService.updateStatus(id, body);
+    return ApplicationService.updateStatus(id, body, getAuthenticatedUserId(request));
   });
 }
