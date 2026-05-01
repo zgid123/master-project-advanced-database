@@ -39,7 +39,10 @@ function normalizeSlug(input: Pick<CreateJobInput, 'name' | 'slug'>): string {
 }
 
 function assertStatusTransition(from: JobStatus, to: JobStatus): void {
-  if (from === to) return;
+  if (from === to) {
+    throw new HttpError(400, 'NOOP_STATUS_TRANSITION', 'Job status is already set to that value');
+  }
+
   if (!allowedJobTransitions[from].includes(to)) {
     throw new HttpError(409, 'INVALID_STATUS_TRANSITION', `Cannot change job status from ${from} to ${to}`);
   }

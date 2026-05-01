@@ -25,6 +25,7 @@ type JwksResponse = {
 };
 
 const jwksCache = new Map<string, string>();
+const jwksNegativeCache = new Map<string, number>();
 let jwksCacheExpiresAt = 0;
 let refreshPromise: Promise<void> | null = null;
 
@@ -72,6 +73,7 @@ async function refreshJwks(): Promise<void> {
   jwksCache.clear();
   for (const [kid, pem] of nextCache.entries()) {
     jwksCache.set(kid, pem);
+    jwksNegativeCache.delete(kid);
   }
   jwksCacheExpiresAt = Date.now() + config.jwtJwksCacheTtlMs;
 }
@@ -107,6 +109,11 @@ export async function resolveJwtSecret(
     throw new Error('JWT kid header is required for JWKS verification');
   }
 
+  const negativeCacheExpiresAt = jwksNegativeCache.get(header.kid) ?? 0;
+  if (negativeCacheExpiresAt > Date.now()) {
+    throw new Error('JWT public key not found for kid');
+  }
+
   await ensureFreshJwks();
   let publicKey = jwksCache.get(header.kid);
 
@@ -117,6 +124,7 @@ export async function resolveJwtSecret(
   }
 
   if (!publicKey) {
+    jwksNegativeCache.set(header.kid, Date.now() + config.jwtJwksNegativeCacheTtlMs);
     throw new Error('JWT public key not found for kid');
   }
 
