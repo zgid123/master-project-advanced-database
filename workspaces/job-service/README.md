@@ -12,6 +12,8 @@ pnpm --filter job-service dev
 
 The API listens on `http://localhost:3010`.
 
+Swagger/OpenAPI docs are available at `http://localhost:3010/docs`. The root URL redirects there.
+
 ## Verification
 
 ```sh
@@ -20,7 +22,7 @@ docker compose exec redis redis-cli PING
 pnpm --filter job-service build
 ```
 
-Migration commands use `DIRECT_DB_URL` and connect directly to PostgreSQL on port `5432`. Runtime traffic uses `DATABASE_URL` through PgBouncer on port `6432`.
+Migration commands use `DIRECT_DB_URL` and connect directly to PostgreSQL on port `5432`. Runtime traffic uses `DATABASE_URL` through PgBouncer on port `6432`. The defaults match the local Docker Compose ports, so `.env` is optional for local testing.
 
 ## Auth
 

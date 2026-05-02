@@ -1,4 +1,6 @@
 import jwt from '@fastify/jwt';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import { jwtAlgorithms, resolveJwtSecret } from './auth/jwt-secret.js';
@@ -18,6 +20,44 @@ export async function buildApp() {
     secret: resolveJwtSecret,
     verify: {
       algorithms: jwtAlgorithms(),
+    },
+  });
+
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Job Service API',
+        description: 'Job and Job Application service API.',
+        version: '1.0.0',
+      },
+      servers: [
+        {
+          url: `http://127.0.0.1:${config.port}`,
+          description: 'Local development',
+        },
+      ],
+      tags: [
+        { name: 'Health', description: 'Service health checks' },
+        { name: 'Jobs', description: 'Job listing, search, creation, update, and soft delete' },
+        { name: 'Applications', description: 'Job application submission and status workflow' },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      deepLinking: true,
+      docExpansion: 'list',
     },
   });
 
@@ -47,6 +87,14 @@ export async function buildApp() {
       });
     }
 
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
+      return reply.code(statusCode).send({
+        error: 'BAD_REQUEST',
+        message: error instanceof Error ? error.message : 'Bad request',
+      });
+    }
+
     app.log.error({ error }, 'unhandled request error');
     return reply.code(500).send({
       error: 'INTERNAL_SERVER_ERROR',
@@ -54,7 +102,26 @@ export async function buildApp() {
     });
   });
 
-  app.get('/health', async () => ({
+  app.get('/', { schema: { hide: true } }, async (_request, reply) => {
+    return reply.redirect('/docs');
+  });
+
+  app.get('/health', {
+    schema: {
+      tags: ['Health'],
+      summary: 'Health check',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            service: { type: 'string' },
+          },
+          required: ['status', 'service'],
+        },
+      },
+    },
+  }, async () => ({
     status: 'ok',
     service: 'job-service',
   }));

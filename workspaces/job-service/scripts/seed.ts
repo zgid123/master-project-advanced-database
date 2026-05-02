@@ -2,7 +2,13 @@ import { parseArgs } from 'node:util';
 import { Client } from 'pg';
 import { config } from '../src/config.js';
 
+const cliArgs = process.argv.slice(2);
+if (cliArgs[0] === '--') {
+  cliArgs.shift();
+}
+
 const { values } = parseArgs({
+  args: cliArgs,
   options: {
     jobs: { type: 'string', default: '10000' },
     apps: { type: 'string', default: '50000' },

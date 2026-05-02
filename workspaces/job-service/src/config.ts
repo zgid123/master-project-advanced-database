@@ -5,7 +5,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3010),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().default('postgres://jobsvc:jobsvc@localhost:6432/jobs'),
-  DIRECT_DB_URL: z.string().optional(),
+  DIRECT_DB_URL: z.string().default('postgres://jobsvc:jobsvc@localhost:5432/jobs'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_SECRET: z.string().default('dev-secret'),
   JWT_PUBLIC_KEY: z.string().optional(),
