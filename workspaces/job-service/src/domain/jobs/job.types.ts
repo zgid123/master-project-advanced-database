@@ -37,12 +37,21 @@ export const createJobSchema = z.object({
   valid_to: z.string().datetime().nullable().optional(),
 });
 
-export const updateJobSchema = createJobSchema
-  .partial()
-  .extend({
-    expected_status: z.enum(jobStatuses).optional(),
-  })
-  .refine((value) => Object.keys(value).some((key) => key !== 'expected_status'), {
+export const updateJobSchema = z.object({
+  name: z.string().min(3).max(240).optional(),
+  slug: z.string().regex(/^[a-z0-9-]{3,160}$/).optional(),
+  content: z.string().min(1).optional(),
+  status: z.enum(jobStatuses).optional(),
+  job_type: z.enum(jobTypes).nullable().optional(),
+  location: z.string().max(240).nullable().optional(),
+  salary_min: z.coerce.number().nonnegative().nullable().optional(),
+  salary_max: z.coerce.number().nonnegative().nullable().optional(),
+  currency: z.string().length(3).transform((value) => value.toUpperCase()).nullable().optional(),
+  tags: z.array(z.string().min(1).max(64)).optional(),
+  metadata: metadataSchema.optional(),
+  valid_to: z.string().datetime().nullable().optional(),
+  expected_status: z.enum(jobStatuses).optional(),
+}).refine((value) => Object.keys(value).some((key) => key !== 'expected_status'), {
     message: 'At least one field must be provided',
   });
 
