@@ -5,6 +5,7 @@ export default defineConfig({
     name: 'job-service',
     environment: 'node',
     env: {
+      JWT_SECRET: 'dev-secret',
       LOG_LEVEL: 'silent',
       NODE_ENV: 'test',
     },

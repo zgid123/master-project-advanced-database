@@ -23,6 +23,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test job-service
@@ -45,7 +49,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Typecheck job-service
         run: pnpm --filter job-service typecheck
@@ -75,12 +79,13 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Build job-service
         run: pnpm --filter job-service build
 
       - name: Upload job-service build artifact
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: job-service-dist

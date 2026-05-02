@@ -31,6 +31,7 @@ export async function withTransaction<T>(
 
   try {
     await client.query('BEGIN');
+    await client.query("SET LOCAL statement_timeout = '30s'");
     const result = await fn(client);
     await client.query('COMMIT');
     return result;

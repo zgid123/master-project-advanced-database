@@ -87,9 +87,25 @@ export async function buildApp() {
       });
     }
 
-    const statusCode = (error as { statusCode?: unknown }).statusCode;
-    if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
-      return reply.code(statusCode).send({
+    const fastifyError = error as {
+      code?: unknown;
+      statusCode?: unknown;
+      validation?: unknown;
+    };
+
+    if (fastifyError.validation) {
+      return reply.code(400).send({
+        error: 'SCHEMA_VALIDATION',
+        message: error instanceof Error ? error.message : 'Request did not match the route schema',
+        issues: fastifyError.validation,
+      });
+    }
+
+    if (
+      fastifyError.code === 'FST_ERR_CTP_EMPTY_JSON_BODY'
+      || fastifyError.code === 'FST_ERR_CTP_INVALID_JSON_BODY'
+    ) {
+      return reply.code(400).send({
         error: 'BAD_REQUEST',
         message: error instanceof Error ? error.message : 'Bad request',
       });

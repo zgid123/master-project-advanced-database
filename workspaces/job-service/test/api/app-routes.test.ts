@@ -30,6 +30,7 @@ import { rateLimitApply } from '../../src/cache/rate-limit.js';
 import { buildApp } from '../../src/app.js';
 import { ApplicationService } from '../../src/domain/applications/application.service.js';
 import { JobService } from '../../src/domain/jobs/job.service.js';
+import { HttpError } from '../../src/domain/errors.js';
 import type { ApplicationRow } from '../../src/domain/applications/application.types.js';
 import type { JobListRow, JobRow } from '../../src/domain/jobs/job.types.js';
 
@@ -93,7 +94,7 @@ describe('job-service HTTP API', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   afterAll(async () => {
@@ -195,6 +196,97 @@ describe('job-service HTTP API', () => {
     });
   });
 
+  it('rejects protected routes when the JWT is missing', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/jobs',
+      payload: {
+        name: 'Backend Engineer',
+        content: 'Build and operate the job service.',
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toMatchObject({
+      error: 'UNAUTHORIZED',
+    });
+    expect(JobService.create).not.toHaveBeenCalled();
+  });
+
+  it('returns schema validation details for JSON Schema failures', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/jobs',
+      headers: {
+        authorization: bearerToken('501'),
+      },
+      payload: {
+        name: 'No',
+        content: 'Too short name.',
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: 'SCHEMA_VALIDATION',
+      issues: expect.any(Array),
+    });
+    expect(JobService.create).not.toHaveBeenCalled();
+  });
+
+  it('returns bad request for malformed JSON bodies', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/jobs',
+      headers: {
+        authorization: bearerToken('501'),
+        'content-type': 'application/json',
+      },
+      payload: '{"name":',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: 'BAD_REQUEST',
+    });
+    expect(JobService.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects search cursors because search pagination is not implemented yet', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/jobs?q=backend&cursor=ignored',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: 'SEARCH_CURSOR_UNSUPPORTED',
+    });
+    expect(JobService.search).not.toHaveBeenCalled();
+  });
+
+  it('maps service authorization failures to the route response', async () => {
+    vi.mocked(JobService.update).mockRejectedValue(
+      new HttpError(403, 'FORBIDDEN', 'Only the job poster can update this job'),
+    );
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/v1/jobs/101',
+      headers: {
+        authorization: bearerToken('502'),
+      },
+      payload: {
+        name: 'Backend Platform Engineer',
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      error: 'FORBIDDEN',
+    });
+  });
+
   it('submits an application from POST /v1/jobs/:id/applications', async () => {
     vi.mocked(rateLimitApply).mockResolvedValue(undefined);
     vi.mocked(ApplicationService.submit).mockResolvedValue(applicationRow);
@@ -224,6 +316,51 @@ describe('job-service HTTP API', () => {
       job_id: '101',
       applicant_user_id: '700',
       status: 'submitted',
+    });
+  });
+
+  it('rejects invalid Idempotency-Key headers before submit handling', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/jobs/101/applications',
+      headers: {
+        authorization: bearerToken('700'),
+        'idempotency-key': 'short',
+      },
+      payload: {
+        cover_letter: 'I can help build this service.',
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: 'SCHEMA_VALIDATION',
+      issues: expect.any(Array),
+    });
+    expect(ApplicationService.submit).not.toHaveBeenCalled();
+  });
+
+  it('maps not-open application submissions to 409 responses', async () => {
+    vi.mocked(rateLimitApply).mockResolvedValue(undefined);
+    vi.mocked(ApplicationService.submit).mockRejectedValue(
+      new HttpError(409, 'JOB_NOT_OPEN', 'Job is not open for applications'),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/jobs/101/applications',
+      headers: {
+        authorization: bearerToken('700'),
+        'idempotency-key': 'idem-123456',
+      },
+      payload: {
+        cover_letter: 'I can help build this service.',
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({
+      error: 'JOB_NOT_OPEN',
     });
   });
 });
