@@ -1,0 +1,2 @@
+ALTER DATABASE notifications RESET statement_timeout;
+ALTER DATABASE notifications RESET idle_in_transaction_session_timeout;

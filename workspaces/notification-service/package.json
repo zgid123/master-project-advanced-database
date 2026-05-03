@@ -1,0 +1,49 @@
+{
+  "name": "notification-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "start": "node dist/src/index.js",
+    "migrate": "tsx scripts/migrate.ts up",
+    "migrate:down": "tsx scripts/migrate.ts down",
+    "seed": "tsx scripts/seed.ts",
+    "worker:create": "tsx src/workers/create.worker.ts",
+    "worker:delivery": "tsx src/workers/delivery.worker.ts",
+    "worker:digest": "tsx src/workers/digest.worker.ts",
+    "realtime": "tsx src/realtime/gateway.ts",
+    "publish-outbox": "tsx src/events/publisher.ts",
+    "consume-domain-events": "tsx src/events/domain-consumer.ts",
+    "digest:daily": "tsx scripts/digest.ts daily",
+    "archive:partitions": "tsx scripts/archive-partitions.ts",
+    "bench:inbox": "k6 run scripts/bench/k6-inbox.js",
+    "bench:fanout": "k6 run scripts/bench/k6-fanout.js"
+  },
+  "dependencies": {
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.6",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@socket.io/redis-emitter": "^5.1.0",
+    "bullmq": "^5.65.0",
+    "drizzle-orm": "^0.44.0",
+    "fastify": "^5.2.1",
+    "handlebars": "^4.7.8",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "prom-client": "^15.1.3",
+    "socket.io": "^4.8.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "@types/pg": "^8.11.11",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.4"
+  }
+}
