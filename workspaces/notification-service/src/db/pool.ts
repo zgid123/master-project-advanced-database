@@ -1,8 +1,6 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { config } from '../config.js';
 import { logger } from '../observability/logger.js';
-import * as schema from './schema.js';
 
 const { Pool } = pg;
 
@@ -19,8 +17,6 @@ export const pool = new Pool({
 pool.on('error', (error) => {
   logger.error({ error }, 'postgres pool error');
 });
-
-export const db = drizzle(pool, { schema });
 
 export type PgClient = pg.PoolClient;
 

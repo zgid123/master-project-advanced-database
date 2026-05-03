@@ -31,6 +31,7 @@ Workers:
 ```sh
 pnpm --filter notification-service worker:create
 pnpm --filter notification-service worker:delivery
+pnpm --filter notification-service worker:scheduled
 pnpm --filter notification-service consume-domain-events
 ```
 
@@ -40,4 +41,11 @@ Storage maintenance:
 pnpm --filter notification-service maintain:storage
 ```
 
-Run the maintenance command daily in cron to create future partitions and remove old dedup/device-token rows.
+Run the maintenance command daily in cron, Kubernetes CronJob, or your scheduler of choice. It creates future `notifications` and `notification_deliveries` partitions and removes old dedup/device-token rows in chunks. Tune cleanup with `NOTIFICATION_CLEANUP_BATCH_SIZE`.
+
+## Operational Notes
+
+- `public_id` defaults to UUIDv7 for locality, but PostgreSQL cannot enforce global `UNIQUE (public_id)` on this range-partitioned table without including the partition key. Inbox reads and mutations intentionally scope by `(user_id, public_id)`.
+- JWT verification supports HS256 for local development and RS256/JWKS for production. Set `JWT_ISSUER` and comma-separated `JWT_AUDIENCE` to enforce `iss` and `aud` claims on both REST and realtime connections.
+- Internal ingestion uses `x-internal-token` and is rate-limited per `x-service-name`/IP with `INTERNAL_RATE_LIMIT_PER_MINUTE` requests per minute. Set it to `0` to disable.
+- The service uses hand-written SQL through `pg` to keep partition-aware queries explicit; there is no ORM layer.

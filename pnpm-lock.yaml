@@ -224,9 +224,6 @@ importers:
       bullmq:
         specifier: ^5.65.0
         version: 5.76.5
-      drizzle-orm:
-        specifier: ^0.44.0
-        version: 0.44.7(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.28.16)(pg@8.20.0)
       fastify:
         specifier: ^5.2.1
         version: 5.8.5

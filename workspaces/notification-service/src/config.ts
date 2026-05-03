@@ -13,7 +13,12 @@ const envSchema = z.object({
   JWT_JWKS_URL: z.string().url().optional(),
   JWT_JWKS_CACHE_TTL_MS: z.coerce.number().int().positive().default(300_000),
   JWT_JWKS_NEGATIVE_CACHE_TTL_MS: z.coerce.number().int().positive().default(30_000),
+  JWT_ISSUER: z.string().min(1).optional(),
+  JWT_AUDIENCE: z.string().optional().transform((value) => (
+    value?.split(',').map((audience) => audience.trim()).filter(Boolean) ?? []
+  )),
   INTERNAL_API_TOKEN: z.string().default('dev-internal-token'),
+  INTERNAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().nonnegative().default(600),
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().default('no-reply@solvit.local'),
   WEB_PUSH_VAPID_PUBLIC_KEY: z.string().optional(),
@@ -43,7 +48,10 @@ export const config = {
   jwtJwksUrl: env.JWT_JWKS_URL,
   jwtJwksCacheTtlMs: env.JWT_JWKS_CACHE_TTL_MS,
   jwtJwksNegativeCacheTtlMs: env.JWT_JWKS_NEGATIVE_CACHE_TTL_MS,
+  jwtIssuer: env.JWT_ISSUER,
+  jwtAudiences: env.JWT_AUDIENCE,
   internalApiToken: env.INTERNAL_API_TOKEN,
+  internalRateLimitPerMinute: env.INTERNAL_RATE_LIMIT_PER_MINUTE,
   sendgridApiKey: env.SENDGRID_API_KEY,
   sendgridFromEmail: env.SENDGRID_FROM_EMAIL,
   webPushVapidPublicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,

@@ -1,26 +1,23 @@
 import { createHmac, createVerify, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createAdapter } from '@socket.io/redis-adapter';
-import type { FastifyRequest } from 'fastify';
 import { Redis } from 'ioredis';
 import { Server, type Socket } from 'socket.io';
-import { jwtAlgorithms, resolveJwtSecret } from '../auth/jwt-secret.js';
+import { assertJwtPayloadClaims, jwtAlgorithms, resolveJwtSecret } from '../auth/jwt-secret.js';
 import { config } from '../config.js';
 import { logger } from '../observability/logger.js';
 
 type JwtPayload = {
+  aud?: unknown;
+  exp?: unknown;
+  iss?: unknown;
+  nbf?: unknown;
   sub?: unknown;
   [key: string]: unknown;
 };
 
 function decodeJsonPart<T>(value: string): T {
   return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as T;
-}
-
-function assertTemporalClaims(payload: JwtPayload): void {
-  const now = Math.floor(Date.now() / 1000);
-  if (typeof payload.exp === 'number' && payload.exp <= now) throw new Error('JWT is expired');
-  if (typeof payload.nbf === 'number' && payload.nbf > now) throw new Error('JWT is not active yet');
 }
 
 async function verifyJwtToken(token: string): Promise<JwtPayload> {
@@ -35,7 +32,7 @@ async function verifyJwtToken(token: string): Promise<JwtPayload> {
 
   const signedPart = `${encodedHeader}.${encodedPayload}`;
   const actual = Buffer.from(encodedSignature, 'base64url');
-  const secret = await resolveJwtSecret({} as FastifyRequest, { header, payload });
+  const secret = await resolveJwtSecret(undefined, { header, payload });
 
   if (header.alg === 'HS256') {
     const expected = createHmac('sha256', secret)
@@ -54,7 +51,7 @@ async function verifyJwtToken(token: string): Promise<JwtPayload> {
     throw new Error('Unsupported JWT alg');
   }
 
-  assertTemporalClaims(payload);
+  assertJwtPayloadClaims(payload);
   return payload;
 }
 

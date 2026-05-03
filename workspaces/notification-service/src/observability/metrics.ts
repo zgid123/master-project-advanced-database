@@ -68,3 +68,9 @@ export function startQueueDepthMetrics(intervalMs = 15_000): void {
     // Redis may not be available during local startup.
   });
 }
+
+export function stopQueueDepthMetrics(): void {
+  if (!queueMetricsTimer) return;
+  clearInterval(queueMetricsTimer);
+  queueMetricsTimer = null;
+}

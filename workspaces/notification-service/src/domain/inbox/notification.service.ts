@@ -288,6 +288,7 @@ export const NotificationService = {
       const now = new Date();
 
       for (const row of inserted) {
+        // A missing preference row means the user accepts the category defaults.
         const prefsByChannelId = prefsByUser.get(row.user_id) ?? new Map<number, (typeof prefs)[number]>();
         const deliverableChannels = defaultChannels
           .filter(nonInAppChannel)

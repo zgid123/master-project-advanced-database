@@ -13,6 +13,13 @@ type TokenOrHeaderLike = JwtHeaderLike | {
   payload?: unknown;
 };
 
+type JwtPayloadClaims = {
+  aud?: unknown;
+  exp?: unknown;
+  iss?: unknown;
+  nbf?: unknown;
+};
+
 type JwksKey = Record<string, unknown> & {
   kid?: string;
   kty?: string;
@@ -87,7 +94,7 @@ export function jwtAlgorithms(): ['RS256'] | ['HS256'] {
 }
 
 export async function resolveJwtSecret(
-  _request: FastifyRequest,
+  _request: FastifyRequest | undefined,
   tokenOrHeader: TokenOrHeaderLike,
 ): Promise<string | Buffer> {
   if (config.jwtPublicKey) return normalizePublicKey(config.jwtPublicKey);
@@ -116,4 +123,34 @@ export async function resolveJwtSecret(
   }
 
   return publicKey;
+}
+
+export function jwtVerifyOptions() {
+  return {
+    algorithms: jwtAlgorithms(),
+    ...(config.jwtIssuer ? { allowedIss: config.jwtIssuer } : {}),
+    ...(config.jwtAudiences.length > 0 ? { allowedAud: config.jwtAudiences } : {}),
+  };
+}
+
+export function assertJwtPayloadClaims(payload: JwtPayloadClaims): void {
+  const now = Math.floor(Date.now() / 1000);
+  if (typeof payload.exp === 'number' && payload.exp <= now) throw new Error('JWT is expired');
+  if (typeof payload.nbf === 'number' && payload.nbf > now) throw new Error('JWT is not active yet');
+
+  if (config.jwtIssuer && payload.iss !== config.jwtIssuer) {
+    throw new Error('JWT issuer is invalid');
+  }
+
+  if (config.jwtAudiences.length === 0) return;
+
+  const audiences = Array.isArray(payload.aud)
+    ? payload.aud.filter((audience): audience is string => typeof audience === 'string')
+    : typeof payload.aud === 'string'
+      ? [payload.aud]
+      : [];
+
+  if (!audiences.some((audience) => config.jwtAudiences.includes(audience))) {
+    throw new Error('JWT audience is invalid');
+  }
 }

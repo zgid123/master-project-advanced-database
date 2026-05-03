@@ -3,6 +3,16 @@ import { pool } from '../../db/pool.js';
 import { HttpError } from '../errors.js';
 import type { PreferenceRow, PreferenceUpsertInput } from './preference.types.js';
 
+type ChannelPreference = Pick<
+  PreferenceRow,
+  'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'
+>;
+
+type UserChannelPreference = Pick<
+  PreferenceRow,
+  'user_id' | 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'
+>;
+
 export const PreferenceRepo = {
   async listForUser(userId: string, client: PgClient | typeof pool = pool): Promise<PreferenceRow[]> {
     const result = await client.query<PreferenceRow>({
@@ -79,8 +89,8 @@ export const PreferenceRepo = {
     userId: string,
     categoryId: number,
     client: PgClient | typeof pool = pool,
-  ): Promise<Array<Pick<PreferenceRow, 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>> {
-    const result = await client.query<Array<Pick<PreferenceRow, 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>[number]>({
+  ): Promise<ChannelPreference[]> {
+    const result = await client.query<ChannelPreference>({
       name: 'preferences-for-user-category',
       text: `
         SELECT p.channel_id, ch.code AS channel_code, p.enabled,
@@ -100,10 +110,10 @@ export const PreferenceRepo = {
     userIds: string[],
     categoryId: number,
     client: PgClient | typeof pool = pool,
-  ): Promise<Array<Pick<PreferenceRow, 'user_id' | 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>> {
+  ): Promise<UserChannelPreference[]> {
     if (userIds.length === 0) return [];
 
-    const result = await client.query<Array<Pick<PreferenceRow, 'user_id' | 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>[number]>({
+    const result = await client.query<UserChannelPreference>({
       name: 'preferences-for-users-category',
       text: `
         SELECT p.user_id, p.channel_id, ch.code AS channel_code, p.enabled,

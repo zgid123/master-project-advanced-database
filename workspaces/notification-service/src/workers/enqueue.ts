@@ -1,4 +1,5 @@
 import type { ChannelCode } from '../domain/templates/template.types.js';
+import { deliveryJobId } from './job-ids.js';
 import { deliveryQueues } from './queues.js';
 
 export type DeliveryJobData = {
@@ -22,10 +23,9 @@ const queueByChannel = {
 
 export async function enqueueDelivery(data: DeliveryJobData): Promise<void> {
   const queue = queueByChannel[data.channel_code];
-  const jobId = `${data.channel_code}:${data.notification_id}:${data.notification_created_at}`;
 
   await queue.add(data.channel_code, data, {
-    jobId,
+    jobId: deliveryJobId(data),
     attempts: data.channel_code === 'sms' ? 5 : 8,
     backoff: {
       type: 'exponential',

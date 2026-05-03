@@ -4,7 +4,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { jwtAlgorithms, resolveJwtSecret } from './auth/jwt-secret.js';
+import { jwtVerifyOptions, resolveJwtSecret } from './auth/jwt-secret.js';
 import { config } from './config.js';
 import { getRedis } from './cache/redis.js';
 import { pool } from './db/pool.js';
@@ -12,12 +12,42 @@ import { deviceRoutes } from './domain/devices/device.controller.js';
 import { HttpError } from './domain/errors.js';
 import { notificationRoutes } from './domain/inbox/notification.controller.js';
 import { preferenceRoutes } from './domain/preferences/preference.controller.js';
-import { httpDuration, registry, startQueueDepthMetrics } from './observability/metrics.js';
+import { httpDuration, registry, startQueueDepthMetrics, stopQueueDepthMetrics } from './observability/metrics.js';
 
 function timingSafeStringEqual(left: string, right: string): boolean {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function internalRateLimitKey(request: FastifyRequest): string {
+  const serviceName = request.headers['x-service-name'];
+  const service = Array.isArray(serviceName) ? serviceName[0] : serviceName;
+  const identity = service || request.ip || 'unknown';
+  return `rate:internal:${identity.replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 120)}`;
+}
+
+async function enforceInternalRateLimit(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  if (config.internalRateLimitPerMinute === 0) return true;
+
+  try {
+    const redis = await getRedis();
+    const key = internalRateLimitKey(request);
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+
+    if (count > config.internalRateLimitPerMinute) {
+      await reply.code(429).send({
+        error: 'RATE_LIMITED',
+        message: 'Internal notification ingest rate limit exceeded',
+      });
+      return false;
+    }
+  } catch (error) {
+    request.log.warn({ error }, 'internal rate limit check failed');
+  }
+
+  return true;
 }
 
 export async function buildApp() {
@@ -29,9 +59,7 @@ export async function buildApp() {
 
   await app.register(jwt, {
     secret: resolveJwtSecret,
-    verify: {
-      algorithms: jwtAlgorithms(),
-    },
+    verify: jwtVerifyOptions(),
   });
 
   await app.register(swagger, {
@@ -105,6 +133,8 @@ export async function buildApp() {
       service: request.headers['x-service-name'] ?? 'unknown',
       route: request.routeOptions.url,
     }, 'internal notification request authenticated');
+
+    if (!await enforceInternalRateLimit(request, reply)) return;
   });
 
   app.addHook('onResponse', async (request, reply) => {
@@ -232,6 +262,9 @@ export async function buildApp() {
 
   if (config.nodeEnv !== 'test') {
     startQueueDepthMetrics();
+    app.addHook('onClose', async () => {
+      stopQueueDepthMetrics();
+    });
   }
 
   return app;
