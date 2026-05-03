@@ -63,6 +63,9 @@ jobs:
       - name: Run notification-service mock API tests
         run: pnpm --filter notification-service test:mock-api
 
+      - name: Run notification-service full test sweep
+        run: pnpm --filter notification-service test
+
       - name: Check notification-service Swagger/OpenAPI
         run: pnpm --filter notification-service openapi:check
 

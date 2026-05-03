@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test';
-process.env.LOG_LEVEL ??= 'silent';
+process.env.LOG_LEVEL = 'silent';
 
 const [{ buildApp }, { pool }] = await Promise.all([
   import('../src/app.js'),
@@ -18,6 +18,15 @@ const requiredPaths = [
 
 const app = await buildApp();
 let exitCode = 0;
+
+async function closeWithDiagnostics(label: string, close: () => Promise<unknown>): Promise<void> {
+  try {
+    await close();
+  } catch (error) {
+    exitCode = 1;
+    console.error(`${label} failed`, error);
+  }
+}
 
 try {
   await app.ready();
@@ -58,8 +67,8 @@ try {
   exitCode = 1;
   console.error(error instanceof Error ? error.message : error);
 } finally {
-  await app.close().catch(() => undefined);
-  await pool.end().catch(() => undefined);
+  await closeWithDiagnostics('app.close', () => app.close());
+  await closeWithDiagnostics('pool.end', () => pool.end());
 }
 
 process.exit(exitCode);
