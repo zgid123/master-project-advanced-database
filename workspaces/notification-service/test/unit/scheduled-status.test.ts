@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { scheduledNotificationStatus, scheduledRetryDelaySeconds } from '../../src/workers/scheduled-status.js';
+import {
+  minimumScheduledLeaseSeconds,
+  scheduledInteger,
+  scheduledNotificationStatus,
+  scheduledRetryDelaySeconds,
+} from '../../src/workers/scheduled-status.js';
 
 describe('scheduled notification status policy', () => {
   it('keeps status values explicit', () => {
@@ -17,5 +22,11 @@ describe('scheduled notification status policy', () => {
     expect(scheduledRetryDelaySeconds(2)).toBe(60);
     expect(scheduledRetryDelaySeconds(8)).toBe(3_600);
     expect(scheduledRetryDelaySeconds(20)).toBe(3_600);
+  });
+
+  it('normalizes numeric worker settings with safe minimums', () => {
+    expect(scheduledInteger('abc', 900, minimumScheduledLeaseSeconds)).toBe(900);
+    expect(scheduledInteger('10', 900, minimumScheduledLeaseSeconds)).toBe(minimumScheduledLeaseSeconds);
+    expect(scheduledInteger('90.7', 900, minimumScheduledLeaseSeconds)).toBe(90);
   });
 });

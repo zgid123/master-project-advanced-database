@@ -28,6 +28,12 @@ export const notificationDeliveryAttempts = new Counter({
   registers: [registry],
 });
 
+export const scheduledNotificationFailures = new Counter({
+  name: 'scheduled_notification_failed_total',
+  help: 'Scheduled notifications that exhausted retries',
+  registers: [registry],
+});
+
 export const queueDepth = new Gauge({
   name: 'bullmq_queue_waiting',
   help: 'BullMQ waiting job count',
