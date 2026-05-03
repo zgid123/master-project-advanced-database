@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const metadataSchema = z.record(z.string(), z.unknown()).refine(
+  (value) => Buffer.byteLength(JSON.stringify(value), 'utf8') <= 4096,
+  'data must be at most 4KB when serialized',
+);
+
 export const notificationListFilterSchema = z.union([
   z.literal('all'),
   z.literal('unread'),
@@ -17,7 +22,7 @@ export const createNotificationEventSchema = z.object({
   recipients: z.array(z.object({
     user_id: z.coerce.string().regex(/^\d+$/),
   })).min(1).max(10_000),
-  data: z.record(z.string(), z.unknown()).default({}),
+  data: metadataSchema.default({}),
   title: z.string().min(1).max(500).optional(),
   body: z.string().min(1).max(4000).optional(),
   dedup_key_prefix: z.string().min(1).max(300).optional(),
@@ -71,5 +76,6 @@ export type CreatedNotification = Pick<
   | 'title'
   | 'body'
   | 'metadata'
+  | 'dedup_key'
   | 'created_at'
 >;

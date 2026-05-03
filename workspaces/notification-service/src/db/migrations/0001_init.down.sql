@@ -13,4 +13,5 @@ DROP TABLE IF EXISTS notification_preferences;
 DROP TABLE IF EXISTS notification_templates;
 DROP TABLE IF EXISTS notification_categories;
 DROP TABLE IF EXISTS notification_channels;
+DROP FUNCTION IF EXISTS uuidv7();
 DROP FUNCTION IF EXISTS touch_updated_at();

@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool.js';
+import { HttpError } from '../errors.js';
 import type { DeviceTokenRow, RegisterDeviceInput } from './device.types.js';
 
 export const DeviceRepo = {
@@ -41,7 +42,9 @@ export const DeviceRepo = {
       ],
     });
 
-    return result.rows[0] as DeviceTokenRow;
+    const row = result.rows[0];
+    if (!row) throw new HttpError(500, 'DEVICE_REGISTER_FAILED', 'Device registration did not return a row');
+    return row;
   },
 
   async deactivate(userId: string, id: string): Promise<boolean> {

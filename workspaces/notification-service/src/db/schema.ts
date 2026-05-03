@@ -75,7 +75,7 @@ export const deviceTokens = pgTable('device_tokens', {
 
 export const notifications = pgTable('notifications', {
   id: bigint('id', { mode: 'bigint' }).generatedAlwaysAsIdentity().notNull(),
-  publicId: uuid('public_id').defaultRandom().notNull(),
+  publicId: uuid('public_id').default(sql`uuidv7()`).notNull(),
   userId: bigint('user_id', { mode: 'bigint' }).notNull(),
   categoryId: smallint('category_id').notNull(),
   templateId: bigint('template_id', { mode: 'bigint' }),

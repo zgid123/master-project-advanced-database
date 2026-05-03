@@ -33,3 +33,11 @@ pnpm --filter notification-service worker:create
 pnpm --filter notification-service worker:delivery
 pnpm --filter notification-service consume-domain-events
 ```
+
+Storage maintenance:
+
+```sh
+pnpm --filter notification-service maintain:storage
+```
+
+Run the maintenance command daily in cron to create future partitions and remove old dedup/device-token rows.

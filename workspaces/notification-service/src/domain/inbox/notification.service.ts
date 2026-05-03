@@ -16,6 +16,7 @@ import { NotificationRepo } from './notification.repo.js';
 import type { CreateNotificationEventInput, CreatedNotification, NotificationRow } from './notification.types.js';
 
 type ListFilter = 'all' | 'unread' | { category: string };
+type RepoListFilter = 'all' | 'unread' | { categoryId: number };
 
 type IngestResult = {
   duplicate_event: boolean;
@@ -40,34 +41,57 @@ function nonInAppChannel(channel: ChannelRow): channel is ChannelRow & { code: E
   return channel.code !== 'in_app';
 }
 
-function inQuietHours(now: Date, start: number | null, end: number | null): boolean {
+export function localHourInTimezone(now: Date, timezone: string): number {
+  try {
+    const hourPart = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(now).find((part) => part.type === 'hour');
+    const hour = Number(hourPart?.value);
+    return Number.isInteger(hour) ? hour : now.getUTCHours();
+  } catch {
+    return now.getUTCHours();
+  }
+}
+
+export function inQuietHours(
+  now: Date,
+  start: number | null,
+  end: number | null,
+  timezone: string,
+): boolean {
   if (start === null || end === null || start === end) return false;
 
-  const hour = now.getUTCHours();
+  const hour = localHourInTimezone(now, timezone);
   if (start < end) return hour >= start && hour < end;
   return hour >= start || hour < end;
 }
 
-async function cacheNewNotification(row: CreatedNotification): Promise<void> {
+async function cacheNewNotifications(rows: CreatedNotification[]): Promise<void> {
+  if (rows.length === 0) return;
+
   try {
     const redis = await getRedis();
     const pipe = redis.pipeline();
-    pipe.incr(unreadCacheKey(row.user_id));
-    pipe.expire(unreadCacheKey(row.user_id), 604_800);
-    pipe.zadd(
-      feedCacheKey(row.user_id),
-      row.created_at.getTime(),
-      JSON.stringify({
-        id: row.public_id,
-        title: row.title,
-        created_at: row.created_at.toISOString(),
-      }),
-    );
-    pipe.zremrangebyrank(feedCacheKey(row.user_id), 0, -101);
-    pipe.expire(feedCacheKey(row.user_id), 604_800);
+    for (const row of rows) {
+      pipe.incr(unreadCacheKey(row.user_id));
+      pipe.expire(unreadCacheKey(row.user_id), 604_800);
+      pipe.zadd(
+        feedCacheKey(row.user_id),
+        row.created_at.getTime(),
+        JSON.stringify({
+          id: row.public_id,
+          title: row.title,
+          created_at: row.created_at.toISOString(),
+        }),
+      );
+      pipe.zremrangebyrank(feedCacheKey(row.user_id), 0, -101);
+      pipe.expire(feedCacheKey(row.user_id), 604_800);
+    }
     await pipe.exec();
   } catch (error) {
-    logger.warn({ error, userId: row.user_id }, 'notification cache update failed');
+    logger.warn({ error, count: rows.length }, 'notification cache update failed');
   }
 }
 
@@ -76,9 +100,10 @@ async function sideEffects(
   rows: CreatedNotification[],
   channelsByNotification: Map<string, Array<ChannelRow & { code: Exclude<ChannelCode, 'in_app'> }>>,
 ): Promise<void> {
+  await cacheNewNotifications(rows);
+
   for (const row of rows) {
     notificationCreated.inc({ category: row.category_code });
-    await cacheNewNotification(row);
     await emitNotificationNew(row.user_id, {
       id: row.public_id,
       title: row.title,
@@ -113,7 +138,18 @@ export const NotificationService = {
     limit: number,
     filter: string,
   ): Promise<{ items: NotificationRow[]; next_cursor: string | null }> {
-    const rows = await NotificationRepo.listForUser(userId, cursor, limit, normalizeFilter(filter));
+    const normalizedFilter = normalizeFilter(filter);
+    let repoFilter: RepoListFilter = normalizedFilter === 'all' || normalizedFilter === 'unread'
+      ? normalizedFilter
+      : 'all';
+
+    if (typeof normalizedFilter === 'object') {
+      const category = await TemplateRepo.categoryByCode(normalizedFilter.category);
+      if (!category) return { items: [], next_cursor: null };
+      repoFilter = { categoryId: category.id };
+    }
+
+    const rows = await NotificationRepo.listForUser(userId, cursor, limit, repoFilter);
     return pageResponse(rows, limit);
   },
 
@@ -121,7 +157,7 @@ export const NotificationService = {
     const cached = await getJson<number>(unreadCacheKey(userId));
     if (cached !== null) return { count: cached };
 
-    const count = await NotificationRepo.unreadCount(userId);
+    const count = Math.min(await NotificationRepo.unreadCount(userId), 1000);
     await setJson(unreadCacheKey(userId), count, 604_800);
     return { count };
   },
@@ -135,7 +171,7 @@ export const NotificationService = {
 
   async markAllRead(userId: string): Promise<{ updated: number }> {
     const updated = await NotificationRepo.markAllRead(userId);
-    await delKeys(unreadCacheKey(userId));
+    await delKeys(unreadCacheKey(userId), feedCacheKey(userId));
     return { updated };
   },
 
@@ -166,17 +202,8 @@ export const NotificationService = {
 
       const inAppTemplate = await TemplateRepo.activeTemplate(category.id, 'in_app', input.locale, client);
       const defaultChannels = await TemplateRepo.channelsByIds(category.default_channels, client);
-      const inserted: CreatedNotification[] = [];
-      let skippedRecipients = 0;
-
-      for (const recipient of input.recipients) {
+      const candidates = input.recipients.map((recipient) => {
         const dedupKey = `${input.dedup_key_prefix ?? input.event_id}:${recipient.user_id}`;
-        const claimed = await NotificationRepo.claimRecipientDedup(recipient.user_id, dedupKey, client);
-        if (!claimed) {
-          skippedRecipients += 1;
-          continue;
-        }
-
         const templateData = {
           ...input.data,
           user_id: recipient.user_id,
@@ -190,33 +217,78 @@ export const NotificationService = {
           category_code: input.category_code,
         });
 
-        const row = await NotificationRepo.insert({
-          user_id: recipient.user_id,
-          category_id: category.id,
-          template_id: inAppTemplate?.id ?? null,
-          title,
-          body,
-          source_service: input.source_service,
-          source_type: input.source_type ?? null,
-          source_id: input.source_id ?? null,
-          actor_user_id: input.actor_user_id ?? null,
-          dedup_key: dedupKey,
-          metadata: input.data,
-        }, category.code, client);
+        return {
+          dedupKey,
+          insert: {
+            user_id: recipient.user_id,
+            category_id: category.id,
+            template_id: inAppTemplate?.id ?? null,
+            title,
+            body,
+            source_service: input.source_service,
+            source_type: input.source_type ?? null,
+            source_id: input.source_id ?? null,
+            actor_user_id: input.actor_user_id ?? null,
+            dedup_key: dedupKey,
+            metadata: input.data,
+          },
+        };
+      });
 
-        await NotificationRepo.linkRecipientDedup(recipient.user_id, dedupKey, row.id, row.created_at, client);
-        await NotificationRepo.appendOutbox('notification', 'notification.created', {
-          id: row.id,
-          public_id: row.public_id,
+      const claimed = await NotificationRepo.claimRecipientDedupMany(
+        candidates.map((candidate) => ({
+          user_id: candidate.insert.user_id,
+          dedup_key: candidate.dedupKey,
+        })),
+        client,
+      );
+      const claimedKeys = new Set(claimed.map((row) => `${row.user_id}:${row.dedup_key}`));
+      const insertInputs = candidates
+        .filter((candidate) => claimedKeys.has(`${candidate.insert.user_id}:${candidate.dedupKey}`))
+        .map((candidate) => candidate.insert);
+      const inserted = await NotificationRepo.insertMany(insertInputs, category.code, client);
+      const skippedRecipients = input.recipients.length - inserted.length;
+
+      await NotificationRepo.linkRecipientDedupMany(
+        inserted.map((row) => ({
           user_id: row.user_id,
-          category_code: row.category_code,
-          source_service: input.source_service,
-          event_id: input.event_id,
-        }, client);
+          dedup_key: row.dedup_key,
+          notification_id: row.id,
+          notification_created_at: row.created_at,
+        })),
+        client,
+      );
+      await NotificationRepo.appendOutboxMany(
+        inserted.map((row) => ({
+          aggregate: 'notification',
+          event_type: 'notification.created',
+          payload: {
+            id: row.id,
+            public_id: row.public_id,
+            user_id: row.user_id,
+            category_code: row.category_code,
+            source_service: input.source_service,
+            event_id: input.event_id,
+          },
+        })),
+        client,
+      );
 
-        const prefs = await PreferenceRepo.channelPrefsForUserCategory(recipient.user_id, category.id, client);
-        const prefsByChannelId = new Map(prefs.map((preference) => [preference.channel_id, preference]));
-        const now = new Date();
+      const prefs = await PreferenceRepo.channelPrefsForUsersCategory(
+        [...new Set(inserted.map((row) => row.user_id))],
+        category.id,
+        client,
+      );
+      const prefsByUser = new Map<string, Map<number, (typeof prefs)[number]>>();
+      for (const pref of prefs) {
+        const userPrefs = prefsByUser.get(pref.user_id) ?? new Map<number, (typeof prefs)[number]>();
+        userPrefs.set(pref.channel_id, pref);
+        prefsByUser.set(pref.user_id, userPrefs);
+      }
+      const now = new Date();
+
+      for (const row of inserted) {
+        const prefsByChannelId = prefsByUser.get(row.user_id) ?? new Map<number, (typeof prefs)[number]>();
         const deliverableChannels = defaultChannels
           .filter(nonInAppChannel)
           .filter((channel) => {
@@ -224,11 +296,10 @@ export const NotificationService = {
             const pref = prefsByChannelId.get(channel.id);
             if (pref?.enabled === false) return false;
             if (!pref) return true;
-            return !inQuietHours(now, pref.quiet_hours_start, pref.quiet_hours_end);
+            return !inQuietHours(now, pref.quiet_hours_start, pref.quiet_hours_end, pref.timezone);
           });
 
         channelsByNotification.set(row.id, deliverableChannels);
-        inserted.push(row);
       }
 
       return {

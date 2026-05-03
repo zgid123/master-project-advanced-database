@@ -34,3 +34,37 @@ export const queueDepth = new Gauge({
   labelNames: ['queue'],
   registers: [registry],
 });
+
+let queueMetricsTimer: NodeJS.Timeout | null = null;
+
+export async function refreshQueueDepthMetrics(): Promise<void> {
+  const queues = await import('../workers/queues.js');
+  const queueEntries = [
+    [queues.queueNames.create, queues.createNotificationQueue],
+    [queues.queueNames.email, queues.emailQueue],
+    [queues.queueNames.webPush, queues.webPushQueue],
+    [queues.queueNames.mobilePush, queues.mobilePushQueue],
+    [queues.queueNames.sms, queues.smsQueue],
+    [queues.queueNames.digest, queues.digestQueue],
+  ] as const;
+
+  for (const [name, queue] of queueEntries) {
+    const counts = await queue.getJobCounts('waiting');
+    queueDepth.set({ queue: name }, counts.waiting ?? 0);
+  }
+}
+
+export function startQueueDepthMetrics(intervalMs = 15_000): void {
+  if (queueMetricsTimer) return;
+
+  queueMetricsTimer = setInterval(() => {
+    refreshQueueDepthMetrics().catch(() => {
+      // Metrics collection must not affect request handling.
+    });
+  }, intervalMs);
+  queueMetricsTimer.unref();
+
+  refreshQueueDepthMetrics().catch(() => {
+    // Redis may not be available during local startup.
+  });
+}

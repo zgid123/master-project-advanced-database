@@ -42,7 +42,7 @@ export async function deviceRoutes(app: FastifyInstance) {
         properties: {
           platform: { type: 'string', enum: ['ios', 'android', 'web'] },
           token: { type: 'string', minLength: 12, maxLength: 4096 },
-          app_version: { type: ['string', 'null'], maxLength: 80 },
+          app_version: { anyOf: [{ type: 'string', maxLength: 80 }, { type: 'null' }] },
           device_info: { type: 'object', additionalProperties: true },
         },
         required: ['platform', 'token'],

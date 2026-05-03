@@ -124,9 +124,9 @@ export async function notificationRoutes(app: FastifyInstance) {
         properties: {
           event_id: { type: 'string' },
           source_service: { type: 'string' },
-          source_type: { type: ['string', 'null'] },
-          source_id: { type: ['string', 'number', 'null'] },
-          actor_user_id: { type: ['string', 'number', 'null'] },
+          source_type: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+          source_id: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
+          actor_user_id: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
           category_code: { type: 'string' },
           locale: { type: 'string', default: 'en' },
           recipients: {
@@ -136,7 +136,7 @@ export async function notificationRoutes(app: FastifyInstance) {
             items: {
               type: 'object',
               properties: {
-                user_id: { type: ['string', 'number'] },
+                user_id: { anyOf: [{ type: 'string' }, { type: 'number' }] },
               },
               required: ['user_id'],
             },

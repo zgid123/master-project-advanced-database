@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool.js';
+import { HttpError } from '../errors.js';
 import type { ChannelCode } from '../templates/template.types.js';
 import { deliveryStatus, type DeliveryAttemptRow, type DeliveryProviderResult } from './delivery.types.js';
 
@@ -44,7 +45,9 @@ export const DeliveryRepo = {
       ],
     });
 
-    return result.rows[0] as DeliveryAttemptRow;
+    const row = result.rows[0];
+    if (!row) throw new HttpError(500, 'DELIVERY_ATTEMPT_FAILED', 'Delivery attempt insert did not return a row');
+    return row;
   },
 
   async finishAttempt(

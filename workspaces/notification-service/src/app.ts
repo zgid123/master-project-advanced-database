@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
@@ -5,11 +6,19 @@ import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import { jwtAlgorithms, resolveJwtSecret } from './auth/jwt-secret.js';
 import { config } from './config.js';
+import { getRedis } from './cache/redis.js';
+import { pool } from './db/pool.js';
 import { deviceRoutes } from './domain/devices/device.controller.js';
 import { HttpError } from './domain/errors.js';
 import { notificationRoutes } from './domain/inbox/notification.controller.js';
 import { preferenceRoutes } from './domain/preferences/preference.controller.js';
-import { httpDuration, registry } from './observability/metrics.js';
+import { httpDuration, registry, startQueueDepthMetrics } from './observability/metrics.js';
+
+function timingSafeStringEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
 
 export async function buildApp() {
   const app = Fastify({
@@ -82,13 +91,20 @@ export async function buildApp() {
   });
 
   app.decorate('authenticateInternal', async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = request.headers['x-internal-token'];
-    if (token !== config.internalApiToken) {
+    const tokenHeader = request.headers['x-internal-token'];
+    const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
+    if (!token || !timingSafeStringEqual(token, config.internalApiToken)) {
       await reply.code(401).send({
         error: 'UNAUTHORIZED',
         message: 'Internal API token is missing or invalid',
       });
+      return;
     }
+
+    request.log.info({
+      service: request.headers['x-service-name'] ?? 'unknown',
+      route: request.routeOptions.url,
+    }, 'internal notification request authenticated');
   });
 
   app.addHook('onResponse', async (request, reply) => {
@@ -160,15 +176,45 @@ export async function buildApp() {
           properties: {
             status: { type: 'string' },
             service: { type: 'string' },
+            checks: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+            },
+          },
+          required: ['status', 'service'],
+        },
+        503: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            service: { type: 'string' },
+            checks: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+            },
           },
           required: ['status', 'service'],
         },
       },
     },
-  }, async () => ({
-    status: 'ok',
-    service: 'notification-service',
-  }));
+  }, async (_request, reply) => {
+    const [postgres, redis] = await Promise.allSettled([
+      pool.query('SELECT 1'),
+      getRedis().then((client) => client.ping()),
+    ]);
+    const ok = postgres.status === 'fulfilled' && redis.status === 'fulfilled';
+
+    if (!ok) reply.code(503);
+
+    return {
+      status: ok ? 'ok' : 'degraded',
+      service: 'notification-service',
+      checks: {
+        postgres: postgres.status === 'fulfilled' ? 'ok' : 'failed',
+        redis: redis.status === 'fulfilled' ? 'ok' : 'failed',
+      },
+    };
+  });
 
   app.get('/metrics', {
     schema: {
@@ -183,6 +229,10 @@ export async function buildApp() {
   await app.register(notificationRoutes);
   await app.register(preferenceRoutes);
   await app.register(deviceRoutes);
+
+  if (config.nodeEnv !== 'test') {
+    startQueueDepthMetrics();
+  }
 
   return app;
 }

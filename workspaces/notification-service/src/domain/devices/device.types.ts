@@ -6,7 +6,10 @@ export const registerDeviceSchema = z.object({
   platform: z.enum(devicePlatforms),
   token: z.string().min(12).max(4096),
   app_version: z.string().max(80).nullable().optional(),
-  device_info: z.record(z.string(), z.unknown()).default({}),
+  device_info: z.record(z.string(), z.unknown()).default({}).refine(
+    (value) => Buffer.byteLength(JSON.stringify(value), 'utf8') <= 1024,
+    'device_info must be at most 1KB when serialized',
+  ),
 });
 
 export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema> & {

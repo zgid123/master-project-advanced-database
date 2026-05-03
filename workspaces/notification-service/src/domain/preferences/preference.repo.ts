@@ -95,4 +95,27 @@ export const PreferenceRepo = {
 
     return result.rows;
   },
+
+  async channelPrefsForUsersCategory(
+    userIds: string[],
+    categoryId: number,
+    client: PgClient | typeof pool = pool,
+  ): Promise<Array<Pick<PreferenceRow, 'user_id' | 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>> {
+    if (userIds.length === 0) return [];
+
+    const result = await client.query<Array<Pick<PreferenceRow, 'user_id' | 'channel_id' | 'channel_code' | 'enabled' | 'quiet_hours_start' | 'quiet_hours_end' | 'timezone'>>[number]>({
+      name: 'preferences-for-users-category',
+      text: `
+        SELECT p.user_id, p.channel_id, ch.code AS channel_code, p.enabled,
+               p.quiet_hours_start, p.quiet_hours_end, p.timezone
+        FROM notification_preferences p
+        JOIN notification_channels ch ON ch.id = p.channel_id
+        WHERE p.user_id = ANY($1::bigint[])
+          AND p.category_id = $2
+      `,
+      values: [userIds, categoryId],
+    });
+
+    return result.rows;
+  },
 };

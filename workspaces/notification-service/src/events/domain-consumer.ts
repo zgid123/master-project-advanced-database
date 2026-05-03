@@ -1,10 +1,12 @@
+import { randomUUID } from 'node:crypto';
+import { hostname } from 'node:os';
 import { getRedis } from '../cache/redis.js';
 import { createNotificationQueue } from '../workers/queues.js';
 import { logger } from '../observability/logger.js';
 
 const stream = 'events:domain';
 const group = 'notification-service';
-const consumer = `${process.pid}`;
+const consumer = `${hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
 let shuttingDown = false;
 
 type DomainEventPayload = {
@@ -24,6 +26,7 @@ type DomainEventPayload = {
 };
 
 type RedisStreamResponse = Array<[string, Array<[string, string[]]>]> | null;
+type RedisStreamMessages = Array<[string, string[]]>;
 
 function fieldsToObject(fields: string[]): Record<string, string> {
   const result: Record<string, string> = {};
@@ -82,7 +85,37 @@ async function consumeLoop(): Promise<void> {
   await ensureGroup();
   const redis = await getRedis();
 
-  while (!shuttingDown) {
+  async function readPending(): Promise<RedisStreamMessages> {
+    const response = await redis.xreadgroup(
+      'GROUP',
+      group,
+      consumer,
+      'COUNT',
+      100,
+      'STREAMS',
+      stream,
+      '0',
+    ) as RedisStreamResponse;
+
+    return response?.[0]?.[1] ?? [];
+  }
+
+  async function claimStalePending(): Promise<RedisStreamMessages> {
+    const response = await redis.call(
+      'XAUTOCLAIM',
+      stream,
+      group,
+      consumer,
+      '60000',
+      '0-0',
+      'COUNT',
+      '100',
+    ) as [string, RedisStreamMessages, string[]?];
+
+    return response[1] ?? [];
+  }
+
+  async function readNew(): Promise<RedisStreamMessages> {
     const response = await redis.xreadgroup(
       'GROUP',
       group,
@@ -96,7 +129,10 @@ async function consumeLoop(): Promise<void> {
       '>',
     ) as RedisStreamResponse;
 
-    const messages = response?.[0]?.[1] ?? [];
+    return response?.[0]?.[1] ?? [];
+  }
+
+  async function processMessages(messages: RedisStreamMessages): Promise<void> {
     for (const [messageId, fields] of messages) {
       try {
         const object = fieldsToObject(fields);
@@ -116,6 +152,22 @@ async function consumeLoop(): Promise<void> {
         logger.error({ error, messageId }, 'domain event consume failed');
       }
     }
+  }
+
+  while (!shuttingDown) {
+    const pending = await readPending();
+    if (pending.length > 0) {
+      await processMessages(pending);
+      continue;
+    }
+
+    const claimed = await claimStalePending();
+    if (claimed.length > 0) {
+      await processMessages(claimed);
+      continue;
+    }
+
+    await processMessages(await readNew());
   }
 }
 

@@ -18,6 +18,7 @@
     "publish-outbox": "tsx src/events/publisher.ts",
     "consume-domain-events": "tsx src/events/domain-consumer.ts",
     "digest:daily": "tsx scripts/digest.ts daily",
+    "maintain:storage": "tsx scripts/maintenance.ts",
     "archive:partitions": "tsx scripts/archive-partitions.ts",
     "bench:inbox": "k6 run scripts/bench/k6-inbox.js",
     "bench:fanout": "k6 run scripts/bench/k6-fanout.js"
