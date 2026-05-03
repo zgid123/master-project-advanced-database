@@ -1,0 +1,101 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notification-storage-maintenance
+  namespace: solvit
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: maintenance
+spec:
+  schedule: "15 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: notification-service
+            app.kubernetes.io/component: maintenance
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: maintenance
+              image: ghcr.io/your-org/notification-service:latest
+              imagePullPolicy: IfNotPresent
+              command: ["node", "dist/scripts/maintenance.js"]
+              envFrom:
+                - configMapRef:
+                    name: notification-service-config
+                - secretRef:
+                    name: notification-service-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notification-daily-digest
+  namespace: solvit
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: digest
+spec:
+  schedule: "0 17 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: notification-service
+            app.kubernetes.io/component: digest
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: daily-digest
+              image: ghcr.io/your-org/notification-service:latest
+              imagePullPolicy: IfNotPresent
+              command: ["node", "dist/scripts/digest.js", "daily"]
+              envFrom:
+                - configMapRef:
+                    name: notification-service-config
+                - secretRef:
+                    name: notification-service-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notification-weekly-digest
+  namespace: solvit
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: digest
+spec:
+  schedule: "30 17 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: notification-service
+            app.kubernetes.io/component: digest
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: weekly-digest
+              image: ghcr.io/your-org/notification-service:latest
+              imagePullPolicy: IfNotPresent
+              command: ["node", "dist/scripts/digest.js", "weekly"]
+              envFrom:
+                - configMapRef:
+                    name: notification-service-config
+                - secretRef:
+                    name: notification-service-secrets

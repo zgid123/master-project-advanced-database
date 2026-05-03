@@ -1,0 +1,17 @@
+DROP FUNCTION IF EXISTS create_notification_delivery_partitions(DATE, INTEGER);
+DROP FUNCTION IF EXISTS create_notification_partitions(DATE, INTEGER);
+DROP TABLE IF EXISTS notification_outbox;
+DROP TABLE IF EXISTS notification_inbox_dedup;
+DROP TABLE IF EXISTS scheduled_notifications;
+DROP TABLE IF EXISTS notification_batch_items;
+DROP TABLE IF EXISTS notification_batches;
+DROP TABLE IF EXISTS notification_deliveries;
+DROP TABLE IF EXISTS notification_recipient_dedup;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS device_tokens;
+DROP TABLE IF EXISTS notification_preferences;
+DROP TABLE IF EXISTS notification_templates;
+DROP TABLE IF EXISTS notification_categories;
+DROP TABLE IF EXISTS notification_channels;
+DROP FUNCTION IF EXISTS uuidv7();
+DROP FUNCTION IF EXISTS touch_updated_at();

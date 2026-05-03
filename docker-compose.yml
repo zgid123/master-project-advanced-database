@@ -53,6 +53,56 @@ services:
       timeout: 5s
       retries: 10
 
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: notifsvc
+      POSTGRES_PASSWORD: notifsvc
+      POSTGRES_DB: notifications
+    command: >
+      postgres
+        -c wal_level=logical
+        -c max_wal_size=4GB
+        -c shared_buffers=512MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=128MB
+        -c effective_cache_size=1GB
+        -c track_io_timing=on
+        -c shared_preload_libraries='pg_stat_statements'
+        -c pg_stat_statements.track=all
+        -c log_min_duration_statement=100
+    ports:
+      - "5433:5432"
+    volumes:
+      - notifpgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifsvc -d notifications"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  notification-pgbouncer:
+    image: edoburu/pgbouncer
+    environment:
+      DATABASE_URL: postgres://notifsvc:notifsvc@notification-postgres:5432/notifications
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 5000
+      DEFAULT_POOL_SIZE: 30
+      MAX_PREPARED_STATEMENTS: 1000
+    ports:
+      - "6433:5432"
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata: {}
   redisdata: {}
+  notifpgdata: {}

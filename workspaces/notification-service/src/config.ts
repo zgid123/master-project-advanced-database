@@ -1,0 +1,71 @@
+import { z } from 'zod';
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(3020),
+  REALTIME_PORT: z.coerce.number().int().positive().default(3021),
+  HOST: z.string().default('0.0.0.0'),
+  DATABASE_URL: z.string().default('postgres://notifsvc:notifsvc@localhost:6433/notifications'),
+  DIRECT_DB_URL: z.string().default('postgres://notifsvc:notifsvc@localhost:5433/notifications'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  JWT_SECRET: z.string().default('dev-secret'),
+  JWT_PUBLIC_KEY: z.string().optional(),
+  JWT_JWKS_URL: z.string().url().optional(),
+  JWT_JWKS_CACHE_TTL_MS: z.coerce.number().int().positive().default(300_000),
+  JWT_JWKS_NEGATIVE_CACHE_TTL_MS: z.coerce.number().int().positive().default(30_000),
+  JWT_ISSUER: z.string().min(1).optional(),
+  JWT_AUDIENCE: z.string().optional().transform((value) => (
+    value?.split(',').map((audience) => audience.trim()).filter(Boolean) ?? []
+  )),
+  INTERNAL_API_TOKEN: z.string().default('dev-internal-token'),
+  INTERNAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().nonnegative().default(600),
+  INTERNAL_RATE_LIMIT_FAIL_CLOSED: z.string().optional().transform((value) => (
+    value === 'true' || value === '1'
+  )),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().email().default('no-reply@solvit.local'),
+  WEB_PUSH_VAPID_PUBLIC_KEY: z.string().optional(),
+  WEB_PUSH_VAPID_PRIVATE_KEY: z.string().optional(),
+  FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  APNS_KEY_ID: z.string().optional(),
+  APNS_TEAM_ID: z.string().optional(),
+  OTLP_ENDPOINT: z.string().url().optional(),
+  LOG_LEVEL: z.string().default('info'),
+  PG_POOL_MAX: z.coerce.number().int().positive().default(20),
+  PG_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
+  PG_POOL_MAX_USES: z.coerce.number().int().positive().default(7_500),
+});
+
+const env = envSchema.parse(process.env);
+
+export const config = {
+  nodeEnv: env.NODE_ENV,
+  port: env.PORT,
+  realtimePort: env.REALTIME_PORT,
+  host: env.HOST,
+  databaseUrl: env.DATABASE_URL,
+  directDatabaseUrl: env.DIRECT_DB_URL ?? env.DATABASE_URL,
+  redisUrl: env.REDIS_URL,
+  jwtSecret: env.JWT_SECRET,
+  jwtPublicKey: env.JWT_PUBLIC_KEY,
+  jwtJwksUrl: env.JWT_JWKS_URL,
+  jwtJwksCacheTtlMs: env.JWT_JWKS_CACHE_TTL_MS,
+  jwtJwksNegativeCacheTtlMs: env.JWT_JWKS_NEGATIVE_CACHE_TTL_MS,
+  jwtIssuer: env.JWT_ISSUER,
+  jwtAudiences: env.JWT_AUDIENCE,
+  internalApiToken: env.INTERNAL_API_TOKEN,
+  internalRateLimitPerMinute: env.INTERNAL_RATE_LIMIT_PER_MINUTE,
+  internalRateLimitFailClosed: env.INTERNAL_RATE_LIMIT_FAIL_CLOSED,
+  sendgridApiKey: env.SENDGRID_API_KEY,
+  sendgridFromEmail: env.SENDGRID_FROM_EMAIL,
+  webPushVapidPublicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,
+  webPushVapidPrivateKey: env.WEB_PUSH_VAPID_PRIVATE_KEY,
+  fcmServiceAccountJson: env.FCM_SERVICE_ACCOUNT_JSON,
+  apnsKeyId: env.APNS_KEY_ID,
+  apnsTeamId: env.APNS_TEAM_ID,
+  otlpEndpoint: env.OTLP_ENDPOINT,
+  logLevel: env.LOG_LEVEL,
+  pgPoolMax: env.PG_POOL_MAX,
+  pgPoolMin: env.PG_POOL_MIN,
+  pgPoolMaxUses: env.PG_POOL_MAX_USES,
+} as const;
