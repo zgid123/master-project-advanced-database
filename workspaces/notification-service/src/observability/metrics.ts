@@ -31,6 +31,7 @@ export const notificationDeliveryAttempts = new Counter({
 export const scheduledNotificationFailures = new Counter({
   name: 'scheduled_notification_failed_total',
   help: 'Scheduled notifications that exhausted retries',
+  labelNames: ['category'],
   registers: [registry],
 });
 

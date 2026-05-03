@@ -23,16 +23,16 @@ type ScheduledNotificationRow = {
 };
 
 const workerId = `${hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
-const pollMs = scheduledInteger(process.env.SCHEDULED_NOTIFICATION_POLL_MS, 5_000, 1_000);
-const batchSize = scheduledInteger(process.env.SCHEDULED_NOTIFICATION_BATCH_SIZE, 100, 1);
-const maxAttempts = scheduledInteger(process.env.SCHEDULED_NOTIFICATION_MAX_ATTEMPTS, 5, 1);
-const leaseSeconds = scheduledInteger(
-  process.env.SCHEDULED_NOTIFICATION_LEASE_SECONDS,
+const pollMs = scheduledEnvInteger('SCHEDULED_NOTIFICATION_POLL_MS', 5_000, 1_000);
+const batchSize = scheduledEnvInteger('SCHEDULED_NOTIFICATION_BATCH_SIZE', 100, 1);
+const maxAttempts = scheduledEnvInteger('SCHEDULED_NOTIFICATION_MAX_ATTEMPTS', 5, 1);
+const leaseSeconds = scheduledEnvInteger(
+  'SCHEDULED_NOTIFICATION_LEASE_SECONDS',
   900,
   minimumScheduledLeaseSeconds,
 );
-const heartbeatFailureLimit = scheduledInteger(
-  process.env.SCHEDULED_NOTIFICATION_HEARTBEAT_FAILURE_LIMIT,
+const heartbeatFailureLimit = scheduledEnvInteger(
+  'SCHEDULED_NOTIFICATION_HEARTBEAT_FAILURE_LIMIT',
   3,
   1,
 );
@@ -50,8 +50,34 @@ const scheduledPayloadParsers: Record<number, ScheduledPayloadParser | undefined
   1: (payload) => createNotificationEventSchema.parse(payload),
 };
 
+function scheduledEnvInteger(name: string, fallback: number, minimum: number): number {
+  const rawValue = process.env[name];
+  const normalized = scheduledInteger(rawValue, fallback, minimum);
+  const parsed = Number(rawValue);
+
+  if (rawValue !== undefined && (!Number.isFinite(parsed) || normalized !== parsed)) {
+    logger.warn({
+      name,
+      configured: rawValue,
+      normalized,
+      minimum,
+    }, 'scheduled notification worker normalized numeric configuration');
+  }
+
+  return normalized;
+}
+
 function scheduledErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message.slice(0, 2_000) : String(error).slice(0, 2_000);
+}
+
+function scheduledPayloadCategory(payload: unknown): string {
+  if (payload && typeof payload === 'object' && 'category_code' in payload) {
+    const category = (payload as { category_code?: unknown }).category_code;
+    if (typeof category === 'string' && category.length > 0) return category;
+  }
+
+  return 'unknown';
 }
 
 function leaseLostError(id: string): Error {
@@ -126,7 +152,12 @@ async function finishScheduledNotification(id: string): Promise<void> {
   }
 }
 
-async function failScheduledNotification(id: string, attempts: number, error: unknown): Promise<void> {
+async function failScheduledNotification(
+  id: string,
+  attempts: number,
+  error: unknown,
+  category: string,
+): Promise<void> {
   const exhausted = attempts >= maxAttempts;
   const retryDelaySeconds = scheduledRetryDelaySeconds(attempts);
 
@@ -162,7 +193,7 @@ async function failScheduledNotification(id: string, attempts: number, error: un
   }
 
   if (exhausted) {
-    scheduledNotificationFailures.inc();
+    scheduledNotificationFailures.inc({ category });
     logger.error({ scheduledNotificationId: id, attempts }, 'scheduled notification exhausted retries');
   }
 }
@@ -252,7 +283,8 @@ export async function processDueScheduledNotifications(limit = batchSize): Promi
       }, 'scheduled notification processed');
     } catch (error) {
       logger.error({ error, scheduledNotificationId: row.id }, 'scheduled notification processing failed');
-      await failScheduledNotification(row.id, row.attempts, error);
+      // If the lease was lost, this scoped update intentionally no-ops so the current owner keeps control.
+      await failScheduledNotification(row.id, row.attempts, error, scheduledPayloadCategory(row.payload));
     } finally {
       heartbeat.stop();
     }
