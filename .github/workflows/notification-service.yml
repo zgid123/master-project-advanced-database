@@ -1,0 +1,138 @@
+name: Notification Service CI
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/notification-service.yml'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'workspaces/notification-service/**'
+  push:
+    paths:
+      - '.github/workflows/notification-service.yml'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'workspaces/notification-service/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test notification-service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Check compose config
+        run: docker compose config --quiet
+
+      - name: Typecheck notification-service
+        run: pnpm --filter notification-service typecheck
+
+      - name: Test notification-service
+        run: pnpm --filter notification-service test
+
+  docker-smoke:
+    name: Migrate and seed notification-service
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Start notification dependencies
+        run: docker compose up -d notification-postgres notification-pgbouncer redis
+
+      - name: Run notification migrations
+        run: pnpm --filter notification-service migrate
+
+      - name: Seed notification reference data
+        run: pnpm --filter notification-service seed
+
+      - name: Run storage maintenance
+        run: pnpm --filter notification-service maintain:storage
+
+      - name: Stop compose services
+        if: always()
+        run: docker compose down --remove-orphans
+
+  build:
+    name: Build notification-service
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Build notification-service
+        run: pnpm --filter notification-service build
+
+      - name: Upload notification-service build artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: notification-service-dist
+          path: |
+            workspaces/notification-service/dist
+            workspaces/notification-service/package.json
+          if-no-files-found: error

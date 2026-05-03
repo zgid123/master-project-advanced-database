@@ -42,6 +42,13 @@ export const queueDepth = new Gauge({
   registers: [registry],
 });
 
+export const queueFailed = new Gauge({
+  name: 'bullmq_queue_failed',
+  help: 'BullMQ failed job count',
+  labelNames: ['queue'],
+  registers: [registry],
+});
+
 let queueMetricsTimer: NodeJS.Timeout | null = null;
 
 export async function refreshQueueDepthMetrics(): Promise<void> {
@@ -56,8 +63,9 @@ export async function refreshQueueDepthMetrics(): Promise<void> {
   ] as const;
 
   for (const [name, queue] of queueEntries) {
-    const counts = await queue.getJobCounts('waiting');
+    const counts = await queue.getJobCounts('waiting', 'failed');
     queueDepth.set({ queue: name }, counts.waiting ?? 0);
+    queueFailed.set({ queue: name }, counts.failed ?? 0);
   }
 }
 

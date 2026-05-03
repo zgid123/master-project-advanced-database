@@ -1,0 +1,32 @@
+groups:
+  - name: notification-service
+    rules:
+      - alert: NotificationBullMQFailedJobs
+        expr: sum by (queue) (bullmq_queue_failed{queue=~"q\\.notification\\..+"}) > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: notification-service
+        annotations:
+          summary: "Notification queue has failed jobs"
+          description: "Queue {{ $labels.queue }} has {{ $value }} failed jobs for more than 10 minutes."
+
+      - alert: ScheduledNotificationExhaustedRetries
+        expr: increase(scheduled_notification_failed_total[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: notification-service
+        annotations:
+          summary: "Scheduled notifications exhausted retries"
+          description: "Scheduled notification retries exhausted for category {{ $labels.category }}."
+
+      - alert: NotificationOutboxPublisherBacklog
+        expr: sum by (queue) (bullmq_queue_waiting{queue="q.notification.create"}) > 1000
+        for: 15m
+        labels:
+          severity: warning
+          service: notification-service
+        annotations:
+          summary: "Notification create queue backlog is high"
+          description: "Notification create queue has {{ $value }} waiting jobs for more than 15 minutes."
