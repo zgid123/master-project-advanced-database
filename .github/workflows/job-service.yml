@@ -1,0 +1,95 @@
+name: Job Service CI/CD
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/job-service.yml'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'workspaces/job-service/**'
+  push:
+    paths:
+      - '.github/workflows/job-service.yml'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'workspaces/job-service/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test job-service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Typecheck job-service
+        run: pnpm --filter job-service typecheck
+
+      - name: Test job-service
+        run: pnpm --filter job-service test
+
+  build:
+    name: Build and package job-service
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Build job-service
+        run: pnpm --filter job-service build
+
+      - name: Upload job-service build artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-service-dist
+          path: |
+            workspaces/job-service/dist
+            workspaces/job-service/package.json
+          if-no-files-found: error

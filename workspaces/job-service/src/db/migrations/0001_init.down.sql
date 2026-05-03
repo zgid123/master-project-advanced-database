@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS job_applications CASCADE;
+DROP TABLE IF EXISTS jobs CASCADE;
+DROP FUNCTION IF EXISTS trg_set_updated_at;
+DROP TYPE IF EXISTS job_type;
+DROP TYPE IF EXISTS application_status;
+DROP TYPE IF EXISTS job_status;

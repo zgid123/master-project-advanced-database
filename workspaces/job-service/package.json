@@ -1,0 +1,36 @@
+{
+  "name": "job-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "start": "node dist/src/index.js",
+    "migrate": "tsx scripts/migrate.ts up",
+    "migrate:down": "tsx scripts/migrate.ts down",
+    "seed": "tsx scripts/seed.ts",
+    "publish-outbox": "tsx src/events/publisher.ts",
+    "bench:list-jobs": "k6 run scripts/bench/k6-list-jobs.js",
+    "bench:apply-burst": "k6 run scripts/bench/k6-apply-burst.js"
+  },
+  "dependencies": {
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.6",
+    "drizzle-orm": "^0.44.0",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "@types/pg": "^8.11.11",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.4"
+  }
+}
