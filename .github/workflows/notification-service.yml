@@ -57,8 +57,14 @@ jobs:
       - name: Typecheck notification-service
         run: pnpm --filter notification-service typecheck
 
-      - name: Test notification-service
-        run: pnpm --filter notification-service test
+      - name: Run notification-service unit tests
+        run: pnpm --filter notification-service test:unit
+
+      - name: Run notification-service mock API tests
+        run: pnpm --filter notification-service test:mock-api
+
+      - name: Check notification-service Swagger/OpenAPI
+        run: pnpm --filter notification-service openapi:check
 
   docker-smoke:
     name: Migrate and seed notification-service
