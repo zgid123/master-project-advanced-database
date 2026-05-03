@@ -4,7 +4,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { jwtVerifyOptions, resolveJwtSecret } from './auth/jwt-secret.js';
+import { assertJwtPayloadClaims, jwtVerifyOptions, resolveJwtSecret } from './auth/jwt-secret.js';
 import { config } from './config.js';
 import { getRedis } from './cache/redis.js';
 import { pool } from './db/pool.js';
@@ -23,12 +23,12 @@ function timingSafeStringEqual(left: string, right: string): boolean {
 function internalRateLimitKey(request: FastifyRequest): string {
   const serviceName = request.headers['x-service-name'];
   const service = Array.isArray(serviceName) ? serviceName[0] : serviceName;
-  const identity = service || request.ip || 'unknown';
+  const identity = `${service || 'unknown'}:${request.ip || 'unknown'}`;
   return `rate:internal:${identity.replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 120)}`;
 }
 
 async function enforceInternalRateLimit(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
-  if (config.internalRateLimitPerMinute === 0) return true;
+  if (config.nodeEnv === 'test' || config.internalRateLimitPerMinute === 0) return true;
 
   try {
     const redis = await getRedis();
@@ -45,6 +45,13 @@ async function enforceInternalRateLimit(request: FastifyRequest, reply: FastifyR
     }
   } catch (error) {
     request.log.warn({ error }, 'internal rate limit check failed');
+    if (config.internalRateLimitFailClosed) {
+      await reply.code(503).send({
+        error: 'RATE_LIMIT_UNAVAILABLE',
+        message: 'Internal notification ingest rate limit could not be checked',
+      });
+      return false;
+    }
   }
 
   return true;
@@ -56,6 +63,10 @@ export async function buildApp() {
       level: config.logLevel,
     },
   });
+
+  if ((config.jwtJwksUrl || config.jwtPublicKey) && config.jwtAudiences.length === 0) {
+    app.log.warn('JWT_AUDIENCE is not configured; JWT audience will not be enforced');
+  }
 
   await app.register(jwt, {
     secret: resolveJwtSecret,
@@ -109,7 +120,8 @@ export async function buildApp() {
 
   app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      await request.jwtVerify();
+      const payload = await request.jwtVerify<Record<string, unknown>>();
+      assertJwtPayloadClaims(payload);
     } catch {
       await reply.code(401).send({
         error: 'UNAUTHORIZED',

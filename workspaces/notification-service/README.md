@@ -47,5 +47,6 @@ Run the maintenance command daily in cron, Kubernetes CronJob, or your scheduler
 
 - `public_id` defaults to UUIDv7 for locality, but PostgreSQL cannot enforce global `UNIQUE (public_id)` on this range-partitioned table without including the partition key. Inbox reads and mutations intentionally scope by `(user_id, public_id)`.
 - JWT verification supports HS256 for local development and RS256/JWKS for production. Set `JWT_ISSUER` and comma-separated `JWT_AUDIENCE` to enforce `iss` and `aud` claims on both REST and realtime connections.
-- Internal ingestion uses `x-internal-token` and is rate-limited per `x-service-name`/IP with `INTERNAL_RATE_LIMIT_PER_MINUTE` requests per minute. Set it to `0` to disable.
+- Internal ingestion uses `x-internal-token` and is rate-limited per `x-service-name` plus requester IP with `INTERNAL_RATE_LIMIT_PER_MINUTE` requests per minute. Set it to `0` to disable. By default, rate limiting fails open if Redis is unavailable; set `INTERNAL_RATE_LIMIT_FAIL_CLOSED=true` to return `503` instead.
+- Scheduled notifications use statuses `0=pending`, `1=processing`, `2=fired`, `3=cancelled`, and `4=failed`. The worker records `processed_at`, `failed_at`, and `last_error`, uses retry backoff, and refreshes its processing lease while a row is in progress.
 - The service uses hand-written SQL through `pg` to keep partition-aware queries explicit; there is no ORM layer.

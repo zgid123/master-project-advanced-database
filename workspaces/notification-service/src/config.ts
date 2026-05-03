@@ -19,6 +19,9 @@ const envSchema = z.object({
   )),
   INTERNAL_API_TOKEN: z.string().default('dev-internal-token'),
   INTERNAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().nonnegative().default(600),
+  INTERNAL_RATE_LIMIT_FAIL_CLOSED: z.string().optional().transform((value) => (
+    value === 'true' || value === '1'
+  )),
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().default('no-reply@solvit.local'),
   WEB_PUSH_VAPID_PUBLIC_KEY: z.string().optional(),
@@ -52,6 +55,7 @@ export const config = {
   jwtAudiences: env.JWT_AUDIENCE,
   internalApiToken: env.INTERNAL_API_TOKEN,
   internalRateLimitPerMinute: env.INTERNAL_RATE_LIMIT_PER_MINUTE,
+  internalRateLimitFailClosed: env.INTERNAL_RATE_LIMIT_FAIL_CLOSED,
   sendgridApiKey: env.SENDGRID_API_KEY,
   sendgridFromEmail: env.SENDGRID_FROM_EMAIL,
   webPushVapidPublicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,
