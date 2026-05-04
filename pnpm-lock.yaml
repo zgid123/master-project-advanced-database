@@ -57,6 +57,21 @@ importers:
 
   '@types/globals': {}
 
+  packages/@domain/auth:
+    dependencies:
+      '@domain/core':
+        specifier: workspace:^
+        version: link:../core
+      arktype:
+        specifier: ^2.2.0
+        version: 2.2.0
+
+  packages/@domain/core:
+    dependencies:
+      arktype:
+        specifier: ^2.2.0
+        version: 2.2.0
+
   workspaces/api-gateway:
     dependencies:
       '@hono/node-server':
