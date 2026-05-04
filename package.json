@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@alphacifer/core-utils": "^0.0.9",
+    "detect-port": "^2.1.0",
     "tslib": "^2.8.1"
   }
 }
