@@ -1,0 +1,9 @@
+{
+  "extends": "@alphacifer/tsconfig/hono",
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "include": [
+    "src"
+  ]
+}

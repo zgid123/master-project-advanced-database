@@ -1,0 +1,35 @@
+{
+  "name": "auth",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migrate:create": "dotenv -e .env -- drizzle-kit generate",
+    "db:migrate": "dotenv -e .env -- drizzle-kit migrate",
+    "db:migrate:test": "dotenv -e .env.test -- drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@alphacifer/drizzle": "^0.0.5",
+    "@alphacifer/hono": "^0.0.6",
+    "@hono/node-server": "^1.19.14",
+    "bcrypt": "^6.0.0",
+    "detect-port": "^2.1.0",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.15",
+    "jsonwebtoken": "^9.0.3",
+    "nanoid": "^5.1.11",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@vitest/coverage-istanbul": "^4.1.4",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.7.1"
+  }
+}
