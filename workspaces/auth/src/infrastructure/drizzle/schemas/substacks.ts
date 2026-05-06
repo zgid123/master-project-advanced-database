@@ -15,7 +15,7 @@ import { users } from './users';
 
 export const substacks = pgTable('substacks', {
   ...baseUuidSchema,
-  name: varchar().notNull(),
+  name: varchar().unique().notNull(),
   description: text(),
   slug: varchar().unique().notNull(),
   approved: boolean().notNull().default(false),

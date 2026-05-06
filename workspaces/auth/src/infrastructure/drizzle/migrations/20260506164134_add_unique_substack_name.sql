@@ -1,0 +1,1 @@
+ALTER TABLE "substacks" ADD CONSTRAINT "substacks_name_unique" UNIQUE("name");
