@@ -1,0 +1,27 @@
+{
+  "name": "notifications",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@alphacifer/hono": "^0.0.6",
+    "@domain/core": "workspace:^",
+    "@hono/node-server": "^1.19.14",
+    "@node/hono": "workspace:^",
+    "detect-port": "^2.1.0",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.15",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-istanbul": "^4.1.4",
+    "dotenv-cli": "^11.0.0",
+    "tsx": "^4.7.1"
+  }
+}
