@@ -5,13 +5,17 @@ export interface IFindOneUserParams {
   email: string;
 }
 
+export interface IFindPartialOneUserParams {
+  email: string;
+}
+
 export type TCreateUserParams = Omit<TSignUp, 'password'> & {
-  roleId?: string;
+  roleId: string;
   password: string;
 };
 
 export interface IUserRepository {
   create(params: TCreateUserParams): Promise<UserEntity>;
   findOne(params: IFindOneUserParams): Promise<UserEntity>;
-  findOneOrNull(params: IFindOneUserParams): Promise<UserEntity | null>;
+  findPartialOne(params: IFindPartialOneUserParams): Promise<UserEntity | null>;
 }

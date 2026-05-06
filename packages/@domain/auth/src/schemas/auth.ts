@@ -2,9 +2,13 @@ import { type } from 'arktype';
 
 import { User } from './user';
 
-export const SignIn = User.pick('email', 'password');
+export const SignIn = User.pick('email').and({
+  password: 'string',
+});
 
-export const SignUp = User.pick('email', 'password');
+export const SignUp = User.pick('email').and({
+  password: 'string',
+});
 
 export const Token = type({
   token: 'string',

@@ -2,7 +2,9 @@ import type { TRole, TUser } from '../schemas';
 
 export type TUserEntity = TUser;
 
-export type TUserProfile = Omit<TUserEntity, 'password'>;
+export type TUserProfile = Omit<TUserEntity, 'password' | 'role'> & {
+  role: string;
+};
 
 export class UserEntity implements TUserEntity {
   public id: string;
@@ -55,8 +57,11 @@ export class UserEntity implements TUserEntity {
   }
 
   public toProfile(): TUserProfile {
-    const { password: _, ...profile } = this;
+    const { password: _, role, ...profile } = this;
 
-    return profile;
+    return {
+      ...profile,
+      role: role.displayName,
+    };
   }
 }

@@ -15,7 +15,9 @@
   "dependencies": {
     "@alphacifer/drizzle": "^0.0.5",
     "@alphacifer/hono": "^0.0.6",
+    "@domain/core": "workspace:^",
     "@hono/node-server": "^1.19.14",
+    "@domain/auth": "workspace:^",
     "bcrypt": "^6.0.0",
     "detect-port": "^2.1.0",
     "dotenv": "^17.4.2",
