@@ -3,10 +3,15 @@ import {
   type IAuthIoC,
   registerAuthIoC,
 } from '#/modules/auth/adapters/restful/ioc';
+import {
+  type ISubstackIoC,
+  registerSubstackIoC,
+} from '#/modules/substack/adapters/restful/ioc';
 
 export interface IIoC {
-  drizzle: TDrizzle;
   auth: IAuthIoC;
+  drizzle: TDrizzle;
+  substack: ISubstackIoC;
   [key: string]: unknown;
 }
 
@@ -18,6 +23,9 @@ export function registerIoC({ drizzle }: IRegisterIoCParams): IIoC {
   return {
     drizzle,
     auth: registerAuthIoC({
+      drizzle,
+    }),
+    substack: registerSubstackIoC({
       drizzle,
     }),
   };

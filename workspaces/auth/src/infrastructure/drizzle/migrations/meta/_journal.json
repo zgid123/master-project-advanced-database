@@ -50,6 +50,13 @@
       "when": 1777916694749,
       "tag": "20260504174454_create_substack_role_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778085694637,
+      "tag": "20260506164134_add_unique_substack_name",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,27 @@
+meta {
+  name: Create Substack
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/substacks
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "{{substackName}}",
+    "slug": "{{substackSlug}}",
+    "description": "{{substackDescription}}"
+  }
+}

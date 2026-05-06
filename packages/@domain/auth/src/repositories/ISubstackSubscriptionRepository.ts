@@ -13,7 +13,4 @@ export interface ISubstackSubscriptionRepository {
   findOne(
     params: IFindOneSubstackSubscriptionParams,
   ): Promise<SubstackSubscriptionEntity>;
-  findOneOrNull(
-    params: IFindOneSubstackSubscriptionParams,
-  ): Promise<SubstackSubscriptionEntity | null>;
 }
