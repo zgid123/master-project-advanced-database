@@ -10,7 +10,12 @@ export interface IFindSubstackParams {
   approved?: boolean;
 }
 
+export interface IApproveSubstackParams {
+  slug: string;
+}
+
 export interface ISubstackRepository {
+  approve(params: IApproveSubstackParams): Promise<SubstackEntity>;
   create(params: TCreateSubstack): Promise<SubstackEntity>;
   find(params: IFindSubstackParams): Promise<SubstackEntity[]>;
   findOne(params: IFindOneSubstackParams): Promise<SubstackEntity>;

@@ -1,4 +1,6 @@
+import { and, eq, isNull } from '@alphacifer/drizzle/core';
 import {
+  type IApproveSubstackParams,
   type IFindOneSubstackParams,
   type IFindSubstackParams,
   type ISubstackRepository,
@@ -16,6 +18,25 @@ export class SubstackRepository implements ISubstackRepository {
 
   constructor(drizzle: TDrizzle) {
     this.#drizzle = drizzle;
+  }
+
+  public async approve({
+    slug,
+  }: IApproveSubstackParams): Promise<SubstackEntity> {
+    const [approvedSubstack] = await this.#drizzle
+      .update(substacks)
+      .set({
+        approved: true,
+      })
+      .where(and(eq(substacks.slug, slug), isNull(substacks.deletedAt)))
+      .returning()
+      .execute();
+
+    if (!approvedSubstack) {
+      throw SubstackError.notFound();
+    }
+
+    return SubstackEntity.create(approvedSubstack);
   }
 
   public async create(params: TCreateSubstack): Promise<SubstackEntity> {
