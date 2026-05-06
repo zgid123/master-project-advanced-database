@@ -1,0 +1,15 @@
+meta {
+  name: Approve Substack
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/admin/substacks/{{substackSlug}}/approve
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
