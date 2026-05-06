@@ -6,3 +6,10 @@ export interface ICoreDrizzleContextVariables<TDrizzle> extends Env {
     drizzle: TDrizzle;
   };
 }
+
+export interface ICoreMongooseContextVariables<TMongoose> extends Env {
+  // biome-ignore lint/style/useNamingConvention: hono typing
+  Variables: {
+    mongoose: TMongoose;
+  };
+}
