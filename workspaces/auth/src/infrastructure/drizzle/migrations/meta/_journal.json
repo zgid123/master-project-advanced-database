@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777916586939,
+      "tag": "20260504174306_create_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777916605180,
+      "tag": "20260504174325_create_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777916622840,
+      "tag": "20260504174342_create_allowed_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777916642554,
+      "tag": "20260504174402_create_substacks",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777916659288,
+      "tag": "20260504174419_create_substacks_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777916678873,
+      "tag": "20260504174438_create_substack_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777916694749,
+      "tag": "20260504174454_create_substack_role_assignments",
+      "breakpoints": true
+    }
+  ]
+}
