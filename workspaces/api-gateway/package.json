@@ -10,10 +10,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.14",
-    "hono": "^4.12.15"
-  },
-  "devDependencies": {
-    "tsx": "^4.7.1"
+    "@hono/node-server": "^2.0.1",
+    "hono": "^4.12.18"
   }
 }
