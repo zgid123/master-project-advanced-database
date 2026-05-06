@@ -1,7 +1,7 @@
 import { relations } from '@alphacifer/drizzle/core';
 import { pgTable, varchar } from '@alphacifer/drizzle/pg';
+import { baseUuidSchema } from '@node/drizzle';
 
-import { baseUuidSchema } from './base';
 import { users } from './users';
 
 export const roles = pgTable('roles', {

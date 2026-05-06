@@ -1,0 +1,12 @@
+{
+  "name": "@node/hono",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./interfaces": "./src/interfaces/index.ts",
+    "./middlewares": "./src/middlewares/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.12.14"
+  }
+}

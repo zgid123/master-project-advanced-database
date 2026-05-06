@@ -1,8 +1,8 @@
 import { relations } from '@alphacifer/drizzle/core';
 import { integer, pgTable, text, uuid, varchar } from '@alphacifer/drizzle/pg';
+import { baseUuidSchema } from '@node/drizzle';
 
 import { allowedTokens } from './allowedTokens';
-import { baseUuidSchema } from './base';
 import { roles } from './roles';
 import { substackRoleAssignments } from './substackRoleAssignments';
 import { substacks } from './substacks';
