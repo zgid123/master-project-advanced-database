@@ -1,7 +1,7 @@
 import { relations } from '@alphacifer/drizzle/core';
 import { pgTable, uniqueIndex, uuid } from '@alphacifer/drizzle/pg';
+import { baseUuidSchema } from '@node/drizzle';
 
-import { baseUuidSchema } from './base';
 import { substacks } from './substacks';
 import { users } from './users';
 

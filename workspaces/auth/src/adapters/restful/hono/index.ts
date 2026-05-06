@@ -1,28 +1,24 @@
 import { migrate } from '@alphacifer/drizzle/core';
 import { onError } from '@alphacifer/hono/core';
 import { type ServerType, serve } from '@hono/node-server';
+import type { ICoreDrizzleContextVariables } from '@node/hono/interfaces';
+import {
+  createDrizzleMiddleware,
+  createRegisterIoCMiddleware,
+} from '@node/hono/middlewares';
 import { detect } from 'detect-port';
-import type { Env } from 'hono';
 import { Hono } from 'hono';
-import { createMiddleware } from 'hono/factory';
 import type { ExtractSchema } from 'hono/types';
 
 import type { TDrizzle } from '#/infrastructure/drizzle/config';
 import { drizzle } from '#/infrastructure/drizzle/instance';
 import { seed } from '#/infrastructure/drizzle/seeds';
 
-import { type IIoC, registerIoC } from '../ioc';
+import { registerIoC } from '../ioc';
 import { endpoints } from './endpoints';
 
-interface ICoreContextVariables<TDrizzle> extends Env {
-  // biome-ignore lint/style/useNamingConvention: hono typing
-  Variables: {
-    drizzle: TDrizzle;
-  } & IIoC;
-}
-
 export type TApp = Hono<
-  ICoreContextVariables<TDrizzle>,
+  ICoreDrizzleContextVariables<TDrizzle>,
   ExtractSchema<typeof endpoints>,
   '/'
 >;
@@ -36,28 +32,10 @@ interface IInitHonoParams {
   beforeInitRoutes?: (app: TApp) => void;
 }
 
-function createDrizzleMiddleware(drizzle: TDrizzle) {
-  return createMiddleware<ICoreContextVariables<TDrizzle>>((c, next) => {
-    c.set('drizzle', drizzle);
-
-    return next();
-  });
-}
-
-function createRegisterIoCMiddleware(ioc: IIoC) {
-  return createMiddleware<ICoreContextVariables<TDrizzle>>((c, next) => {
-    Object.entries(ioc).forEach(([key, value]) => {
-      c.set(key, value);
-    });
-
-    return next();
-  });
-}
-
 export async function initHono({
   beforeInitRoutes,
 }: IInitHonoParams = {}): Promise<IInitHonoReturn> {
-  const app = new Hono<ICoreContextVariables<TDrizzle>>();
+  const app = new Hono<ICoreDrizzleContextVariables<TDrizzle>>();
   const isTest = !!process.env.VITEST_WORKER_ID;
 
   if (!isTest) {
@@ -74,8 +52,16 @@ export async function initHono({
   });
 
   app
-    .use(createDrizzleMiddleware(drizzle))
-    .use(createRegisterIoCMiddleware(ioc));
+    .use(
+      createDrizzleMiddleware({
+        drizzle,
+      }),
+    )
+    .use(
+      createRegisterIoCMiddleware({
+        ioc,
+      }),
+    );
 
   beforeInitRoutes?.(app);
 

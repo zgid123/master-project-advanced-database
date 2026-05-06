@@ -7,8 +7,8 @@ import {
   uuid,
   varchar,
 } from '@alphacifer/drizzle/pg';
+import { baseUuidSchema } from '@node/drizzle';
 
-import { baseUuidSchema } from './base';
 import { substackRoles } from './substackRoles';
 import { substacksSubscriptions } from './substacksSubscriptions';
 import { users } from './users';

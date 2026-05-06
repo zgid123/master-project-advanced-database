@@ -1,7 +1,7 @@
 import { relations } from '@alphacifer/drizzle/core';
 import { date, pgTable, text, uuid } from '@alphacifer/drizzle/pg';
+import { baseUuidSchema } from '@node/drizzle';
 
-import { baseUuidSchema } from './base';
 import { users } from './users';
 
 export const allowedTokens = pgTable('allowed_tokens', {
