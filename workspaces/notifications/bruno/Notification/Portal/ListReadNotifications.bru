@@ -1,0 +1,11 @@
+meta {
+  name: List Read Notifications
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/notifications?userId={{userId}}&read=true&limit={{limit}}
+  body: none
+  auth: none
+}
