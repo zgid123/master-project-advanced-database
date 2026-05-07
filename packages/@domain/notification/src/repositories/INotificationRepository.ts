@@ -7,7 +7,15 @@ export interface IFindNotificationsParams {
   limit?: number;
 }
 
+export interface IMarkNotificationAsReadParams {
+  id: string;
+  userId: string;
+}
+
 export interface INotificationRepository {
   create(params: TCreateNotification): Promise<NotificationEntity>;
   find(params: IFindNotificationsParams): Promise<NotificationEntity[]>;
+  markAsRead(
+    params: IMarkNotificationAsReadParams,
+  ): Promise<NotificationEntity | null>;
 }
