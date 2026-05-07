@@ -1,11 +1,12 @@
 import {
   type IFindNotificationsParams,
+  type IMarkNotificationAsReadParams,
   type INotificationRepository,
   NotificationEntity,
   type TCreateNotification,
   type TNotification,
 } from '@domain/notification';
-import type { QueryFilter } from 'mongoose';
+import { isValidObjectId, type QueryFilter } from 'mongoose';
 
 import { NotificationModel } from '#/infrastructure/mongoose/schemas';
 
@@ -48,5 +49,33 @@ export class NotificationRepository implements INotificationRepository {
     return notifications.map((notification) => {
       return NotificationEntity.create(notification);
     });
+  }
+
+  public async markAsRead({
+    id,
+    userId,
+  }: IMarkNotificationAsReadParams): Promise<NotificationEntity | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
+
+    const notification = await NotificationModel.findOneAndUpdate(
+      {
+        _id: id,
+        userId,
+      },
+      {
+        read: true,
+      },
+      {
+        new: true,
+      },
+    ).exec();
+
+    if (!notification) {
+      return null;
+    }
+
+    return NotificationEntity.create(notification);
   }
 }
