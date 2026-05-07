@@ -1,6 +1,7 @@
-import { type InferSchemaType, model, models, Schema } from 'mongoose';
+import type { TNotification } from '@domain/notification';
+import { type Model, model, models, Schema } from 'mongoose';
 
-const notificationSchema = new Schema(
+const notificationSchema = new Schema<TNotification>(
   {
     title: {
       type: String,
@@ -50,7 +51,6 @@ notificationSchema.index({
   createdAt: -1,
 });
 
-export type TNotification = InferSchemaType<typeof notificationSchema>;
-
 export const NotificationModel =
-  models.Notification || model('Notification', notificationSchema);
+  (models.Notification as Model<TNotification> | undefined) ||
+  model<TNotification>('Notification', notificationSchema);

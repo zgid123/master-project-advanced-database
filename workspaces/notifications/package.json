@@ -12,8 +12,10 @@
   "dependencies": {
     "@alphacifer/hono": "^0.0.6",
     "@domain/core": "workspace:^",
+    "@domain/notification": "workspace:^",
     "@hono/node-server": "^2.0.1",
     "@node/hono": "workspace:^",
+    "@node/utils": "workspace:^",
     "hono": "^4.12.18",
     "mongoose": "^9.6.1"
   }
