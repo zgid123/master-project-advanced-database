@@ -6,26 +6,11 @@ import {
   authenticatedUserMiddleware,
   requiredUserMiddleware,
 } from '#/modules/auth/adapters/restful/hono/middlewares/authMiddleware';
+import { getUserDisplayName } from '#/utils/userUtils';
 
 import type { ISubstackContextVariables } from '../../../context';
 
 const CreateSubstackRequest = CreateSubstack.omit('ownerId');
-
-function getUserDisplayName({
-  email,
-  lastName,
-  firstName,
-  displayName,
-}: {
-  email: string;
-  lastName: string | null;
-  firstName: string | null;
-  displayName: string | null;
-}): string {
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-
-  return displayName ?? (fullName || email);
-}
 
 export const substackEndpoints = new Hono<ISubstackContextVariables>()
   .use(authenticatedUserMiddleware)

@@ -5,3 +5,4 @@ export * from './SubstackRoleAssignmentEntity';
 export * from './SubstackRoleEntity';
 export * from './SubstackSubscriptionEntity';
 export * from './UserEntity';
+export * from './UserSubscriptionEntity';

@@ -6,3 +6,4 @@ export * from './substackRole';
 export * from './substackRoleAssignment';
 export * from './substackSubscription';
 export * from './user';
+export * from './userSubscription';

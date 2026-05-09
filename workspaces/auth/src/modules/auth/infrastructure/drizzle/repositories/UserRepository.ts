@@ -1,4 +1,5 @@
 import {
+  type IFindOneUserByIdParams,
   type IFindOneUserParams,
   type IFindPartialOneUserParams,
   type IUserRepository,
@@ -68,6 +69,25 @@ export class UserRepository implements IUserRepository {
     }
 
     return user;
+  }
+
+  public async findOneById({
+    id,
+  }: IFindOneUserByIdParams): Promise<UserEntity> {
+    const user = await this.#drizzle.query.users.findFirst({
+      where: (users, { eq }) => {
+        return eq(users.id, id);
+      },
+      with: {
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw UserError.notFound();
+    }
+
+    return UserEntity.create(user);
   }
 
   public async findPartialOne({

@@ -2,6 +2,8 @@ import { arkValidator } from '@alphacifer/hono/core';
 import { SignIn, SignUp, Token } from '@domain/auth';
 import { Hono, type ValidationTargets } from 'hono';
 
+import { getUserDisplayName } from '#/utils/userUtils';
+
 import { AuthError } from '../../../../../domain/errors';
 import type { IAuthContextVariables } from '../../../context';
 import {
@@ -123,5 +125,51 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
       return c.json({
         data: currentUser.toProfile(),
       });
+    },
+  )
+  .post(
+    '/users/:userId/subscribe',
+    authenticatedUserMiddleware,
+    requiredUserMiddleware,
+    async (c) => {
+      const currentUser = c.get('currentUser');
+
+      const { created, user } =
+        await c.var.auth.portal.subscribeUserCommand.exec({
+          userId: c.req.param('userId'),
+          followerId: currentUser.id,
+        });
+
+      if (created) {
+        c.var.auth.portal.notificationService
+          .createSocialUserSubscribedNotification({
+            userId: user.id,
+            actorUserId: currentUser.id,
+            actorName: getUserDisplayName(currentUser),
+          })
+          .catch((error: unknown) => {
+            console.error(
+              'Failed to create social user subscribed notification',
+              error,
+            );
+          });
+      }
+
+      return c.body(null, 204);
+    },
+  )
+  .delete(
+    '/users/:userId/subscribe',
+    authenticatedUserMiddleware,
+    requiredUserMiddleware,
+    async (c) => {
+      const currentUser = c.get('currentUser');
+
+      await c.var.auth.portal.unsubscribeUserCommand.exec({
+        userId: c.req.param('userId'),
+        followerId: currentUser.id,
+      });
+
+      return c.body(null, 204);
     },
   );

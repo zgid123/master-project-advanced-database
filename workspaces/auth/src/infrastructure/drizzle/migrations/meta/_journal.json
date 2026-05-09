@@ -57,6 +57,13 @@
       "when": 1778085694637,
       "tag": "20260506164134_add_unique_substack_name",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778357611116,
+      "tag": "20260509201331_CreateUsersSubscriptions",
+      "breakpoints": true
     }
   ]
 }

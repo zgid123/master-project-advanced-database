@@ -7,6 +7,7 @@ import { roles } from './roles';
 import { substackRoleAssignments } from './substackRoleAssignments';
 import { substacks } from './substacks';
 import { substacksSubscriptions } from './substacksSubscriptions';
+import { usersSubscriptions } from './usersSubscriptions';
 
 export type TUserStatus = 'active' | 'inactive' | 'suspended';
 
@@ -37,6 +38,12 @@ export const usersRelations = relations(users, ({ many, one }) => {
     ownedSubstacks: many(substacks),
     substackSubscriptions: many(substacksSubscriptions),
     substackRoleAssignments: many(substackRoleAssignments),
+    subscriptions: many(usersSubscriptions, {
+      relationName: 'userSubscriptions',
+    }),
+    followers: many(usersSubscriptions, {
+      relationName: 'userFollowers',
+    }),
   };
 });
 

@@ -5,3 +5,4 @@ export * from './ISubstackRoleAssignmentRepository';
 export * from './ISubstackRoleRepository';
 export * from './ISubstackSubscriptionRepository';
 export * from './IUserRepository';
+export * from './IUserSubscriptionRepository';
