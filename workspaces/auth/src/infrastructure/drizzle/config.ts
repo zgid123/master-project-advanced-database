@@ -17,6 +17,10 @@ import {
   substacksSubscriptionsRelations,
 } from './schemas/substacksSubscriptions';
 import { users, usersRelations } from './schemas/users';
+import {
+  usersSubscriptions,
+  usersSubscriptionsRelations,
+} from './schemas/usersSubscriptions';
 
 export const schema = {
   users,
@@ -26,11 +30,13 @@ export const schema = {
   allowedTokens,
   usersRelations,
   rolesRelations,
+  usersSubscriptions,
   substacksRelations,
   substacksSubscriptions,
   substackRolesRelations,
   allowedTokensRelations,
   substackRoleAssignments,
+  usersSubscriptionsRelations,
   substacksSubscriptionsRelations,
   substackRoleAssignmentsRelations,
 } as const;

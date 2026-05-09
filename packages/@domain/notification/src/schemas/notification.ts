@@ -48,6 +48,7 @@ export const CreateSystemNotification = type.or(
     type: "'social.user.subscribed'",
     userId: 'string',
     data: {
+      actorName: 'string',
       actorUserId: 'string',
     },
   },

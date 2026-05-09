@@ -12,6 +12,12 @@ interface ICreateSubstackSubscribedNotificationParams {
   substackSlug: string;
 }
 
+interface ICreateSocialUserSubscribedNotificationParams {
+  userId: string;
+  actorName: string;
+  actorUserId: string;
+}
+
 export class NotificationService {
   readonly #baseUrl: string;
   readonly #internalServiceSecret: string;
@@ -84,6 +90,37 @@ export class NotificationService {
     if (!response.ok) {
       throw new Error(
         `Failed to create substack subscribed notification: ${response.status}`,
+      );
+    }
+  }
+
+  public async createSocialUserSubscribedNotification({
+    userId,
+    actorName,
+    actorUserId,
+  }: ICreateSocialUserSubscribedNotificationParams): Promise<void> {
+    const response = await fetch(
+      new URL('/internal/v1/notifications', this.#baseUrl),
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-service-secret': this.#internalServiceSecret,
+        },
+        body: JSON.stringify({
+          userId,
+          type: 'social.user.subscribed',
+          data: {
+            actorName,
+            actorUserId,
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to create social user subscribed notification: ${response.status}`,
       );
     }
   }

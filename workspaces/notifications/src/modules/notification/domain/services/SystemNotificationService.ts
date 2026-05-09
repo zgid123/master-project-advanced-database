@@ -7,6 +7,7 @@ import {
   AUTH_SIGN_UP_WELCOME_NOTIFICATION_BODY,
   AUTH_SIGN_UP_WELCOME_NOTIFICATION_TITLE,
   createAnswerVoteNotificationBody,
+  createSocialUserSubscribedNotificationBody,
   createSubstackApprovedNotificationBody,
   createSubstackCreatedNotificationBody,
   createSubstackSubscribedNotificationBody,
@@ -16,7 +17,6 @@ import {
   QNA_ANSWER_UPVOTED_NOTIFICATION_TITLE,
   QNA_TOPIC_DOWNVOTED_NOTIFICATION_TITLE,
   QNA_TOPIC_UPVOTED_NOTIFICATION_TITLE,
-  SOCIAL_USER_SUBSCRIBED_NOTIFICATION_BODY,
   SOCIAL_USER_SUBSCRIBED_NOTIFICATION_TITLE,
   SUBSTACK_APPROVED_NOTIFICATION_TITLE,
   SUBSTACK_CREATED_NOTIFICATION_TITLE,
@@ -108,10 +108,13 @@ export class SystemNotificationService {
         return {
           userId: params.userId,
           title: SOCIAL_USER_SUBSCRIBED_NOTIFICATION_TITLE,
-          body: SOCIAL_USER_SUBSCRIBED_NOTIFICATION_BODY,
+          body: createSocialUserSubscribedNotificationBody(
+            params.data.actorName,
+          ),
           metadata: {
             source: 'social',
             type: params.type,
+            actorName: params.data.actorName,
             actorUserId: params.data.actorUserId,
           },
         };
