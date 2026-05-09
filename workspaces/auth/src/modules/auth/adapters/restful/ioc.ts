@@ -12,6 +12,7 @@ import {
   RoleRepository,
   UserRepository,
 } from '../../infrastructure/drizzle/repositories';
+import { NotificationService } from '../../infrastructure/services';
 
 export interface IAuthIoC {
   portal: {
@@ -19,6 +20,7 @@ export interface IAuthIoC {
     signInCommand: SignInCommand;
     signUpCommand: SignUpCommand;
     signUserCommand: SignUserCommand;
+    notificationService: NotificationService;
     refreshTokenCommand: RefreshTokenCommand;
   };
 }
@@ -38,12 +40,15 @@ export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
   const signUpCommand = new SignUpCommand(userRepository, roleRepository);
   const refreshTokenCommand = new RefreshTokenCommand(allowedTokenRepository);
 
+  const notificationService = new NotificationService();
+
   return {
     portal: {
       getUserQuery,
       signInCommand,
       signUpCommand,
       signUserCommand,
+      notificationService,
       refreshTokenCommand,
     },
   };

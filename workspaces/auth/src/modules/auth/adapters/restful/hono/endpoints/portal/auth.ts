@@ -29,6 +29,15 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
           user,
         });
 
+      v.auth.portal.notificationService
+        .createSignUpWelcomeNotification({
+          userId: user.id,
+          email: user.email,
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to create sign-up welcome notification', error);
+        });
+
       return c.json({
         data: {
           authToken,

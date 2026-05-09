@@ -1,0 +1,35 @@
+meta {
+  name: Social User Subscribed
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/internal/v1/notifications
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  x-internal-service-secret: {{internalServiceSecret}}
+}
+
+body:json {
+  {
+    "type": "social.user.subscribed",
+    "userId": "{{userId}}",
+    "data": {
+      "actorUserId": "{{actorUserId}}"
+    }
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const data = typeof body === 'string' ? JSON.parse(body) : body;
+
+  if (data?.data?.id) {
+    bru.setEnvVar('notificationId', data.data.id);
+  }
+}
