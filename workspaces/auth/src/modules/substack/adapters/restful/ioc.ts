@@ -1,7 +1,11 @@
 import type { TDrizzle } from '#/infrastructure/drizzle/config';
 
 import { ApproveSubstackCommand } from '../../application/admin/v1/commands';
-import { CreateSubstackCommand } from '../../application/portal/v1/commands';
+import {
+  CreateSubstackCommand,
+  SubscribeSubstackCommand,
+  UnsubscribeSubstackCommand,
+} from '../../application/portal/v1/commands';
 import {
   GetSubstackQuery,
   GetSubstacksQuery,
@@ -10,6 +14,7 @@ import {
   SubstackRepository,
   SubstackRoleAssignmentRepository,
   SubstackRoleRepository,
+  SubstackSubscriptionRepository,
 } from '../../infrastructure/drizzle/repositories';
 
 export interface ISubstackIoC {
@@ -20,6 +25,8 @@ export interface ISubstackIoC {
     getSubstackQuery: GetSubstackQuery;
     getSubstacksQuery: GetSubstacksQuery;
     createSubstackCommand: CreateSubstackCommand;
+    subscribeSubstackCommand: SubscribeSubstackCommand;
+    unsubscribeSubstackCommand: UnsubscribeSubstackCommand;
   };
 }
 
@@ -35,6 +42,9 @@ export function registerSubstackIoC({
   const substackRoleAssignmentRepository = new SubstackRoleAssignmentRepository(
     drizzle,
   );
+  const substackSubscriptionRepository = new SubstackSubscriptionRepository(
+    drizzle,
+  );
 
   const createSubstackCommand = new CreateSubstackCommand(
     substackRepository,
@@ -44,6 +54,14 @@ export function registerSubstackIoC({
   const getSubstackQuery = new GetSubstackQuery(substackRepository);
   const getSubstacksQuery = new GetSubstacksQuery(substackRepository);
   const approveSubstackCommand = new ApproveSubstackCommand(substackRepository);
+  const subscribeSubstackCommand = new SubscribeSubstackCommand(
+    substackRepository,
+    substackSubscriptionRepository,
+  );
+  const unsubscribeSubstackCommand = new UnsubscribeSubstackCommand(
+    substackRepository,
+    substackSubscriptionRepository,
+  );
 
   return {
     admin: {
@@ -53,6 +71,8 @@ export function registerSubstackIoC({
       getSubstackQuery,
       getSubstacksQuery,
       createSubstackCommand,
+      subscribeSubstackCommand,
+      unsubscribeSubstackCommand,
     },
   };
 }

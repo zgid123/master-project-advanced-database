@@ -3,6 +3,15 @@ interface ICreateSignUpWelcomeNotificationParams {
   userId: string;
 }
 
+interface ICreateSubstackSubscribedNotificationParams {
+  userId: string;
+  actorName: string;
+  substackId: string;
+  actorUserId: string;
+  substackName: string;
+  substackSlug: string;
+}
+
 export class NotificationService {
   readonly #baseUrl: string;
   readonly #internalServiceSecret: string;
@@ -38,6 +47,43 @@ export class NotificationService {
     if (!response.ok) {
       throw new Error(
         `Failed to create sign-up welcome notification: ${response.status}`,
+      );
+    }
+  }
+
+  public async createSubstackSubscribedNotification({
+    userId,
+    actorName,
+    substackId,
+    actorUserId,
+    substackName,
+    substackSlug,
+  }: ICreateSubstackSubscribedNotificationParams): Promise<void> {
+    const response = await fetch(
+      new URL('/internal/v1/notifications', this.#baseUrl),
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-service-secret': this.#internalServiceSecret,
+        },
+        body: JSON.stringify({
+          userId,
+          type: 'substack.subscribed',
+          data: {
+            actorName,
+            substackId,
+            actorUserId,
+            substackName,
+            substackSlug,
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to create substack subscribed notification: ${response.status}`,
       );
     }
   }

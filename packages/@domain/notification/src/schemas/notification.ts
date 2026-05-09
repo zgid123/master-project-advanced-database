@@ -55,10 +55,21 @@ export const CreateSystemNotification = type.or(
     type: "'substack.topic.created'",
     userId: 'string',
     data: {
-      authorUserId: 'string',
       topicId: 'string',
       topicTitle: 'string',
       substackId: 'string',
+      substackName: 'string',
+      substackSlug: 'string',
+      authorUserId: 'string',
+    },
+  },
+  {
+    type: "'substack.subscribed'",
+    userId: 'string',
+    data: {
+      actorName: 'string',
+      substackId: 'string',
+      actorUserId: 'string',
       substackName: 'string',
       substackSlug: 'string',
     },
