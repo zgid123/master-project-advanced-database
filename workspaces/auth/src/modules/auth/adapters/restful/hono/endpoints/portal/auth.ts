@@ -3,16 +3,11 @@ import { SignIn, SignUp, Token } from '@domain/auth';
 import { Hono, type ValidationTargets } from 'hono';
 
 import { AuthError } from '../../../../../domain/errors';
-import {
-  AUTH_TOKEN_COOKIE_NAME,
-  REFRESH_TOKEN_COOKIE_NAME,
-} from '../../../constants';
 import type { IAuthContextVariables } from '../../../context';
 import {
   authenticatedUserMiddleware,
   requiredUserMiddleware,
 } from '../../middlewares/authMiddleware';
-import { setHttpOnly } from '../../utils/cookieUtils';
 
 export const authEndpoints = new Hono<IAuthContextVariables>()
   .post(
@@ -33,13 +28,6 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
         await v.auth.portal.signUserCommand.exec({
           user,
         });
-
-      setHttpOnly(c, AUTH_TOKEN_COOKIE_NAME, authToken, {
-        expires: '1h',
-      });
-      setHttpOnly(c, REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
-        expires: '1y',
-      });
 
       return c.json({
         data: {
@@ -72,13 +60,6 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
         await v.auth.portal.signUserCommand.exec({
           user,
         });
-
-      setHttpOnly(c, AUTH_TOKEN_COOKIE_NAME, authToken, {
-        expires: '1h',
-      });
-      setHttpOnly(c, REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
-        expires: '1y',
-      });
 
       return c.json({
         data: {
@@ -113,13 +94,6 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
         await v.auth.portal.signUserCommand.exec({
           user,
         });
-
-      setHttpOnly(c, AUTH_TOKEN_COOKIE_NAME, authToken, {
-        expires: '1h',
-      });
-      setHttpOnly(c, REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
-        expires: '1y',
-      });
 
       return c.json({
         data: {

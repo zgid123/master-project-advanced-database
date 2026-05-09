@@ -1,18 +1,5 @@
-import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
+import '#/infrastructure/common/env';
 
-const app = new Hono();
+import { initHono } from '#/adapters/restful/hono';
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!');
-});
-
-serve(
-  {
-    fetch: app.fetch,
-    port: 3_000,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  },
-);
+initHono();
