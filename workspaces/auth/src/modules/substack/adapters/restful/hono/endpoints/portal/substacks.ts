@@ -11,6 +11,22 @@ import type { ISubstackContextVariables } from '../../../context';
 
 const CreateSubstackRequest = CreateSubstack.omit('ownerId');
 
+function getUserDisplayName({
+  email,
+  lastName,
+  firstName,
+  displayName,
+}: {
+  email: string;
+  lastName: string | null;
+  firstName: string | null;
+  displayName: string | null;
+}): string {
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+  return displayName ?? (fullName || email);
+}
+
 export const substackEndpoints = new Hono<ISubstackContextVariables>()
   .use(authenticatedUserMiddleware)
   .use(requiredUserMiddleware)
@@ -29,6 +45,44 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
     return c.json({
       data: substack,
     });
+  })
+  .post('/:slug/subscribe', async (c) => {
+    const currentUser = c.get('currentUser');
+    const { created, substack } =
+      await c.var.substack.portal.subscribeSubstackCommand.exec({
+        userId: currentUser.id,
+        slug: c.req.param('slug'),
+      });
+
+    if (created && substack.ownerId !== currentUser.id) {
+      c.var.auth.portal.notificationService
+        .createSubstackSubscribedNotification({
+          substackId: substack.id,
+          userId: substack.ownerId,
+          actorUserId: currentUser.id,
+          substackName: substack.name,
+          substackSlug: substack.slug,
+          actorName: getUserDisplayName(currentUser),
+        })
+        .catch((error: unknown) => {
+          console.error(
+            'Failed to create substack subscribed notification',
+            error,
+          );
+        });
+    }
+
+    return c.body(null, 204);
+  })
+  .delete('/:slug/subscribe', async (c) => {
+    const currentUser = c.get('currentUser');
+
+    await c.var.substack.portal.unsubscribeSubstackCommand.exec({
+      userId: currentUser.id,
+      slug: c.req.param('slug'),
+    });
+
+    return c.body(null, 204);
   })
   .post(
     '/',

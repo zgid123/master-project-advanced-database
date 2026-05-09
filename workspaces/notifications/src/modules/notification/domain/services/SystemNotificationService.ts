@@ -9,6 +9,7 @@ import {
   createAnswerVoteNotificationBody,
   createSubstackApprovedNotificationBody,
   createSubstackCreatedNotificationBody,
+  createSubstackSubscribedNotificationBody,
   createSubstackTopicCreatedNotificationBody,
   createTopicVoteNotificationBody,
   QNA_ANSWER_DOWNVOTED_NOTIFICATION_TITLE,
@@ -19,6 +20,7 @@ import {
   SOCIAL_USER_SUBSCRIBED_NOTIFICATION_TITLE,
   SUBSTACK_APPROVED_NOTIFICATION_TITLE,
   SUBSTACK_CREATED_NOTIFICATION_TITLE,
+  SUBSTACK_SUBSCRIBED_NOTIFICATION_TITLE,
   SUBSTACK_TOPIC_CREATED_NOTIFICATION_TITLE,
 } from '../constants';
 
@@ -47,9 +49,9 @@ export class SystemNotificationService {
           metadata: {
             source: 'qna',
             type: params.type,
-            actorUserId: params.data.actorUserId,
             topicId: params.data.topicId,
             topicTitle: params.data.topicTitle,
+            actorUserId: params.data.actorUserId,
           },
         };
       case 'qna.topic.downvoted':
@@ -63,9 +65,9 @@ export class SystemNotificationService {
           metadata: {
             source: 'qna',
             type: params.type,
-            actorUserId: params.data.actorUserId,
             topicId: params.data.topicId,
             topicTitle: params.data.topicTitle,
+            actorUserId: params.data.actorUserId,
           },
         };
       case 'qna.answer.upvoted':
@@ -79,10 +81,10 @@ export class SystemNotificationService {
           metadata: {
             source: 'qna',
             type: params.type,
-            actorUserId: params.data.actorUserId,
-            answerId: params.data.answerId,
             topicId: params.data.topicId,
+            answerId: params.data.answerId,
             topicTitle: params.data.topicTitle,
+            actorUserId: params.data.actorUserId,
           },
         };
       case 'qna.answer.downvoted':
@@ -96,10 +98,10 @@ export class SystemNotificationService {
           metadata: {
             source: 'qna',
             type: params.type,
-            actorUserId: params.data.actorUserId,
-            answerId: params.data.answerId,
             topicId: params.data.topicId,
+            answerId: params.data.answerId,
             topicTitle: params.data.topicTitle,
+            actorUserId: params.data.actorUserId,
           },
         };
       case 'social.user.subscribed':
@@ -124,10 +126,28 @@ export class SystemNotificationService {
           metadata: {
             source: 'substack',
             type: params.type,
-            authorUserId: params.data.authorUserId,
             topicId: params.data.topicId,
             topicTitle: params.data.topicTitle,
             substackId: params.data.substackId,
+            authorUserId: params.data.authorUserId,
+            substackName: params.data.substackName,
+            substackSlug: params.data.substackSlug,
+          },
+        };
+      case 'substack.subscribed':
+        return {
+          userId: params.userId,
+          title: SUBSTACK_SUBSCRIBED_NOTIFICATION_TITLE,
+          body: createSubstackSubscribedNotificationBody(
+            params.data.actorName,
+            params.data.substackName,
+          ),
+          metadata: {
+            source: 'substack',
+            type: params.type,
+            actorName: params.data.actorName,
+            substackId: params.data.substackId,
+            actorUserId: params.data.actorUserId,
             substackName: params.data.substackName,
             substackSlug: params.data.substackSlug,
           },

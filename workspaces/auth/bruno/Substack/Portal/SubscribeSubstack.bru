@@ -1,0 +1,15 @@
+meta {
+  name: Subscribe Substack
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/substacks/{{substackSlug}}/subscribe
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
