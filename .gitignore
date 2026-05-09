@@ -87,3 +87,4 @@ __unconfig*
 *.njsproj
 *.sln
 *.sw?
+.pnpm-store
