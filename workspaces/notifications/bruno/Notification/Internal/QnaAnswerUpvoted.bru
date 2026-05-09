@@ -1,0 +1,38 @@
+meta {
+  name: QnA Answer Upvoted
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/internal/v1/notifications
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  x-internal-service-secret: {{internalServiceSecret}}
+}
+
+body:json {
+  {
+    "type": "qna.answer.upvoted",
+    "userId": "{{userId}}",
+    "data": {
+      "actorUserId": "{{actorUserId}}",
+      "answerId": "{{answerId}}",
+      "topicId": "{{topicId}}",
+      "topicTitle": "{{topicTitle}}"
+    }
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const data = typeof body === 'string' ? JSON.parse(body) : body;
+
+  if (data?.data?.id) {
+    bru.setEnvVar('notificationId', data.data.id);
+  }
+}

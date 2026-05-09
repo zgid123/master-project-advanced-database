@@ -11,6 +11,8 @@ declare namespace NodeJS {
     DB_PASSWORD: string;
     ADMIN_EMAIL: string;
     ADMIN_PASSWORD: string;
+    INTERNAL_SERVICE_SECRET?: string;
+    NOTIFICATIONS_SERVICE_URL?: string;
     NODE_ENV: 'development' | 'production' | 'staging' | 'test';
   }
 }

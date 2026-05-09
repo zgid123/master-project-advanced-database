@@ -1,11 +1,6 @@
-import {
-  arkValidator,
-  HonoCommonError,
-  HonoError,
-} from '@alphacifer/hono/core';
-import { CreateNotification } from '@domain/notification';
+import { HonoCommonError, HonoError } from '@alphacifer/hono/core';
 import { parsePagy } from '@node/utils';
-import { Hono, type ValidationTargets } from 'hono';
+import { Hono } from 'hono';
 
 import type { INotificationContextVariables } from '../../../context';
 
@@ -71,27 +66,4 @@ export const notificationEndpoints = new Hono<INotificationContextVariables>()
     return c.json({
       data: notification,
     });
-  })
-  .post(
-    '/',
-    arkValidator<
-      typeof CreateNotification,
-      keyof ValidationTargets,
-      INotificationContextVariables,
-      string
-    >('json', CreateNotification),
-    async (c) => {
-      const { req, var: v } = c;
-      const data = req.valid('json');
-
-      const notification =
-        await v.notification.portal.createNotificationCommand.exec(data);
-
-      return c.json(
-        {
-          data: notification,
-        },
-        201,
-      );
-    },
-  );
+  });
