@@ -6,9 +6,16 @@ import { CommentsModule } from './comments/comments.module';
 import { VotesModule } from './votes/votes.module';
 import { TopicSubscriptionsModule } from './topic_subscriptions/topic_subscriptions.module';
 import { MongoModule } from './database/mongo.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [TopicsModule, CommentsModule, VotesModule, TopicSubscriptionsModule, MongoModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TopicsModule,
+    CommentsModule,
+    VotesModule,
+    TopicSubscriptionsModule,
+    MongoModule],
   controllers: [AppController],
   providers: [AppService],
 })

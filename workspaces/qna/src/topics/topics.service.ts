@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateTopicDto } from './dto/create-topic.dto';
+import { NotificationService } from '../notifications/notification.service';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { TopicsRepo } from './topic.repo';
 import { VoteTopicDto } from './dto/vote-topic.dto';
@@ -41,6 +42,26 @@ export class TopicsService {
       target_type: 'topic',
       point: dto.point,
     });
+
+    try {
+      const subscribers = await this.topicSubscriptionsRepo.getSubscribers(topicId);
+      const notifyType = dto.point === 1 ? 'qna.topic.upvoted' : 'qna.topic.downvoted';
+      for (const sub of subscribers) {
+        const subscriberId = sub.user_id?.toString();
+        if (!subscriberId || subscriberId === dto.user_id) continue;
+        await NotificationService.sendNotification({
+          type: notifyType,
+          userId: subscriberId,
+          data: {
+            actorUserId: dto.user_id,
+            topicId: topicId,
+            topicTitle: topic.title,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Notification error:', err?.message || err);
+    }
 
     return { message: 'Vote recorded' };
   }
@@ -92,7 +113,7 @@ export class TopicsService {
     if (!topic) throw new NotFoundException('Topic not found');
 
     const [vote_score, comments_count, subscriptions_count, accepted_comment] = await Promise.all([
-      this.votesRepo.getScore(topicId),
+      this.votesRepo.getVotesForTargets([new Types.ObjectId(topicId)], 'topic').then(res => res[0]?.score || 0),
       this.commentsRepo.countByTopic(topicId),
       this.topicSubscriptionsRepo.countByTopic(topicId),
       this.commentsRepo.getAcceptedComment(topicId),
@@ -127,7 +148,7 @@ export class TopicsService {
 
     const { topics, total } = await this.topicsRepo.getTopicsWithAggregates(query, page, limit);
 
-    const topicIds = topics.map((t: any) => t._id.toString());
+    const topicIds = topics.map((t: any) => t._id);
 
     const [voteScores, commentsCounts, subscriptionsCounts, acceptedComments, isSubscribed] = await Promise.all([
       this.votesRepo.getVotesForTargets(topicIds, 'topic'),
@@ -247,7 +268,7 @@ export class TopicsService {
     }
 
     const [voteScore, commentsCount, subscriptionsCount, acceptedComment, isSubscribed] = await Promise.all([
-      this.votesRepo.getScore(id),
+      this.votesRepo.getVotesForTargets([new Types.ObjectId(id)], 'topic').then(res => res[0]?.score || 0),
       this.commentsRepo.countByTopic(id),
       this.topicSubscriptionsRepo.countByTopic(id),
       this.commentsRepo.getAcceptedComment(id),

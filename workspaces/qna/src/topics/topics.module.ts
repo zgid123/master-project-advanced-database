@@ -7,6 +7,7 @@ import { CommentsModule } from 'src/comments/comments.module';
 import { TopicSubscriptionsModule } from 'src/topic_subscriptions/topic_subscriptions.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Topic, TopicSchema } from './schemas/topic.schema';
+import { CommentsService } from 'src/comments/comments.service';
 
 @Module({
   imports: [
