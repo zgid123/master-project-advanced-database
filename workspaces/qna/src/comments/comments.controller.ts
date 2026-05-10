@@ -22,12 +22,33 @@ import {
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { VoteCommentDto } from './dto/vote-comment.dto';
+import { VoteRecordedResponseSwagger } from 'src/topics/topics.swagger';
 
 @ApiTags('Comments')
 @Controller('comments')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) { }
+
+  @Post(':id/vote')
+  @ApiOperation({ summary: 'Vote on a comment' })
+  @ApiParam({ name: 'id', description: 'Comment ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        user_id: { type: 'string', example: '6638e1f2c2a1b2c3d4e5f6b8' },
+        point: { type: 'number', example: 1, description: '1 for upvote, -1 for downvote' }
+      },  
+      required: ['user_id', 'point']
+    }
+  })
+  @ApiOkResponse(VoteRecordedResponseSwagger)
+  @ApiNotFoundResponse({ description: 'Comment not found' })
+  async voteComment(@Param('id') id: string, @Body() dto: VoteCommentDto) {
+    return await this.commentsService.voteComment(id, dto);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a comment on a topic' })

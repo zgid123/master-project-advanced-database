@@ -1,3 +1,4 @@
+import { NotificationService } from '../notifications/notification.service';
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -13,17 +14,44 @@ export class CommentsService {
     private readonly commentsRepo: CommentsRepo,
     private readonly topicsRepo: TopicsRepo,
     private readonly votesRepo: VotesRepo,
-  ) {}
+  ) { }
 
   async voteComment(commentId: string, dto: VoteCommentDto) {
     const comment = await this.commentsRepo.findById(commentId);
     if (!comment || comment.deleted_at) throw new NotFoundException('Comment not found');
+
+    if (![1, -1].includes(dto.point)) {
+      throw new ForbiddenException('Invalid vote point');
+    }
+
     await this.votesRepo.vote({
       target_id: new Types.ObjectId(commentId),
       user_id: dto.user_id,
       target_type: 'comment',
       point: dto.point,
     });
+
+    try {
+      if (comment.user_id?.toString() !== dto.user_id) {
+        const topic = await this.topicsRepo.findById(comment.topic_id);
+        if (topic) {
+          const notifyType = dto.point === 1 ? 'qna.answer.upvoted' : 'qna.answer.downvoted';
+          await NotificationService.sendNotification({
+            type: notifyType,
+            userId: comment.user_id,
+            data: {
+              actorUserId: dto.user_id,
+              answerId: commentId,
+              topicId: comment.topic_id,
+              topicTitle: topic.title,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Notification error:', err?.message || err);
+    }
+
     return { message: 'Vote recorded' };
   }
 
@@ -34,29 +62,21 @@ export class CommentsService {
     return { message: 'Vote removed' };
   }
 
-  async getCommentsByTopic(topicId: string, page: number, limit: number) {
-    const { comments, total } = await this.commentsRepo.getCommentsWithAggregates(topicId, page, limit);
-    const commentIds = comments.map((c: any) => c._id.toString());
+  async getCommentsByTopic(topicId: string) {
+    const comments = await this.commentsRepo.getCommentsWithAggregates(topicId);
+    const commentIds = comments.map((c: any) => c._id);
     const voteScores = await this.votesRepo.getVotesForTargets(commentIds, 'comment');
     const voteScoreMap = Object.fromEntries(voteScores.map((v: any) => [v._id.toString(), v.score]));
-    return {
-      data: comments.map((comment: any) => ({
-        id: comment._id,
-        topic_id: comment.topic_id,
-        user_id: comment.user_id,
-        content: comment.content,
-        is_accepted: comment.is_accepted,
-        created_at: comment.get('created_at'),
-        updated_at: comment.get('updated_at'),
-        vote_score: voteScoreMap[comment._id.toString()] || 0,
-      })),
-      pagination: {
-        page,
-        limit,
-        total,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
+    return comments.map((comment: any) => ({
+      id: comment._id,
+      topic_id: comment.topic_id,
+      user_id: comment.user_id,
+      content: comment.content,
+      is_accepted: comment.is_accepted,
+      created_at: comment.get('created_at'),
+      updated_at: comment.get('updated_at'),
+      vote_score: voteScoreMap[comment._id.toString()] || 0,
+    }));
   }
 
   async createComment(dto: CreateCommentDto) {

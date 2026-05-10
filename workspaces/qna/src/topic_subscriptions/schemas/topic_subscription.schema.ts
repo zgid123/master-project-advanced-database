@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class TopicSubscription {
+  _id: Types.ObjectId;
+  
   @Prop()
   topic_id: Types.ObjectId;
 

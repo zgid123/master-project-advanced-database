@@ -31,12 +31,16 @@ import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { SearchTopicDto } from './dto/search-topic.dto';
 import { VoteTopicDto } from './dto/vote-topic.dto';
+import { CommentsService } from 'src/comments/comments.service';
 
 @ApiTags('Topics')
 @Controller('topics')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class TopicsController {
-  constructor(private readonly topicsService: TopicsService) { }
+  constructor(
+    private readonly topicsService: TopicsService,
+    private readonly commentsService: CommentsService,
+  ) { }
 
   @Post(':id/subscribe')
   @ApiOperation({ summary: 'Subscribe to a topic' })
@@ -188,7 +192,7 @@ export class TopicsController {
   @ApiOkResponse(GetCommentsByTopicResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async getCommentsByTopic(@Param('id') id: string) {
-    return await this.topicsService.getCommentsByTopic(id);
+    return await this.commentsService.getCommentsByTopic(id);
   }
 
   @Get(':id')

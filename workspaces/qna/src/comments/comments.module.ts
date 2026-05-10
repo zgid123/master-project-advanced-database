@@ -20,6 +20,6 @@ import { Comment, CommentSchema } from './schemas/comment.schema';
   ],
   controllers: [CommentsController],
   providers: [CommentsService, CommentsRepo],
-  exports: [CommentsRepo],
+  exports: [CommentsRepo, CommentsService],
 })
 export class CommentsModule { }

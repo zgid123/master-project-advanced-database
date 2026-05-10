@@ -40,12 +40,10 @@ export class CommentsRepo {
         });
     }
 
-    async getCommentsWithAggregates(topicId: string, page: number, limit: number) {
+    async getCommentsWithAggregates(topicId: string) {
         const filter = { topic_id: topicId, deleted_at: null };
-        const skip = (page - 1) * limit;
-        const comments = await this.model.find(filter).skip(skip).limit(limit).sort({ created_at: 1 });
-        const total = await this.model.countDocuments(filter);
-        return { comments, total };
+        const comments = await this.model.find(filter).sort({ created_at: 1 });
+        return comments;
     }
 
     async countByTopic(topicId: string) {
