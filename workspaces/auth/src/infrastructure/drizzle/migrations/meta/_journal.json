@@ -64,6 +64,13 @@
       "when": 1778357611116,
       "tag": "20260509201331_CreateUsersSubscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778401112301,
+      "tag": "20260510081832_DropAllowedTokens",
+      "breakpoints": true
     }
   ]
 }

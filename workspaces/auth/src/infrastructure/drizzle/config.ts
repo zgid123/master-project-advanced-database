@@ -4,7 +4,6 @@ import {
   createDrizzle as init,
 } from '@alphacifer/drizzle/factory';
 
-import { allowedTokens, allowedTokensRelations } from './schemas/allowedTokens';
 import { roles, rolesRelations } from './schemas/roles';
 import {
   substackRoleAssignments,
@@ -27,14 +26,12 @@ export const schema = {
   roles,
   substacks,
   substackRoles,
-  allowedTokens,
   usersRelations,
   rolesRelations,
   usersSubscriptions,
   substacksRelations,
   substacksSubscriptions,
   substackRolesRelations,
-  allowedTokensRelations,
   substackRoleAssignments,
   usersSubscriptionsRelations,
   substacksSubscriptionsRelations,

@@ -2,7 +2,6 @@ import { relations } from '@alphacifer/drizzle/core';
 import { integer, pgTable, text, uuid, varchar } from '@alphacifer/drizzle/pg';
 import { baseUuidSchema } from '@node/drizzle';
 
-import { allowedTokens } from './allowedTokens';
 import { roles } from './roles';
 import { substackRoleAssignments } from './substackRoleAssignments';
 import { substacks } from './substacks';
@@ -34,7 +33,6 @@ export const usersRelations = relations(users, ({ many, one }) => {
       fields: [users.roleId],
       references: [roles.id],
     }),
-    allowedTokens: many(allowedTokens),
     ownedSubstacks: many(substacks),
     substackSubscriptions: many(substacksSubscriptions),
     substackRoleAssignments: many(substackRoleAssignments),

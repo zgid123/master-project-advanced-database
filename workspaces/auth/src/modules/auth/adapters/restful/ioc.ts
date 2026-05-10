@@ -10,11 +10,11 @@ import {
 } from '../../application/portal/v1/commands';
 import { GetUserQuery } from '../../application/portal/v1/queries';
 import {
-  AllowedTokenRepository,
   RoleRepository,
   UserRepository,
   UserSubscriptionRepository,
 } from '../../infrastructure/drizzle/repositories';
+import { AllowedTokenRepository } from '../../infrastructure/redis/repositories/AllowedTokenRepository';
 import { NotificationService } from '../../infrastructure/services';
 
 export interface IAuthIoC {
@@ -37,7 +37,7 @@ interface IRegisterIoCParams {
 export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
   const userRepository = new UserRepository(drizzle);
   const roleRepository = new RoleRepository(drizzle);
-  const allowedTokenRepository = new AllowedTokenRepository(drizzle);
+  const allowedTokenRepository = new AllowedTokenRepository(userRepository);
   const userSubscriptionRepository = new UserSubscriptionRepository(drizzle);
 
   const getUserQuery = new GetUserQuery(userRepository);
