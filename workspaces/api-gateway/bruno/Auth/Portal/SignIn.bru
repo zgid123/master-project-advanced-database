@@ -1,0 +1,35 @@
+meta {
+  name: Sign In
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/sign-in
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const data = typeof body === 'string' ? JSON.parse(body) : body;
+
+  if (data?.data?.authToken) {
+    bru.setEnvVar('authToken', data.data.authToken);
+  }
+
+  if (data?.data?.refreshToken) {
+    bru.setEnvVar('refreshToken', data.data.refreshToken);
+  }
+}

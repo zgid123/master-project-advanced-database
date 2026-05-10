@@ -10,6 +10,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@domain/auth": "workspace:^",
     "@hono/node-server": "^2.0.1",
     "@node/hono": "workspace:^",
     "hono": "^4.12.18"

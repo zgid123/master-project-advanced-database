@@ -1,0 +1,15 @@
+meta {
+  name: Unsubscribe User
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/auth/users/{{targetUserId}}/subscribe
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}

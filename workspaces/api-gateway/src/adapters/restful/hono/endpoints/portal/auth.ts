@@ -7,22 +7,16 @@ import {
 } from '../../../constants';
 import type { IApiGatewayContextVariables } from '../../../context';
 import { setHttpOnly } from '../../utils/cookieUtils';
+import {
+  createUpstreamResponseHeaders,
+  forwardUpstreamResponse,
+} from '../../utils/upstreamResponseUtils';
 
 interface IAuthServiceResponse {
   data?: {
     authToken?: unknown;
     refreshToken?: unknown;
   };
-}
-
-function createAuthResponseHeaders(response: Response): Headers {
-  const headers = new Headers(response.headers);
-
-  headers.delete('content-encoding');
-  headers.delete('content-length');
-  headers.delete('set-cookie');
-
-  return headers;
 }
 
 function setAuthCookies(c: Context, body: string): void {
@@ -66,7 +60,9 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
     return c.newResponse(body, {
       statusText: response.statusText,
       status: response.status as StatusCode,
-      headers: createAuthResponseHeaders(response),
+      headers: createUpstreamResponseHeaders(response, {
+        excludedHeaders: ['set-cookie'],
+      }),
     });
   })
   .post('/sign-in', async (c) => {
@@ -85,7 +81,9 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
     return c.newResponse(body, {
       statusText: response.statusText,
       status: response.status as StatusCode,
-      headers: createAuthResponseHeaders(response),
+      headers: createUpstreamResponseHeaders(response, {
+        excludedHeaders: ['set-cookie'],
+      }),
     });
   })
   .post('/refresh', async (c) => {
@@ -104,6 +102,28 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
     return c.newResponse(body, {
       statusText: response.statusText,
       status: response.status as StatusCode,
-      headers: createAuthResponseHeaders(response),
+      headers: createUpstreamResponseHeaders(response, {
+        excludedHeaders: ['set-cookie'],
+      }),
+    });
+  })
+  .post('/users/:userId/subscribe', async (c) => {
+    const response = await c.var.authService.subscribeUser({
+      userId: c.req.param('userId'),
+      authToken: c.get('authToken'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
+  .delete('/users/:userId/subscribe', async (c) => {
+    const response = await c.var.authService.unsubscribeUser({
+      userId: c.req.param('userId'),
+      authToken: c.get('authToken'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
     });
   });
