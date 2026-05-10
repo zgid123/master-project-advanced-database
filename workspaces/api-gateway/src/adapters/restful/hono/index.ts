@@ -6,6 +6,7 @@ import type { ExtractSchema } from 'hono/types';
 import type { IApiGatewayContextVariables } from '../context';
 import { registerIoC } from '../ioc';
 import { endpoints } from './endpoints';
+import { authMiddleware } from './middlewares';
 
 export type TApp = Hono<
   IApiGatewayContextVariables,
@@ -32,6 +33,8 @@ export function initHono({
       ioc,
     }),
   );
+
+  app.use('*', authMiddleware);
 
   beforeInitRoutes?.(app);
 

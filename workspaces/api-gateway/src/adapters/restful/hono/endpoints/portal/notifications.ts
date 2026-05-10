@@ -1,16 +1,7 @@
 import { Hono } from 'hono';
-import type { StatusCode } from 'hono/utils/http-status';
 
 import type { IApiGatewayContextVariables } from '../../../context';
-
-function createNotificationResponseHeaders(response: Response): Headers {
-  const headers = new Headers(response.headers);
-
-  headers.delete('content-encoding');
-  headers.delete('content-length');
-
-  return headers;
-}
+import { forwardUpstreamResponse } from '../../utils/upstreamResponseUtils';
 
 export const notificationsEndpoints =
   new Hono<IApiGatewayContextVariables>().get('/', async (c) => {
@@ -19,11 +10,6 @@ export const notificationsEndpoints =
     const response = await v.notificationService.listNotifications({
       search: new URL(req.url).search,
     });
-    const body = await response.text();
 
-    return c.newResponse(body, {
-      statusText: response.statusText,
-      status: response.status as StatusCode,
-      headers: createNotificationResponseHeaders(response),
-    });
+    return forwardUpstreamResponse(c, response);
   });

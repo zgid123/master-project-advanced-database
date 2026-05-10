@@ -1,0 +1,38 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/refresh
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "token": "{{refreshToken}}"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const data = typeof body === 'string' ? JSON.parse(body) : body;
+
+  if (data?.data?.authToken) {
+    bru.setEnvVar('authToken', data.data.authToken);
+  }
+
+  if (data?.data?.refreshToken) {
+    bru.setEnvVar('refreshToken', data.data.refreshToken);
+  }
+}
