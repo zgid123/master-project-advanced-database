@@ -8,6 +8,7 @@ import { TopicSubscriptionsModule } from 'src/topic_subscriptions/topic_subscrip
 import { MongooseModule } from '@nestjs/mongoose';
 import { Topic, TopicSchema } from './schemas/topic.schema';
 import { CommentsService } from 'src/comments/comments.service';
+import { SearchModule } from 'src/search/search.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CommentsService } from 'src/comments/comments.service';
     forwardRef(() => VotesModule),
     forwardRef(() => CommentsModule),
     forwardRef(() => TopicSubscriptionsModule),
+    forwardRef(() => SearchModule),
   ],
   controllers: [TopicsController],
   providers: [TopicsService, TopicsRepo],

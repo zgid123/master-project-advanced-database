@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class SearchTopicDto {
     @ApiProperty({ example: 'abc', description: 'Keyword to search in topic titles and bodies' })
@@ -16,4 +16,9 @@ export class SearchTopicDto {
     @IsString()
     @IsNotEmpty()
     limit: number;
+
+    @ApiPropertyOptional({ example: '6638e1f2c2a1b2c3d4e5f6a7' })
+    @IsString()
+    @IsOptional()
+    substack_id?: string;
 }
