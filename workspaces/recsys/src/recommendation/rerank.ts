@@ -1,38 +1,38 @@
 import type { ScoredCandidate } from './types.js';
 
+const mmrLambda = 0.7;
+
 export function rerank(scored: ScoredCandidate[], k = 20): ScoredCandidate[] {
   const remaining = [...scored];
   const result: ScoredCandidate[] = [];
-  const substackCount = new Map<string, number>();
 
   while (result.length < k && remaining.length > 0) {
-    remaining.sort(
-      (a, b) =>
-        adjustedScore(b, substackCount) - adjustedScore(a, substackCount),
-    );
+    remaining.sort((a, b) => mmrScore(b, result) - mmrScore(a, result));
     const top = remaining.shift();
     if (!top) break;
 
     result.push(top);
-
-    if (top.substackId) {
-      substackCount.set(
-        top.substackId,
-        (substackCount.get(top.substackId) ?? 0) + 1,
-      );
-    }
   }
 
   return result;
 }
 
-function adjustedScore(
+function mmrScore(
   candidate: ScoredCandidate,
-  substackCount: Map<string, number>,
+  selected: ScoredCandidate[],
 ): number {
-  const duplicatePenalty = candidate.substackId
-    ? (substackCount.get(candidate.substackId) ?? 0) * 0.15
-    : 0;
+  const maxSimilarity = Math.max(
+    0,
+    ...selected.map((item) => substackSimilarity(candidate, item)),
+  );
 
-  return candidate.score - duplicatePenalty;
+  return mmrLambda * candidate.score - (1 - mmrLambda) * maxSimilarity;
+}
+
+function substackSimilarity(
+  left: ScoredCandidate,
+  right: ScoredCandidate,
+): number {
+  if (!left.substackId || !right.substackId) return 0;
+  return left.substackId === right.substackId ? 1 : 0;
 }

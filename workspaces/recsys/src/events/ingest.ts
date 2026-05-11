@@ -22,9 +22,10 @@ MERGE (pe:ProcessedEvent {id: ev.eventId})
 WITH ev, pe
 WHERE pe.processedAt IS NULL
 MERGE (s:Substack {id: ev.substackId})
-  ON CREATE SET s.createdAt = ev.createdAt
+  ON CREATE SET s.createdAt = ev.createdAt,
+                s.subscriberCount = coalesce(ev.subscriberCount, 0)
 SET s.updatedAt = timestamp(),
-    s.subscriberCount = coalesce(ev.subscriberCount, s.subscriberCount, 0)
+    s.subscriberCount = coalesce(s.subscriberCount, 0)
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -52,13 +53,19 @@ MERGE (t:Topic {id: ev.topicId})
 SET t.createdAt = coalesce(t.createdAt, ev.createdAt),
     t.substackId = ev.substackId,
     t.authorId = coalesce(ev.authorId, t.authorId),
-    t.voteScore = coalesce(t.voteScore, 0),
-    t.hotness = coalesce(t.hotness, ev.score, t.score, 0.0),
-    t.score = coalesce(ev.score, t.score, 0.0),
+    t.voteScore = coalesce(t.voteScore, ev.score, 0.0),
+    t.hotness = coalesce(t.hotness, 0.0),
     t.updatedAt = timestamp()
 MERGE (s:Substack {id: ev.substackId})
   ON CREATE SET s.createdAt = ev.createdAt
-MERGE (t)-[:IN_SUBSTACK]->(s)
+MERGE (t)-[inSubstack:IN_SUBSTACK]->(s)
+  ON CREATE SET inSubstack.since = ev.createdAt
+FOREACH (_ IN CASE WHEN ev.authorId IS NULL THEN [] ELSE [1] END |
+  MERGE (author:User {id: ev.authorId})
+    ON CREATE SET author.createdAt = ev.createdAt
+  MERGE (author)-[authored:AUTHORED]->(t)
+    ON CREATE SET authored.at = ev.createdAt
+)
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -73,10 +80,15 @@ MERGE (t:Topic {id: ev.topicId})
   ON CREATE SET t.createdAt = ev.createdAt
 SET t.createdAt = coalesce(t.createdAt, ev.createdAt),
     t.authorId = coalesce(ev.authorId, t.authorId),
-    t.voteScore = coalesce(t.voteScore, 0),
-    t.hotness = coalesce(t.hotness, ev.score, t.score, 0.0),
-    t.score = coalesce(ev.score, t.score, 0.0),
+    t.voteScore = coalesce(t.voteScore, ev.score, 0.0),
+    t.hotness = coalesce(t.hotness, 0.0),
     t.updatedAt = timestamp()
+FOREACH (_ IN CASE WHEN ev.authorId IS NULL THEN [] ELSE [1] END |
+  MERGE (author:User {id: ev.authorId})
+    ON CREATE SET author.createdAt = ev.createdAt
+  MERGE (author)-[authored:AUTHORED]->(t)
+    ON CREATE SET authored.at = ev.createdAt
+)
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -105,8 +117,14 @@ SET c.topicId = ev.topicId,
     c.authorId = coalesce(ev.authorId, c.authorId),
     c.updatedAt = timestamp()
 MERGE (t:Topic {id: ev.topicId})
-  ON CREATE SET t.createdAt = ev.createdAt, t.score = 0.0
+  ON CREATE SET t.createdAt = ev.createdAt, t.voteScore = 0.0, t.hotness = 0.0
 MERGE (c)-[:ON_TOPIC]->(t)
+FOREACH (_ IN CASE WHEN ev.authorId IS NULL THEN [] ELSE [1] END |
+  MERGE (author:User {id: ev.authorId})
+    ON CREATE SET author.createdAt = ev.createdAt
+  MERGE (author)-[authored:AUTHORED]->(c)
+    ON CREATE SET authored.at = ev.createdAt
+)
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -134,27 +152,25 @@ MERGE (u:User {id: ev.userId})
 SET u.lastActiveAt = ev.createdAt,
     u.lastSeenAt = ev.createdAt
 MERGE (t:Topic {id: ev.targetId})
-  ON CREATE SET t.createdAt = ev.createdAt, t.score = 0.0, t.hotness = 0.0, t.voteScore = 0
+  ON CREATE SET t.createdAt = ev.createdAt, t.hotness = 0.0, t.voteScore = 0.0
 FOREACH (_ IN CASE WHEN ev.substackId IS NULL THEN [] ELSE [1] END |
   SET t.substackId = coalesce(t.substackId, ev.substackId)
 )
 FOREACH (_ IN CASE WHEN ev.substackId IS NULL THEN [] ELSE [1] END |
   MERGE (s:Substack {id: ev.substackId})
     ON CREATE SET s.createdAt = ev.createdAt
-  MERGE (t)-[:IN_SUBSTACK]->(s)
+  MERGE (t)-[inSubstack:IN_SUBSTACK]->(s)
+    ON CREATE SET inSubstack.since = ev.createdAt
 )
 MERGE (u)-[r:VOTED]->(t)
   ON CREATE SET r.createdAt = ev.createdAt
 WITH ev, pe, t, r, coalesce(r.weight, 0.0) AS oldWeight,
      CASE ev.voteType WHEN 'up' THEN 1.0 ELSE -1.0 END AS newWeight,
      CASE ev.voteType WHEN 'up' THEN 1 ELSE -1 END AS newVoteType
-SET r.type = ev.voteType,
-    r.voteType = newVoteType,
-    r.createdAt = ev.createdAt,
+SET r.voteType = newVoteType,
     r.votedAt = ev.createdAt,
     r.weight = newWeight,
-    t.voteScore = coalesce(t.voteScore, 0) - oldWeight + newWeight,
-    t.score = coalesce(t.score, 0.0) - oldWeight + newWeight
+    t.voteScore = coalesce(t.voteScore, 0.0) - oldWeight + newWeight
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -176,9 +192,7 @@ MERGE (u)-[r:VOTED]->(c)
 WITH ev, pe, r,
      CASE ev.voteType WHEN 'up' THEN 1.0 ELSE -1.0 END AS newWeight,
      CASE ev.voteType WHEN 'up' THEN 1 ELSE -1 END AS newVoteType
-SET r.type = ev.voteType,
-    r.voteType = newVoteType,
-    r.createdAt = ev.createdAt,
+SET r.voteType = newVoteType,
     r.votedAt = ev.createdAt,
     r.weight = newWeight
 SET pe.processedAt = timestamp()
@@ -194,8 +208,7 @@ WHERE pe.processedAt IS NULL
 OPTIONAL MATCH (:User {id: ev.userId})-[r:VOTED]->(t:Topic {id: ev.targetId})
 WITH ev, pe, r, t, coalesce(r.weight, 0.0) AS oldWeight
 FOREACH (_ IN CASE WHEN t IS NULL THEN [] ELSE [1] END |
-  SET t.voteScore = coalesce(t.voteScore, 0) - oldWeight,
-      t.score = coalesce(t.score, 0.0) - oldWeight
+  SET t.voteScore = coalesce(t.voteScore, 0.0) - oldWeight
 )
 DELETE r
 SET pe.processedAt = timestamp()
@@ -247,7 +260,7 @@ MERGE (u:User {id: ev.userId})
 SET u.lastActiveAt = ev.createdAt,
     u.lastSeenAt = ev.createdAt
 MERGE (t:Topic {id: ev.targetId})
-  ON CREATE SET t.createdAt = ev.createdAt, t.score = 0.0, t.hotness = 0.0, t.voteScore = 0
+  ON CREATE SET t.createdAt = ev.createdAt, t.hotness = 0.0, t.voteScore = 0.0
 MERGE (u)-[r:SUBSCRIBED]->(t)
   ON CREATE SET r.createdAt = ev.createdAt,
                 r.since = ev.createdAt
@@ -289,12 +302,14 @@ RETURN count(pe) AS processed
 `;
 
 export async function ingestBatch(batch: IngestBatch): Promise<void> {
-  await ingestSubstacks(batch.substacks);
-  await ingestTopics(batch.topics);
-  await ingestComments(batch.comments);
-  await ingestSubscriptions(batch.subscriptions);
-  await ingestVotes(batch.votes);
-  await invalidateAffectedCaches(batch);
+  const sortedBatch = sortIngestBatch(batch);
+
+  await ingestSubstacks(sortedBatch.substacks);
+  await ingestTopics(sortedBatch.topics);
+  await ingestComments(sortedBatch.comments);
+  await ingestSubscriptions(sortedBatch.subscriptions);
+  await ingestVotes(sortedBatch.votes);
+  await invalidateAffectedCaches(sortedBatch);
 }
 
 async function ingestSubstacks(events: SubstackEvent[]): Promise<void> {
@@ -445,4 +460,45 @@ function recordIngestLag(events: unknown[]): void {
     if (typeof createdAt !== 'number') continue;
     ingestLagSeconds.observe(Math.max(0, nowSeconds - createdAt));
   }
+}
+
+function sortIngestBatch(batch: IngestBatch): IngestBatch {
+  return {
+    substacks: [...batch.substacks].sort((left, right) =>
+      left.substackId.localeCompare(right.substackId),
+    ),
+    topics: [...batch.topics].sort((left, right) =>
+      left.topicId.localeCompare(right.topicId),
+    ),
+    comments: [...batch.comments].sort((left, right) =>
+      compareKeys(commentSortKey(left), commentSortKey(right)),
+    ),
+    subscriptions: [...batch.subscriptions].sort((left, right) =>
+      compareKeys(
+        [left.userId, left.targetType, left.targetId],
+        [right.userId, right.targetType, right.targetId],
+      ),
+    ),
+    votes: [...batch.votes].sort((left, right) =>
+      compareKeys(
+        [left.userId, left.targetType, left.targetId],
+        [right.userId, right.targetType, right.targetId],
+      ),
+    ),
+  };
+}
+
+function commentSortKey(event: CommentEvent): string[] {
+  return ['topicId' in event ? event.topicId : '', event.commentId];
+}
+
+function compareKeys(left: string[], right: string[]): number {
+  const length = Math.max(left.length, right.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const comparison = (left[index] ?? '').localeCompare(right[index] ?? '');
+    if (comparison !== 0) return comparison;
+  }
+
+  return 0;
 }

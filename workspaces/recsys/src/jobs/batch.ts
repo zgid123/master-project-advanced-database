@@ -1,7 +1,6 @@
-import { setCachedPopularity } from '../cache/feed-cache.js';
 import {
   toNativeNumber,
-  toNativeString,
+  toNeo4jInteger,
   writeTransaction,
 } from '../neo4j/driver.js';
 import { logger } from '../observability/logger.js';
@@ -10,20 +9,19 @@ const refreshPopularityCypher = `
 MATCH (t:Topic)
 OPTIONAL MATCH (t)<-[v:VOTED]-(:User)
 WITH t,
-     sum(CASE coalesce(v.voteType, CASE v.type WHEN 'up' THEN 1 ELSE -1 END)
+     sum(CASE v.voteType
        WHEN 1 THEN 1.0
        WHEN -1 THEN -1.0
        ELSE 0.0
      END) AS rawVoteScore,
-     sum(CASE coalesce(v.voteType, CASE v.type WHEN 'up' THEN 1 ELSE -1 END)
+     sum(CASE v.voteType
        WHEN 1 THEN exp(-0.693 * ((timestamp() / 1000 - coalesce(v.votedAt, v.createdAt, timestamp() / 1000)) / 3600.0) / 24.0)
        ELSE 0.0
      END) AS hotness
 SET t.voteScore = rawVoteScore,
     t.hotness = coalesce(hotness, 0.0),
-    t.score = rawVoteScore,
     t.popularityUpdatedAt = timestamp()
-RETURN t.id AS topicId, t.hotness AS score
+RETURN count(t) AS topicsUpdated
 `;
 
 const dropGdsProjectionCypher = `
@@ -44,6 +42,9 @@ CALL gds.graph.project(
     SUBSCRIBED: {
       orientation: 'UNDIRECTED'
     },
+    AUTHORED: {
+      orientation: 'UNDIRECTED'
+    },
     IN_SUBSTACK: {
       orientation: 'UNDIRECTED'
     }
@@ -53,7 +54,7 @@ YIELD graphName
 RETURN graphName
 `;
 
-const writeSimilarityCypher = `
+const writeEmbeddingsCypher = `
 CALL gds.fastRP.write('user-vote-graph', {
   embeddingDimension: 128,
   iterationWeights: [0.8, 1.0, 1.0],
@@ -62,7 +63,10 @@ CALL gds.fastRP.write('user-vote-graph', {
   writeProperty: 'embedding'
 })
 YIELD nodePropertiesWritten
-WITH nodePropertiesWritten
+RETURN nodePropertiesWritten
+`;
+
+const writeKnnCypher = `
 CALL gds.knn.write('user-vote-graph', {
   nodeLabels: ['User'],
   nodeProperties: ['embedding'],
@@ -72,25 +76,32 @@ CALL gds.knn.write('user-vote-graph', {
   topK: 30
 })
 YIELD relationshipsWritten
-RETURN relationshipsWritten, nodePropertiesWritten
+RETURN relationshipsWritten
+`;
+
+const stampSimilarityComputedAtCypher = `
+MATCH ()-[r:SIMILAR_TO]->()
+SET r.computedAt = datetime()
+RETURN count(r) AS stamped
+`;
+
+const pruneProcessedEventsCypher = `
+MATCH (p:ProcessedEvent)
+WHERE p.firstSeenAt < timestamp() - $retentionMs
+WITH p
+LIMIT $limit
+DETACH DELETE p
+RETURN count(p) AS deleted
 `;
 
 export async function refreshPopularityScores(): Promise<{
   topicsUpdated: number;
 }> {
   const result = await writeTransaction(refreshPopularityCypher);
-
-  await Promise.all(
-    result.records.map((record: { get: (key: string) => unknown }) =>
-      setCachedPopularity(
-        toNativeString(record.get('topicId')),
-        toNativeNumber(record.get('score')),
-      ),
-    ),
-  );
+  const row = result.records[0];
 
   return {
-    topicsUpdated: result.records.length,
+    topicsUpdated: row ? toNativeNumber(row.get('topicsUpdated')) : 0,
   };
 }
 
@@ -107,12 +118,28 @@ export async function refreshUserSimilarity(): Promise<{
   }
 
   await writeTransaction(createGdsProjectionCypher);
-  const result = await writeTransaction(writeSimilarityCypher);
+  await writeTransaction(writeEmbeddingsCypher);
+  const result = await writeTransaction(writeKnnCypher);
+  await writeTransaction(stampSimilarityComputedAtCypher);
   const row = result.records[0];
 
   return {
     relationshipsWritten: row
       ? toNativeNumber(row.get('relationshipsWritten'))
       : 0,
+  };
+}
+
+export async function pruneProcessedEvents(): Promise<{
+  deleted: number;
+}> {
+  const result = await writeTransaction(pruneProcessedEventsCypher, {
+    retentionMs: 7 * 24 * 60 * 60 * 1_000,
+    limit: toNeo4jInteger(50_000),
+  });
+  const row = result.records[0];
+
+  return {
+    deleted: row ? toNativeNumber(row.get('deleted')) : 0,
   };
 }

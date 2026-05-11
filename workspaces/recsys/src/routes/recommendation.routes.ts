@@ -6,6 +6,7 @@ import {
   getPersonalizedFeed,
   getSimilarTopics,
   getTrendingFeed,
+  getUserSimilarUsers,
   suggestSubstacks,
 } from '../recommendation/service.js';
 
@@ -57,7 +58,7 @@ export async function recommendationRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const query = feedQuerySchema.parse(request.query);
-      const userId = query.userId ?? getHeaderString(request, 'x-user-id');
+      const userId = getHeaderString(request, 'x-user-id') ?? query.userId;
 
       if (!userId) {
         throw new HttpError(
@@ -173,6 +174,34 @@ export async function recommendationRoutes(app: FastifyInstance) {
       const { id } = userParamSchema.parse(request.params);
       const { limit } = limitQuerySchema.parse(request.query);
       return suggestSubstacks(id, limit);
+    },
+  );
+
+  app.get(
+    '/v1/similar/users/:id',
+    {
+      schema: {
+        tags: ['Recommendations'],
+        summary: 'Get users similar to a given user',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+          },
+          required: ['id'],
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        },
+      },
+    },
+    async (request) => {
+      const { id } = userParamSchema.parse(request.params);
+      const { limit } = limitQuerySchema.parse(request.query);
+      return getUserSimilarUsers(id, limit);
     },
   );
 }

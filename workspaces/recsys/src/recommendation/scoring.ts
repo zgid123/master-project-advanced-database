@@ -20,6 +20,7 @@ export function scoreCandidate(candidate: Candidate, ctx: UserContext): number {
       ? 1
       : 0;
   const multiSourceBoost = Math.max(0, candidate.sources.length - 1) * 0.05;
+  // Freshness and multi-source boosts are applied before MMR reranking.
   const freshBoost = ageDays < 1 ? 1 + 0.2 * Math.exp(-(ageDays * 24) / 12) : 1;
 
   return (

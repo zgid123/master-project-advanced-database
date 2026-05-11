@@ -10,7 +10,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   INTERNAL_SERVICE_SECRET: z.string().default('dev-internal-secret'),
 
-  NEO4J_URI: z.string().default('bolt://localhost:7687'),
+  NEO4J_URI: z.string().default('neo4j://localhost:7687'),
   NEO4J_USER: z.string().default('neo4j'),
   NEO4J_PASSWORD: z.string().default('recsys-password'),
   NEO4J_DATABASE: z.string().default('neo4j'),
@@ -19,7 +19,7 @@ const envSchema = z.object({
     .number()
     .int()
     .positive()
-    .default(5_000),
+    .default(30_000),
   NEO4J_MAX_TRANSACTION_RETRY_TIME_MS: z.coerce
     .number()
     .int()
@@ -34,12 +34,10 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(1_800),
-  POPULARITY_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
-
   EVENTS_CONSUMER_GROUP: z.string().default('recsys'),
   EVENTS_CONSUMER_NAME: z.string().default(`recsys-${process.pid}`),
   EVENTS_BATCH_SIZE: z.coerce.number().int().positive().default(500),
-  EVENTS_BLOCK_MS: z.coerce.number().int().nonnegative().default(2_000),
+  EVENTS_BLOCK_MS: z.coerce.number().int().nonnegative().default(5_000),
   EVENTS_CLAIM_IDLE_MS: z.coerce.number().int().positive().default(60_000),
   EVENTS_VOTE_STREAM: z.string().default('events:vote'),
   EVENTS_SUBSCRIPTION_STREAM: z.string().default('events:subscription'),
@@ -50,6 +48,7 @@ const envSchema = z.object({
   JOB_QUEUE_NAME: z.string().default('recsys.batch'),
   POPULARITY_REFRESH_CRON: z.string().default('*/10 * * * *'),
   SIMILARITY_REFRESH_CRON: z.string().default('0 2 * * *'),
+  PROCESSED_EVENT_PRUNE_CRON: z.string().default('0 3 * * *'),
 });
 
 const env = envSchema.parse(process.env);
@@ -74,7 +73,6 @@ export const config = {
   feedCacheTtlSeconds: env.FEED_CACHE_TTL_SECONDS,
   trendingCacheTtlSeconds: env.TRENDING_CACHE_TTL_SECONDS,
   userSubsCacheTtlSeconds: env.USER_SUBS_CACHE_TTL_SECONDS,
-  popularityCacheTtlSeconds: env.POPULARITY_CACHE_TTL_SECONDS,
 
   events: {
     consumerGroup: env.EVENTS_CONSUMER_GROUP,
@@ -95,5 +93,6 @@ export const config = {
     queueName: env.JOB_QUEUE_NAME,
     popularityRefreshCron: env.POPULARITY_REFRESH_CRON,
     similarityRefreshCron: env.SIMILARITY_REFRESH_CRON,
+    processedEventPruneCron: env.PROCESSED_EVENT_PRUNE_CRON,
   },
 } as const;

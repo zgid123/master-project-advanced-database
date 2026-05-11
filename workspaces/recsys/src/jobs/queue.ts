@@ -3,7 +3,11 @@ import { Redis } from 'ioredis';
 
 import { config } from '../config.js';
 import { logger } from '../observability/logger.js';
-import { refreshPopularityScores, refreshUserSimilarity } from './batch.js';
+import {
+  pruneProcessedEvents,
+  refreshPopularityScores,
+  refreshUserSimilarity,
+} from './batch.js';
 
 let queue: Queue | null = null;
 let workerConnection: Redis | null = null;
@@ -57,6 +61,19 @@ export async function registerRepeatableJobs(): Promise<void> {
       removeOnFail: 50,
     },
   );
+
+  await batchQueue.add(
+    'prune-processed-events',
+    {},
+    {
+      jobId: 'prune-processed-events-schedule',
+      repeat: {
+        pattern: config.jobs.processedEventPruneCron,
+      },
+      removeOnComplete: 20,
+      removeOnFail: 50,
+    },
+  );
 }
 
 export function createBatchWorker(): Worker {
@@ -68,6 +85,8 @@ export function createBatchWorker(): Worker {
           return refreshPopularityScores();
         case 'refresh-similarity':
           return refreshUserSimilarity();
+        case 'prune-processed-events':
+          return pruneProcessedEvents();
         default:
           throw new Error(`Unsupported batch job: ${job.name}`);
       }

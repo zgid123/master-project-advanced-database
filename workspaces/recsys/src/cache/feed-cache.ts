@@ -4,18 +4,19 @@ import { config } from '../config.js';
 import type { FeedResponse } from '../recommendation/types.js';
 import { getRedis } from './redis.js';
 
-const feedKey = (userId: string) => `feed:user:${userId}`;
+const feedKey = (userId: string, limit: number) =>
+  `feed:user:${userId}:limit:${limit}`;
 const feedLockKey = (userId: string) => `lock:feed:${userId}`;
 const trendingKey = (substackId: string | null = null) =>
   substackId ? `trending:substack:${substackId}` : 'trending:global';
 const userSubsKey = (userId: string) => `user:subs:${userId}`;
-const popularityKey = (topicId: string) => `popularity:${topicId}`;
 
 export async function getCachedFeed(
   userId: string,
+  limit: number,
 ): Promise<FeedResponse | null> {
   const redis = await getRedis();
-  const raw = await redis.get(feedKey(userId));
+  const raw = await redis.get(feedKey(userId, limit));
   return raw
     ? {
         ...(JSON.parse(raw) as FeedResponse),
@@ -26,11 +27,12 @@ export async function getCachedFeed(
 
 export async function setCachedFeed(
   userId: string,
+  limit: number,
   feed: FeedResponse,
 ): Promise<void> {
   const redis = await getRedis();
   await redis.set(
-    feedKey(userId),
+    feedKey(userId, limit),
     JSON.stringify(feed),
     'EX',
     config.feedCacheTtlSeconds,
@@ -39,7 +41,8 @@ export async function setCachedFeed(
 
 export async function invalidateUserFeed(userId: string): Promise<void> {
   const redis = await getRedis();
-  await redis.del(feedKey(userId));
+  const keys = await redis.keys(`feed:user:${userId}:*`);
+  await redis.del(...keys, `feed:user:${userId}`);
 }
 
 export async function acquireFeedLock(userId: string): Promise<string | null> {
@@ -69,12 +72,13 @@ export async function releaseFeedLock(
 
 export async function waitForCachedFeed(
   userId: string,
+  limit: number,
   attempts = 5,
   delayMs = 50,
 ): Promise<FeedResponse | null> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
-    const cached = await getCachedFeed(userId);
+    const cached = await getCachedFeed(userId, limit);
     if (cached) return cached;
   }
 
@@ -138,17 +142,4 @@ export async function invalidateUserSubscriptions(
 ): Promise<void> {
   const redis = await getRedis();
   await redis.del(userSubsKey(userId));
-}
-
-export async function setCachedPopularity(
-  topicId: string,
-  score: number,
-): Promise<void> {
-  const redis = await getRedis();
-  await redis.set(
-    popularityKey(topicId),
-    String(score),
-    'EX',
-    config.popularityCacheTtlSeconds,
-  );
 }

@@ -38,6 +38,7 @@ const kindByStream = new Map<string, EventKind>(
     kind as EventKind,
   ]),
 );
+const claimCursorByStream = new Map<string, string>();
 
 export async function appendEventsToStream(
   kind: EventKind,
@@ -138,15 +139,17 @@ async function claimAndIngest(redis: Redis): Promise<number> {
   let seen = 0;
 
   for (const stream of Object.values(streamByKind)) {
+    const startId = claimCursorByStream.get(stream) ?? '0-0';
     const response = (await redis.xautoclaim(
       stream,
       config.events.consumerGroup,
       config.events.consumerName,
       config.events.claimIdleMs,
-      '0-0',
+      startId,
       'COUNT',
       50,
     )) as [string, RedisStreamEntry[], string[]?];
+    claimCursorByStream.set(stream, response[0] ?? '0-0');
     const entries = response[1] ?? [];
 
     for (const [id, fields] of entries) {

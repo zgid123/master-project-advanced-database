@@ -38,7 +38,6 @@ export type FeedItem = {
 
 export type FeedResponse = {
   items: FeedItem[];
-  next_cursor: string | null;
   nextCursor: string | null;
   generatedAt: string;
   cacheHit: boolean;

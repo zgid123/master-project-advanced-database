@@ -4,7 +4,7 @@ import { rerank } from '../../src/recommendation/rerank.js';
 import type { ScoredCandidate } from '../../src/recommendation/types.js';
 
 describe('rerank', () => {
-  it('penalizes repeated substacks while preserving high-score candidates', () => {
+  it('applies MMR diversity over repeated substacks', () => {
     const candidates: ScoredCandidate[] = [
       scored('topic-a', 'substack-1', 10),
       scored('topic-b', 'substack-1', 9.9),

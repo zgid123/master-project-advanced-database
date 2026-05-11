@@ -1,4 +1,3 @@
-// biome-ignore-all lint/style/useNamingConvention: response field next_cursor matches the service API contract.
 import {
   acquireFeedLock,
   getCachedFeed,
@@ -17,6 +16,7 @@ import {
   getCollaborativeCandidates,
   getRelatedTopicCandidates,
   getSimilarUserCandidates,
+  getSimilarUsers,
   getSubstackCandidates,
   getSuggestedSubstacks,
   getTrendingCandidates,
@@ -39,9 +39,9 @@ export async function getPersonalizedFeed(
   limit: number,
   encodedCursor?: string,
 ): Promise<FeedResponse> {
-  const cacheable = !encodedCursor && limit === 20;
+  const cacheable = !encodedCursor;
   if (cacheable) {
-    const cached = await getCachedFeed(userId);
+    const cached = await getCachedFeed(userId, limit);
     if (cached) {
       feedRequests.inc({ cache: 'hit' });
       return cached;
@@ -52,7 +52,7 @@ export async function getPersonalizedFeed(
   const lockToken = cacheable ? await acquireFeedLock(userId) : null;
 
   if (cacheable && !lockToken) {
-    const cached = await waitForCachedFeed(userId);
+    const cached = await waitForCachedFeed(userId, limit);
     if (cached) {
       feedRequests.inc({ cache: 'coalesced' });
       return cached;
@@ -78,7 +78,7 @@ export async function getPersonalizedFeed(
             getCollaborativeCandidates(userId, cutoff, 200),
             getSimilarUserCandidates(userId, cutoff, 200),
             getSubstackCandidates(userId, cutoff, 100),
-            getTrendingCandidates(cutoff, 100),
+            getTrendingCandidates(100),
           ]);
         candidatesPerFeed.observe(
           { source: 'collaborative' },
@@ -114,14 +114,13 @@ export async function getPersonalizedFeed(
             : null;
         const response = {
           items,
-          next_cursor: nextCursor,
           nextCursor,
           generatedAt: new Date().toISOString(),
           cacheHit: false,
         };
 
         if (cacheable && lockToken) {
-          await setCachedFeed(userId, response);
+          await setCachedFeed(userId, limit, response);
         }
 
         return response;
@@ -160,7 +159,6 @@ export async function getSimilarTopics(
 
   return {
     items,
-    next_cursor: null,
     nextCursor: null,
     generatedAt: new Date().toISOString(),
     cacheHit: false,
@@ -172,8 +170,7 @@ export async function getTrendingFeed(
   substackId: string | null = null,
 ): Promise<FeedResponse> {
   const nowSeconds = Math.floor(Date.now() / 1_000);
-  const cutoff = nowSeconds - thirtyDaysSeconds;
-  const candidates = await getTrendingCandidates(cutoff, limit, substackId);
+  const candidates = await getTrendingCandidates(limit, substackId);
   const items = scoreCandidates(candidates, {
     userId: 'anonymous',
     subscribedSubstacks: new Set(),
@@ -185,10 +182,18 @@ export async function getTrendingFeed(
 
   return {
     items,
-    next_cursor: null,
     nextCursor: null,
     generatedAt: new Date().toISOString(),
     cacheHit: false,
+  };
+}
+
+export async function getUserSimilarUsers(
+  userId: string,
+  limit: number,
+): Promise<{ items: Array<{ userId: string; score: number }> }> {
+  return {
+    items: await getSimilarUsers(userId, limit),
   };
 }
 
