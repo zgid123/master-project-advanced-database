@@ -15,7 +15,6 @@ const idSchema = z
   .transform(String);
 
 const feedQuerySchema = z.object({
-  userId: idSchema.optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
@@ -43,13 +42,19 @@ export async function recommendationRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Recommendations'],
         summary: 'Get a personalized topic feed',
+        headers: {
+          type: 'object',
+          properties: {
+            'x-user-id': {
+              type: 'string',
+              description: 'Verified user id injected by the API gateway.',
+            },
+          },
+          required: ['x-user-id'],
+        },
         querystring: {
           type: 'object',
           properties: {
-            userId: {
-              type: 'string',
-              description: 'Prototype user id. x-user-id may be used instead.',
-            },
             cursor: { type: 'string', description: 'Base64url keyset cursor' },
             limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
           },
@@ -58,13 +63,13 @@ export async function recommendationRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const query = feedQuerySchema.parse(request.query);
-      const userId = getHeaderString(request, 'x-user-id') ?? query.userId;
+      const userId = getHeaderString(request, 'x-user-id');
 
       if (!userId) {
         throw new HttpError(
           400,
           'USER_ID_REQUIRED',
-          'userId query parameter or x-user-id header is required',
+          'x-user-id header is required',
         );
       }
 

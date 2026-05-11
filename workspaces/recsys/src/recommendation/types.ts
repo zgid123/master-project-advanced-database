@@ -19,7 +19,7 @@ export type Candidate = {
 };
 
 export type UserContext = {
-  userId: string;
+  userId: string | null;
   subscribedSubstacks: Set<string>;
   nowSeconds: number;
 };

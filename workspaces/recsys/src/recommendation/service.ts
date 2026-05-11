@@ -148,7 +148,7 @@ export async function getSimilarTopics(
     Math.max(limit + 1, 50),
   );
   const context: UserContext = {
-    userId: 'anonymous',
+    userId: null,
     subscribedSubstacks: new Set(),
     nowSeconds,
   };
@@ -172,7 +172,7 @@ export async function getTrendingFeed(
   const nowSeconds = Math.floor(Date.now() / 1_000);
   const candidates = await getTrendingCandidates(limit, substackId);
   const items = scoreCandidates(candidates, {
-    userId: 'anonymous',
+    userId: null,
     subscribedSubstacks: new Set(),
     nowSeconds,
   })

@@ -20,12 +20,13 @@ export const schemaStatements = [
   'CREATE INDEX similar_to_computed IF NOT EXISTS FOR ()-[r:SIMILAR_TO]-() ON (r.computedAt)',
   "MATCH ()-[r:VOTED]-() WHERE r.voteType IS NULL AND r.type = 'up' SET r.voteType = 1",
   "MATCH ()-[r:VOTED]-() WHERE r.voteType IS NULL AND r.type = 'down' SET r.voteType = -1",
-  'MATCH ()-[r:VOTED]-() WHERE r.votedAt IS NULL SET r.votedAt = coalesce(r.createdAt, 0)',
+  'MATCH ()-[r:VOTED]-() WHERE r.votedAt IS NULL OR r.votedAt = 0 SET r.votedAt = coalesce(r.createdAt, toInteger(timestamp() / 1000))',
   'MATCH ()-[r:VOTED]-() WHERE r.voteType IS NOT NULL REMOVE r.type',
   'MATCH (t:Topic) SET t.voteScore = coalesce(t.voteScore, t.score, 0.0), t.hotness = coalesce(t.hotness, t.score, t.voteScore, 0.0) REMOVE t.score',
-  'MATCH (t:Topic)-[r:IN_SUBSTACK]->() WHERE r.since IS NULL SET r.since = coalesce(t.createdAt, 0)',
-  'MATCH (t:Topic) WHERE t.authorId IS NOT NULL MERGE (u:User {id: t.authorId}) ON CREATE SET u.createdAt = coalesce(t.createdAt, 0) MERGE (u)-[a:AUTHORED]->(t) ON CREATE SET a.at = coalesce(t.createdAt, 0)',
-  'MATCH (c:Comment) WHERE c.authorId IS NOT NULL MERGE (u:User {id: c.authorId}) ON CREATE SET u.createdAt = coalesce(c.createdAt, 0) MERGE (u)-[a:AUTHORED]->(c) ON CREATE SET a.at = coalesce(c.createdAt, 0)',
+  'MATCH (t:Topic)-[r:IN_SUBSTACK]->() WHERE r.since IS NULL OR r.since = 0 SET r.since = coalesce(t.createdAt, toInteger(timestamp() / 1000))',
+  'MATCH (t:Topic) WHERE t.authorId IS NOT NULL MERGE (u:User {id: t.authorId}) ON CREATE SET u.createdAt = coalesce(t.createdAt, toInteger(timestamp() / 1000)) MERGE (u)-[a:AUTHORED]->(t) ON CREATE SET a.at = coalesce(t.createdAt, toInteger(timestamp() / 1000))',
+  'MATCH (c:Comment) WHERE c.authorId IS NOT NULL MERGE (u:User {id: c.authorId}) ON CREATE SET u.createdAt = coalesce(c.createdAt, toInteger(timestamp() / 1000)) MERGE (u)-[a:AUTHORED]->(c) ON CREATE SET a.at = coalesce(c.createdAt, toInteger(timestamp() / 1000))',
+  'MATCH ()-[a:AUTHORED]->(n) WHERE a.at IS NULL OR a.at = 0 SET a.at = coalesce(n.createdAt, toInteger(timestamp() / 1000))',
 ] as const;
 
 export async function runMigrations(): Promise<void> {
