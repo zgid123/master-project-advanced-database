@@ -1,35 +1,75 @@
-# Introduce
+# Solvit Backend
 
-Master's degree Project - Advanced Database
+TypeScript monorepo for the Solvit advanced database project. The repository is
+organized as service workspaces plus shared domain/node packages.
 
-# Install
+## Workspaces
+
+| Workspace | Runtime | Responsibility |
+| --- | --- | --- |
+| `workspaces/api-gateway` | Hono | Public proxy for Auth, Notifications, and public substack reads |
+| `workspaces/auth` | Hono | Identity, JWT/refresh tokens, users, follows, substacks |
+| `workspaces/notifications` | Hono | User notification storage and internal notification creation |
+| `workspaces/qna` | NestJS | Topics, comments, votes, subscriptions, search |
+| `workspaces/job-service` | Fastify | Jobs, applications, PostgreSQL outbox, Redis publishing |
+| `workspaces/recsys` | Fastify | Recommendation APIs, Neo4j graph, Redis stream ingestion |
+| `workspaces/dashboard` | TanStack Start | Frontend shell, auth proxy, substack list UI |
+
+Shared packages live under `packages/`:
+
+- `@domain/auth`
+- `@domain/core`
+- `@domain/notification`
+- `@node/drizzle`
+- `@node/hono`
+- `@node/utils`
+
+## Documentation
+
+- `ARCHITECTURE.md`: system architecture and review notes.
+- `API_REPORT.md`: generated API surface summary.
+- `API_INVENTORY.md`: full generated route/function inventory.
+- `workspaces/*/README.md`: component-specific technical notes.
+
+## Local Setup
 
 ```sh
 pnpm install
+docker compose up -d
 ```
+
+Useful service commands:
+
+```sh
+pnpm --filter auth db:migrate
+pnpm --filter job-service migrate
+pnpm --filter recsys migrate
+pnpm --filter api-gateway dev
+pnpm --filter auth dev
+pnpm --filter notifications dev
+pnpm --filter dashboard dev
+```
+
+Build all workspaces:
 
 ```sh
 pnpm -w build
 ```
 
-# Structure
+## Current Local Ports
 
-```sh
-├── @types
-└── workspaces
-    ├── api-gateway
-    ├── dashboard
-    └── job-service
-```
+| Service | Port |
+| --- | ---: |
+| API Gateway | `3000` |
+| Auth | `3001` |
+| Notifications | `3002` |
+| Job Service | `3010` |
+| RecSys | `3020` |
+| Dashboard | `4000` |
+| PostgreSQL | `5432` |
+| PgBouncer | `6432` |
+| Redis | `6379` |
+| MongoDB | `27017` |
+| Neo4j HTTP/Bolt | `7474` / `7687` |
 
-- api-gateway: API Gateway
-- dashboard: FE App
-- job-service: Fastify/PostgreSQL/Redis Job and Job Application service
-
-# Job Service
-
-```sh
-docker compose up -d
-pnpm --filter job-service migrate
-pnpm --filter job-service dev
-```
+Q&A defaults to `3000`; set `PORT` when running it beside the gateway.

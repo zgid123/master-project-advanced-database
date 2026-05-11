@@ -8,6 +8,7 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 - Render the Solvit dashboard shell, feed, substack, question, and auth screens.
 - Provide sign-in and sign-up forms.
 - Proxy auth requests to the API Gateway from server routes.
+- Proxy public substack list and total-count requests to the API Gateway.
 - Store `solvit_authToken` and `solvit_refreshToken` as HTTP-only cookies.
 - Expose Better Auth-compatible routes for the local auth client.
 
@@ -28,6 +29,8 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 | `POST` | `/api/portal/auth/sign-up` | Proxy to Gateway `/v1/auth/sign-up` |
 | `GET` | `/api/portal/auth/profile` | Proxy to Gateway `/v1/auth/profile` |
 | `POST` | `/api/portal/auth/sign-out` | Expire local auth cookies |
+| `GET` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
+| `GET` | `/api/portal/substacks/total` | Proxy to Gateway `/v1/substacks/total` |
 
 The complete generated API inventory is in `../../API_REPORT.md`.
 
@@ -62,5 +65,7 @@ pnpm --filter dashboard dev
 - Dashboard does not call Auth directly; its server routes call API Gateway.
 - Better Auth is used as the browser/client integration surface, while the
   actual credentials and tokens come from the Solvit Auth service.
-- The current UI is a product dashboard shell with mock domain views plus real
-  auth integration points.
+- The home route renders `SubstacksIsland`, which uses TanStack Query options
+  backed by the dashboard substack API wrapper.
+- `/substacks` currently exists as a route shell; the list data integration is
+  already available through the feature API/query layer.

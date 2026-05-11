@@ -9,7 +9,8 @@ substack membership for Solvit.
 - Issue short-lived JWT access tokens and opaque Redis-backed refresh tokens.
 - Resolve the current user profile from an access token.
 - Manage user-to-user subscriptions.
-- Manage substacks, substack subscriptions, and admin substack approval.
+- Manage substacks, approved-substack listing/counts, substack subscriptions,
+  and admin substack approval.
 - Emit internal notification requests for sign-up, social, and substack events.
 
 ## Runtime And Storage
@@ -31,7 +32,8 @@ substack membership for Solvit.
 | `GET` | `/v1/auth/profile` | Requires auth token; returns current user profile |
 | `POST` | `/v1/auth/users/:userId/subscribe` | Follow another user |
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Unfollow another user |
-| `GET` | `/v1/substacks` | List substacks |
+| `GET` | `/v1/substacks` | List approved substacks; optional `limit` |
+| `GET` | `/v1/substacks/total` | Count approved substacks |
 | `POST` | `/v1/substacks` | Create a substack owned by the current user |
 | `GET` | `/v1/substacks/:slug` | Get substack by slug |
 | `POST` | `/v1/substacks/:slug/subscribe` | Subscribe to a substack |
@@ -66,5 +68,6 @@ pnpm --filter auth start
   numeric user id unless the token contract is changed.
 - Sign-up currently hashes the password before calling the repository, and the
   repository hashes again. New sign-ups should be verified after this is fixed.
-- Auth owns substack data in PostgreSQL; RecSys only receives derived graph
-  structure when event integration is added.
+- Auth owns substack data in PostgreSQL. Gateway and Dashboard now read the
+  approved-substack list and total count from Auth.
+- RecSys only receives derived graph structure when event integration is added.

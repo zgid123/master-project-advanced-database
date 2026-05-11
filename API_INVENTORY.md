@@ -1,6 +1,6 @@
 # API Inventory
 
-Generated: 2026-05-11T15:09:53.129Z
+Generated: 2026-05-11T15:34:07.541Z
 
 Tooling: temporary `ts-morph` AST extractor installed outside the repo dependency graph. Scope is TypeScript source under `workspaces/` and `packages/`, excluding tests, generated route trees, build output, and declaration files.
 
@@ -10,9 +10,9 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 
 | Component | Source files scanned | REST handlers | Exported function/class APIs |
 | --- | ---: | ---: | ---: |
-| API Gateway | 16 | 8 | 13 |
-| Auth Service | 72 | 13 | 67 |
-| Dashboard | 30 | 6 | 23 |
+| API Gateway | 17 | 10 | 15 |
+| Auth Service | 73 | 14 | 69 |
+| Dashboard | 42 | 8 | 29 |
 | Job Service | 24 | 11 | 17 |
 | Notifications Service | 27 | 5 | 18 |
 | Q&A Service | 43 | 17 | 98 |
@@ -33,6 +33,8 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `DELETE /v1/auth/users/:userId/subscribe` (Hono) - [workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/auth.ts:125](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/auth.ts:125)
 - `POST /v1/auth/users/:userId/subscribe` (Hono) - [workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/auth.ts:115](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/auth.ts:115)
 - `GET /v1/notifications` (Hono) - [workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/notifications.ts:7](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/notifications.ts:7)
+- `GET /v1/substacks` (Hono) - [workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/substacks.ts:7](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/substacks.ts:7)
+- `GET /v1/substacks/total` (Hono) - [workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/substacks.ts:14](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/endpoints/portal/substacks.ts:14)
 
 ### Auth Service
 - `POST /admin/substacks/:slug/approve` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/admin/substacks.ts:15](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/admin/substacks.ts:15)
@@ -43,11 +45,12 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `POST /v1/auth/sign-up` (Hono) - [workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:15](D:/Projects/backend/workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:15)
 - `DELETE /v1/auth/users/:userId/subscribe` (Hono) - [workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:161](D:/Projects/backend/workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:161)
 - `POST /v1/auth/users/:userId/subscribe` (Hono) - [workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:130](D:/Projects/backend/workspaces/auth/src/modules/auth/adapters/restful/hono/endpoints/portal/auth.ts:130)
-- `GET /v1/substacks` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:18](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:18)
-- `POST /v1/substacks` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:72](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:72)
-- `GET /v1/substacks/:slug` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:25](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:25)
-- `DELETE /v1/substacks/:slug/subscribe` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:62](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:62)
-- `POST /v1/substacks/:slug/subscribe` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:34](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:34)
+- `GET /v1/substacks` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:19](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:19)
+- `POST /v1/substacks` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:89](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:89)
+- `GET /v1/substacks/:slug` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:41](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:41)
+- `DELETE /v1/substacks/:slug/subscribe` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:79](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:79)
+- `POST /v1/substacks/:slug/subscribe` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:51](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:51)
+- `GET /v1/substacks/total` (Hono) - [workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:31](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/hono/endpoints/portal/substacks.ts:31)
 
 ### Dashboard
 - `GET /api/auth/$` (TanStack Start) - [workspaces/dashboard/src/routes/api/auth/$.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/auth/$.ts:9)
@@ -56,6 +59,8 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `POST /api/portal/auth/sign-in` (TanStack Start) - [workspaces/dashboard/src/routes/api/portal/auth/sign-in.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/portal/auth/sign-in.ts:9)
 - `POST /api/portal/auth/sign-out` (TanStack Start) - [workspaces/dashboard/src/routes/api/portal/auth/sign-out.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/portal/auth/sign-out.ts:9)
 - `POST /api/portal/auth/sign-up` (TanStack Start) - [workspaces/dashboard/src/routes/api/portal/auth/sign-up.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/portal/auth/sign-up.ts:9)
+- `GET /api/portal/substacks/` (TanStack Start) - [workspaces/dashboard/src/routes/api/portal/substacks/index.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/portal/substacks/index.ts:9)
+- `GET /api/portal/substacks/total` (TanStack Start) - [workspaces/dashboard/src/routes/api/portal/substacks/total.ts:9](D:/Projects/backend/workspaces/dashboard/src/routes/api/portal/substacks/total.ts:9)
 
 ### Job Service
 - `GET /` (Fastify) - [workspaces/job-service/src/app.ts:121](D:/Projects/backend/workspaces/job-service/src/app.ts:121)
@@ -121,17 +126,19 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 
 ### API Gateway
 - `initHono({ beforeInitRoutes, }: IInitHonoParams): IInitHonoReturn` - [workspaces/api-gateway/src/adapters/restful/hono/index.ts:28](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/index.ts:28)
-- `authMiddleware(c: Context<IApiGatewayContextVariables, string, {}>, next: Next): Promise<Response>` - [workspaces/api-gateway/src/adapters/restful/hono/middlewares/authMiddleware.ts:36](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/middlewares/authMiddleware.ts:36)
+- `authMiddleware(c: Context<IApiGatewayContextVariables, string, {}>, next: Next): Promise<Response>` - [workspaces/api-gateway/src/adapters/restful/hono/middlewares/authMiddleware.ts:38](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/middlewares/authMiddleware.ts:38)
 - `setHttpOnly(c: Context, name: string, value: string, { secure = true, expires = '1h' }: ISetHttpOnlyOptions): void` - [workspaces/api-gateway/src/adapters/restful/hono/utils/cookieUtils.ts:16](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/utils/cookieUtils.ts:16)
 - `createUpstreamResponseHeaders(response: Response, { excludedHeaders = [] }: IForwardUpstreamResponseOptions): Headers` - [workspaces/api-gateway/src/adapters/restful/hono/utils/upstreamResponseUtils.ts:21](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/utils/upstreamResponseUtils.ts:21)
 - `forwardUpstreamResponse(c: Context, response: Response, options: IForwardUpstreamResponseOptions): Promise<Response>` - [workspaces/api-gateway/src/adapters/restful/hono/utils/upstreamResponseUtils.ts:34](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/hono/utils/upstreamResponseUtils.ts:34)
 - `registerIoC(): IIoC` - [workspaces/api-gateway/src/adapters/restful/ioc.ts:10](D:/Projects/backend/workspaces/api-gateway/src/adapters/restful/ioc.ts:10)
-- `AuthService.signUp(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:22](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:22)
-- `AuthService.signIn(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:26](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:26)
-- `AuthService.refresh(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:30](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:30)
-- `AuthService.profile({ authToken }: IProfileParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:34](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:34)
-- `AuthService.subscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:42](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:42)
-- `AuthService.unsubscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:53](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:53)
+- `AuthService.signUp(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:26](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:26)
+- `AuthService.signIn(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:30](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:30)
+- `AuthService.refresh(params: IAuthRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:34](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:34)
+- `AuthService.profile({ authToken }: IProfileParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:38](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:38)
+- `AuthService.subscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:46](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:46)
+- `AuthService.unsubscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:57](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:57)
+- `AuthService.listSubstacks({ search = '', }: IListSubstacksParams): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:68](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:68)
+- `AuthService.getTotalSubstacks(): Promise<Response>` - [workspaces/api-gateway/src/services/AuthService.ts:80](D:/Projects/backend/workspaces/api-gateway/src/services/AuthService.ts:80)
 - `NotificationService.listNotifications({ search = '', }: IListNotificationsParams): Promise<Response>` - [workspaces/api-gateway/src/services/NotificationService.ts:13](D:/Projects/backend/workspaces/api-gateway/src/services/NotificationService.ts:13)
 
 ### Auth Service
@@ -180,21 +187,23 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `NotificationService.createSignUpWelcomeNotification({ email, userId, }: ICreateSignUpWelcomeNotificationParams): Promise<void>` - [workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:31](D:/Projects/backend/workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:31)
 - `NotificationService.createSubstackSubscribedNotification({ userId, actorName, substackId, actorUserId, substackName, substackSlug, }: ICreateSubstackSubscribedNotificationParams): Promise<void>` - [workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:60](D:/Projects/backend/workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:60)
 - `NotificationService.createSocialUserSubscribedNotification({ userId, actorName, actorUserId, }: ICreateSocialUserSubscribedNotificationParams): Promise<void>` - [workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:97](D:/Projects/backend/workspaces/auth/src/modules/auth/infrastructure/services/NotificationService.ts:97)
-- `registerSubstackIoC({ drizzle, }: IRegisterIoCParams): ISubstackIoC` - [workspaces/auth/src/modules/substack/adapters/restful/ioc.ts:37](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/ioc.ts:37)
+- `registerSubstackIoC({ drizzle, }: IRegisterIoCParams): ISubstackIoC` - [workspaces/auth/src/modules/substack/adapters/restful/ioc.ts:39](D:/Projects/backend/workspaces/auth/src/modules/substack/adapters/restful/ioc.ts:39)
 - `ApproveSubstackCommand.exec(params: IApproveSubstackParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/application/admin/v1/commands/ApproveSubstackCommand.ts:17](D:/Projects/backend/workspaces/auth/src/modules/substack/application/admin/v1/commands/ApproveSubstackCommand.ts:17)
 - `CreateSubstackCommand.exec({ name, slug, ownerId, description, }: TCreateSubstack): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/application/portal/v1/commands/CreateSubstackCommand.ts:31](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/commands/CreateSubstackCommand.ts:31)
 - `SubscribeSubstackCommand.exec({ slug, userId, }: ISubscribeSubstackCommandParams): Promise<ISubscribeSubstackCommandResult>` - [workspaces/auth/src/modules/substack/application/portal/v1/commands/SubscribeSubstackCommand.ts:35](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/commands/SubscribeSubstackCommand.ts:35)
 - `UnsubscribeSubstackCommand.exec({ slug, userId, }: IUnsubscribeSubstackCommandParams): Promise<void>` - [workspaces/auth/src/modules/substack/application/portal/v1/commands/UnsubscribeSubstackCommand.ts:26](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/commands/UnsubscribeSubstackCommand.ts:26)
 - `GetSubstackQuery.exec({ slug, }: IGetSubstackQueryParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstackQuery.ts:17](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstackQuery.ts:17)
-- `GetSubstacksQuery.exec(): Promise<SubstackEntity[]>` - [workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstacksQuery.ts:11](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstacksQuery.ts:11)
+- `GetSubstacksQuery.exec({ limit, }: IGetSubstacksParams): Promise<SubstackEntity[]>` - [workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstacksQuery.ts:17](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/queries/GetSubstacksQuery.ts:17)
+- `GetTotalSubstacksQuery.exec(): Promise<number>` - [workspaces/auth/src/modules/substack/application/portal/v1/queries/GetTotalSubstacksQuery.ts:11](D:/Projects/backend/workspaces/auth/src/modules/substack/application/portal/v1/queries/GetTotalSubstacksQuery.ts:11)
 - `SubstackError.cannotCreate(): SubstackError` - [workspaces/auth/src/modules/substack/domain/errors/substack.ts:15](D:/Projects/backend/workspaces/auth/src/modules/substack/domain/errors/substack.ts:15)
 - `SubstackError.alreadyExists(attribute: keyof TSubstack): SubstackError` - [workspaces/auth/src/modules/substack/domain/errors/substack.ts:24](D:/Projects/backend/workspaces/auth/src/modules/substack/domain/errors/substack.ts:24)
 - `SubstackError.notFound(): SubstackError` - [workspaces/auth/src/modules/substack/domain/errors/substack.ts:33](D:/Projects/backend/workspaces/auth/src/modules/substack/domain/errors/substack.ts:33)
-- `SubstackRepository.approve({ slug, }: IApproveSubstackParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:23](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:23)
-- `SubstackRepository.create(params: TCreateSubstack): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:42](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:42)
-- `SubstackRepository.find({ approved, }: IFindSubstackParams): Promise<SubstackEntity[]>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:56](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:56)
-- `SubstackRepository.findOne(params: IFindOneSubstackParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:77](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:77)
-- `SubstackRepository.findPartialOne({ slug, approved, }: IFindOneSubstackParams): Promise<SubstackEntity | null>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:89](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:89)
+- `SubstackRepository.findPartialOne({ slug, approved, }: IFindOneSubstackParams): Promise<SubstackEntity | null>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:101](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:101)
+- `SubstackRepository.approve({ slug, }: IApproveSubstackParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:24](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:24)
+- `SubstackRepository.create(params: TCreateSubstack): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:43](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:43)
+- `SubstackRepository.count({ approved }: ICountSubstackParams): Promise<number>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:57](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:57)
+- `SubstackRepository.find({ limit, approved, }: IFindSubstackParams): Promise<SubstackEntity[]>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:66](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:66)
+- `SubstackRepository.findOne(params: IFindOneSubstackParams): Promise<SubstackEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:89](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRepository.ts:89)
 - `SubstackRoleAssignmentRepository.create(params: TCreateSubstackRoleAssignment): Promise<SubstackRoleAssignmentEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRoleAssignmentRepository.ts:21](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRoleAssignmentRepository.ts:21)
 - `SubstackRoleRepository.create(params: TCreateSubstackRole): Promise<SubstackRoleEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRoleRepository.ts:19](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackRoleRepository.ts:19)
 - `SubstackSubscriptionRepository.create(params: TCreateSubstackSubscription): Promise<SubstackSubscriptionEntity>` - [workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackSubscriptionRepository.ts:23](D:/Projects/backend/workspaces/auth/src/modules/substack/infrastructure/drizzle/repositories/SubstackSubscriptionRepository.ts:23)
@@ -222,6 +231,12 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `useSignUpCommand(options: TAuthMutationOptions<TSignUp>): any` - [workspaces/dashboard/src/features/auth/queries/authQueries.ts:54](D:/Projects/backend/workspaces/dashboard/src/features/auth/queries/authQueries.ts:54)
 - `useCurrentUserQuery(): any` - [workspaces/dashboard/src/features/auth/queries/authQueries.ts:69](D:/Projects/backend/workspaces/dashboard/src/features/auth/queries/authQueries.ts:69)
 - `useSignOutCommand(): any` - [workspaces/dashboard/src/features/auth/queries/authQueries.ts:83](D:/Projects/backend/workspaces/dashboard/src/features/auth/queries/authQueries.ts:83)
+- `listSubstacks({ limit, signal, }: TListSubstacksParams): Promise<TSubstackEntity[]>` - [workspaces/dashboard/src/features/substack/api/substackApi.ts:76](D:/Projects/backend/workspaces/dashboard/src/features/substack/api/substackApi.ts:76)
+- `getTotalSubstacks({ signal, }: { signal?: AbortSignal; }): Promise<TTotalSubstacks>` - [workspaces/dashboard/src/features/substack/api/substackApi.ts:97](D:/Projects/backend/workspaces/dashboard/src/features/substack/api/substackApi.ts:97)
+- `proxySubstackRequest(request: Request, path: TSubstackProxyPath): Promise<Response>` - [workspaces/dashboard/src/features/substack/api/substackProxy.ts:5](D:/Projects/backend/workspaces/dashboard/src/features/substack/api/substackProxy.ts:5)
+- `SubstacksIsland(): Element` - [workspaces/dashboard/src/features/substack/components/SubstacksIsland.tsx:23](D:/Projects/backend/workspaces/dashboard/src/features/substack/components/SubstacksIsland.tsx:23)
+- `substackListQueryOptions({ limit }: TListSubstacksParams): any` - [workspaces/dashboard/src/features/substack/queries/substackListQueryOptions.ts:10](D:/Projects/backend/workspaces/dashboard/src/features/substack/queries/substackListQueryOptions.ts:10)
+- `totalSubstacksQueryOptions(): any` - [workspaces/dashboard/src/features/substack/queries/totalSubstacksQueryOptions.ts:7](D:/Projects/backend/workspaces/dashboard/src/features/substack/queries/totalSubstacksQueryOptions.ts:7)
 - `BetterAuthHeader(): Element` - [workspaces/dashboard/src/integrations/better-auth/header-user.tsx:9](D:/Projects/backend/workspaces/dashboard/src/integrations/better-auth/header-user.tsx:9)
 - `TanstackQueryProvider(): void` - [workspaces/dashboard/src/integrations/tanstack-query/root-provider.tsx:10](D:/Projects/backend/workspaces/dashboard/src/integrations/tanstack-query/root-provider.tsx:10)
 - `getContext(): { queryClient: any; }` - [workspaces/dashboard/src/integrations/tanstack-query/root-provider.tsx:3](D:/Projects/backend/workspaces/dashboard/src/integrations/tanstack-query/root-provider.tsx:3)

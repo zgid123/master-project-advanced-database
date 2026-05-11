@@ -1,13 +1,15 @@
 # API Gateway
 
-Public Hono gateway for Solvit browser-facing auth and notification traffic.
-It is intentionally thin: it validates the current user through Auth, forwards
-requests to upstream services, and normalizes auth cookies.
+Public Hono gateway for Solvit browser-facing auth, notification, and public
+substack-list traffic. It is intentionally thin: it validates the current user
+through Auth, forwards requests to upstream services, and normalizes auth
+cookies.
 
 ## Responsibilities
 
 - Expose public Auth proxy routes.
 - Expose the Notifications portal proxy route.
+- Expose public substack list and total-count proxy routes.
 - Read bearer tokens or `solvit_authToken` cookies.
 - Resolve the current user by calling Auth `/v1/auth/profile`.
 - Set HTTP-only `solvit_authToken` and `solvit_refreshToken` cookies after
@@ -33,6 +35,8 @@ requests to upstream services, and normalizes auth cookies.
 | `POST` | `/v1/auth/users/:userId/subscribe` | Proxies user follow |
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Proxies user unfollow |
 | `GET` | `/v1/notifications` | Proxies notification list with original query string |
+| `GET` | `/v1/substacks` | Public proxy to Auth substack list |
+| `GET` | `/v1/substacks/total` | Public proxy to Auth approved-substack count |
 
 The complete generated API inventory is in `../../API_REPORT.md`.
 
@@ -62,9 +66,11 @@ pnpm --filter api-gateway dev
 
 ## Architecture Notes
 
-- The gateway currently fronts Auth and Notifications only. Q&A, Job Service,
-  and RecSys are still directly reachable services.
+- The gateway currently fronts Auth, Notifications, and public substack list
+  reads. Q&A, Job Service, and RecSys are still directly reachable services.
 - `/v1/auth/refresh` is declared as an Auth route, but the gateway auth
   middleware currently treats it as protected unless added to public routes.
 - Notification proxying forwards the client query string; it does not inject
   the authenticated user id yet.
+- `/v1/substacks` and `/v1/substacks/total` are public gateway routes and do
+  not require a resolved current user.

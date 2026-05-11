@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2026-05-11T15:15:16.541Z
+Generated: 2026-05-11T15:34:59.688Z
 
 ## Tool Run
 
@@ -18,13 +18,13 @@ Generated: 2026-05-11T15:15:16.541Z
 
 | Component | Files scanned | REST/server routes | Exported function/class APIs | Main role |
 | --- | ---: | ---: | ---: | --- |
-| API Gateway | 16 | 8 | 13 | Thin public proxy layer for Auth and Notifications, plus cookie/upstream response helpers. |
-| Auth Service | 72 | 13 | 67 | Identity, JWT/refresh token lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
-| Dashboard | 30 | 6 | 23 | TanStack Start server routes and client auth APIs/hooks wrapping Gateway/Better Auth behavior. |
+| API Gateway | 17 | 10 | 15 | Public proxy for Auth, Notifications, and public substack list/total routes. |
+| Auth Service | 73 | 14 | 69 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
+| Dashboard | 42 | 8 | 29 | TanStack Start UI, auth proxy routes, and substack list client/server API wrappers. |
 | Job Service | 24 | 11 | 17 | Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 18 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
 | Q&A Service | 43 | 17 | 98 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
-| Recommendation Service | 29 | 19 | 63 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph repository logic, ranking/scoring, BullMQ jobs, metrics. |
+| Recommendation Service | 29 | 19 | 63 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics. |
 | Shared Domain - Auth | 30 | 0 | 10 | Auth/substack/user schemas, entities, repository contracts, and domain errors. |
 | Shared Domain - Notification | 7 | 0 | 1 | Notification schema, entity, and repository contract. |
 | Shared Node - Hono | 8 | 0 | 5 | Reusable Hono middleware for IoC, Drizzle, Mongoose, internal auth, and logging. |
@@ -34,14 +34,14 @@ Generated: 2026-05-11T15:15:16.541Z
 
 | Component | Classes | Interfaces | Functions | Methods | Type aliases | Variables | Enums |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| API Gateway | 2 | 2 | 5 | 7 | 1 | 7 | 0 |
-| Auth Service | 27 | 5 | 17 | 50 | 17 | 26 | 0 |
-| Dashboard | 0 | 0 | 13 | 0 | 1 | 4 | 0 |
+| API Gateway | 2 | 2 | 5 | 9 | 1 | 8 | 0 |
+| Auth Service | 28 | 6 | 17 | 52 | 17 | 26 | 0 |
+| Dashboard | 0 | 0 | 19 | 0 | 3 | 5 | 0 |
 | Job Service | 1 | 0 | 16 | 0 | 14 | 22 | 0 |
 | Notifications Service | 5 | 3 | 11 | 7 | 2 | 16 | 0 |
 | Q&A Service | 40 | 0 | 0 | 70 | 0 | 19 | 0 |
 | Recommendation Service | 1 | 0 | 62 | 0 | 16 | 18 | 0 |
-| Shared Domain - Auth | 8 | 18 | 0 | 32 | 28 | 42 | 0 |
+| Shared Domain - Auth | 8 | 19 | 0 | 33 | 28 | 42 | 0 |
 | Shared Domain - Notification | 1 | 3 | 0 | 4 | 5 | 4 | 0 |
 | Shared Node - Hono | 0 | 2 | 5 | 0 | 0 | 0 | 0 |
 | Shared Node - Utils | 0 | 2 | 1 | 0 | 1 | 0 | 0 |
@@ -60,6 +60,8 @@ Generated: 2026-05-11T15:15:16.541Z
 - `DELETE /v1/auth/users/:userId/subscribe` (Hono)
 - `POST /v1/auth/users/:userId/subscribe` (Hono)
 - `GET /v1/notifications` (Hono)
+- `GET /v1/substacks` (Hono)
+- `GET /v1/substacks/total` (Hono)
 
 ### Auth Service
 - `POST /admin/substacks/:slug/approve` (Hono)
@@ -75,6 +77,7 @@ Generated: 2026-05-11T15:15:16.541Z
 - `GET /v1/substacks/:slug` (Hono)
 - `DELETE /v1/substacks/:slug/subscribe` (Hono)
 - `POST /v1/substacks/:slug/subscribe` (Hono)
+- `GET /v1/substacks/total` (Hono)
 
 ### Dashboard
 - `GET /api/auth/$` (TanStack Start)
@@ -83,6 +86,8 @@ Generated: 2026-05-11T15:15:16.541Z
 - `POST /api/portal/auth/sign-in` (TanStack Start)
 - `POST /api/portal/auth/sign-out` (TanStack Start)
 - `POST /api/portal/auth/sign-up` (TanStack Start)
+- `GET /api/portal/substacks/` (TanStack Start)
+- `GET /api/portal/substacks/total` (TanStack Start)
 
 ### Job Service
 - `GET /` (Fastify)
@@ -147,7 +152,7 @@ Generated: 2026-05-11T15:15:16.541Z
 ## Function/Class API Families
 
 ### API Gateway
-Thin public proxy layer for Auth and Notifications, plus cookie/upstream response helpers.
+Public proxy for Auth, Notifications, and public substack list/total routes.
 
 Representative callable/class APIs from the generated inventory:
 - `initHono({ beforeInitRoutes, }: IInitHonoParams): IInitHonoReturn`
@@ -162,10 +167,10 @@ Representative callable/class APIs from the generated inventory:
 - `AuthService.profile({ authToken }: IProfileParams): Promise<Response>`
 - `AuthService.subscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>`
 - `AuthService.unsubscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>`
-- Additional generated callable APIs: 1. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 3. See `API_INVENTORY.md` for the full list.
 
 ### Auth Service
-Identity, JWT/refresh token lifecycle, user follows, substacks, repositories, seeds, and notification integration.
+Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration.
 
 Representative callable/class APIs from the generated inventory:
 - `initHono({ beforeInitRoutes, }: IInitHonoParams): Promise<IInitHonoReturn>`
@@ -180,10 +185,10 @@ Representative callable/class APIs from the generated inventory:
 - `generateSalt(characterNumber: number): Promise<string>`
 - `bcryptHash({ salt, source, }: IBcryptParams): Promise<IRBcryptHashProps>`
 - `extractJWT({ token, secretKey = '' }: IExtractJWTParams, options: VerifyOptions): T`
-- Additional generated callable APIs: 55. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 57. See `API_INVENTORY.md` for the full list.
 
 ### Dashboard
-TanStack Start server routes and client auth APIs/hooks wrapping Gateway/Better Auth behavior.
+TanStack Start UI, auth proxy routes, and substack list client/server API wrappers.
 
 Representative callable/class APIs from the generated inventory:
 - `Footer(): Element`
@@ -198,7 +203,7 @@ Representative callable/class APIs from the generated inventory:
 - `signOutAuthResponse(): Response`
 - `proxyAuthRequest(request: Request, path: '/v1/auth/sign-in' | '/v1/auth/sign-up'): Promise<Response>`
 - `proxyAuthPayload(payload: unknown, request: Request, path: '/v1/auth/sign-in' | '/v1/auth/sign-up'): Promise<Response>`
-- Additional generated callable APIs: 11. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 17. See `API_INVENTORY.md` for the full list.
 
 ### Job Service
 Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher.
@@ -255,7 +260,7 @@ Representative callable/class APIs from the generated inventory:
 - Additional generated callable APIs: 86. See `API_INVENTORY.md` for the full list.
 
 ### Recommendation Service
-Fastify recommendation routes, Redis stream ingestion, Neo4j graph repository logic, ranking/scoring, BullMQ jobs, metrics.
+Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics.
 
 Representative callable/class APIs from the generated inventory:
 - `buildApp(): Promise<FastifyInstance<Server<typeof IncomingMessage, typeof ServerResponse>, IncomingMessage, ServerResponse<IncomingMessage>, FastifyBaseLogger, FastifyTypeProviderDefault>>`
@@ -311,12 +316,13 @@ Representative callable/class APIs from the generated inventory:
 
 ## Architecture-Relevant Conclusions From API Surface
 
-1. Gateway API surface is small and proxy-oriented. It currently exposes Auth and Notifications, but not Q&A, Job Service, or RecSys, which means browser-facing API ownership is split.
-2. Auth is a broad domain boundary. It owns identity and substack/follow APIs, and it also calls Notifications, so auth changes can affect multiple service flows.
-3. Q&A has the largest Nest/service/DTO surface and direct MongoDB plus Elasticsearch dependencies. Search indexing is part of user-facing write paths.
-4. RecSys has a complete standalone API and function surface, but it is not wired into the gateway or source event producers in the current repo.
-5. Job Service uses its own Fastify/JWT/database/outbox stack and currently publishes a separate `jobs.events` stream, not the RecSys `events:*` streams.
-6. Shared packages expose domain schemas/entities/repository contracts, but cross-service runtime contracts such as JWT subject, current user propagation, and event envelopes are not yet centralized.
+1. Gateway API surface now covers Auth, Notifications, and public substack list/total routes, but Q&A, Job Service, and RecSys remain outside the gateway.
+2. Auth remains the owner of substack data. Public listing and total count are served by Auth and proxied through the gateway/dashboard.
+3. Dashboard now has a real substack feature slice with API wrappers, query options, a `SubstacksIsland`, and server proxy routes for list and total count.
+4. Q&A still has the largest Nest/service/DTO surface and direct MongoDB plus Elasticsearch dependencies. Search indexing remains part of user-facing write paths.
+5. RecSys has a complete standalone API and function surface, but it is not wired into the gateway or source event producers in the current repo.
+6. Job Service uses its own Fastify/JWT/database/outbox stack and publishes a separate `jobs.events` stream, not the RecSys `events:*` streams.
+7. Shared packages expose domain schemas/entities/repository contracts, but cross-service runtime contracts such as JWT subject, current user propagation, and event envelopes are not yet centralized.
 
 ## Source Artifacts
 

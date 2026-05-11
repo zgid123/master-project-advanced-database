@@ -48,13 +48,13 @@ flowchart LR
 
 | Component | Path | Runtime | Primary dependencies | Responsibility |
 | --- | --- | --- | --- | --- |
-| API Gateway | `workspaces/api-gateway` | Hono | Auth, Notifications | Public gateway for auth and notifications |
+| API Gateway | `workspaces/api-gateway` | Hono | Auth, Notifications | Public gateway for auth, notifications, and public substacks |
 | Auth | `workspaces/auth` | Hono | PostgreSQL, Redis, Notifications | Identity, JWTs, user follows, substacks |
 | Notifications | `workspaces/notifications` | Hono | MongoDB | Notification storage and internal notification creation |
 | Q&A | `workspaces/qna` | NestJS | MongoDB, Elasticsearch, Notifications | Topics, comments, votes, topic subscriptions, search |
 | Job Service | `workspaces/job-service` | Fastify | PostgreSQL, PgBouncer, Redis | Jobs, applications, job/application outbox events |
 | RecSys | `workspaces/recsys` | Fastify | Neo4j, Redis, BullMQ | Personalized feed, similar topics/users, graph ingestion |
-| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Better Auth wrapper | Frontend shell and auth proxy |
+| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Better Auth wrapper | Frontend shell, auth proxy, and substack list UI |
 
 Shared packages:
 
@@ -83,9 +83,9 @@ Generated API surface counts:
 
 | Component | REST/server routes | Exported function/class APIs |
 | --- | ---: | ---: |
-| API Gateway | 8 | 13 |
-| Auth Service | 13 | 67 |
-| Dashboard | 6 | 23 |
+| API Gateway | 10 | 15 |
+| Auth Service | 14 | 69 |
+| Dashboard | 8 | 29 |
 | Job Service | 11 | 17 |
 | Notifications Service | 5 | 18 |
 | Q&A Service | 17 | 98 |
@@ -94,18 +94,19 @@ Generated API surface counts:
 
 Architecture conclusions from the generated report:
 
-1. API Gateway is small and proxy-oriented. It exposes Auth and Notifications,
-   but not Q&A, Job Service, or RecSys, so browser-facing API ownership is
-   currently split.
+1. API Gateway is proxy-oriented. It now exposes Auth, Notifications, and public
+   substack list/total routes, but not Q&A, Job Service, or RecSys.
 2. Auth is a broad boundary: identity, JWT/refresh lifecycle, user follows,
    substacks, repositories, seeds, and notification integration live together.
-3. Q&A has the largest callable API surface and combines controllers, services,
+3. Dashboard now has a concrete substack feature slice with API wrappers,
+   query options, a `SubstacksIsland`, and server proxy routes.
+4. Q&A has the largest callable API surface and combines controllers, services,
    DTOs, MongoDB schemas, and Elasticsearch search in one Nest service.
-4. RecSys has a complete standalone API/function surface, but it is not wired
+5. RecSys has a complete standalone API/function surface, but it is not wired
    into the gateway or source event producers in this repo.
-5. Job Service has its own Fastify/JWT/database/outbox stack and publishes
+6. Job Service has its own Fastify/JWT/database/outbox stack and publishes
    `jobs.events`, separate from the RecSys `events:*` streams.
-6. Shared packages centralize domain schemas/entities/contracts, but runtime
+7. Shared packages centralize domain schemas/entities/contracts, but runtime
    contracts such as JWT subject, current-user propagation, and event envelopes
    are not yet centralized.
 
@@ -134,6 +135,8 @@ Main routes:
 - `POST /v1/auth/users/:userId/subscribe`
 - `DELETE /v1/auth/users/:userId/subscribe`
 - `GET /v1/notifications`
+- `GET /v1/substacks`
+- `GET /v1/substacks/total`
 
 Important files:
 
@@ -141,15 +144,19 @@ Important files:
 - `src/adapters/restful/hono/middlewares/authMiddleware.ts`
 - `src/adapters/restful/hono/endpoints/portal/auth.ts`
 - `src/adapters/restful/hono/endpoints/portal/notifications.ts`
+- `src/adapters/restful/hono/endpoints/portal/substacks.ts`
 - `src/services/AuthService.ts`
 - `src/services/NotificationService.ts`
 
 Current behavior:
 
-- Public routes are `/health`, `/v1/auth/sign-in`, and `/v1/auth/sign-up`.
+- Public routes are `/health`, `/v1/auth/sign-in`, `/v1/auth/sign-up`,
+  `/v1/substacks`, and `/v1/substacks/total`.
 - Protected routes validate a bearer token or `solvit_authToken` cookie by calling Auth `/v1/auth/profile`.
 - Auth sign-in/sign-up/refresh responses are parsed so the gateway can set HTTP-only `solvit_authToken` and `solvit_refreshToken` cookies.
 - Notifications are proxied to the Notifications service with the original query string.
+- Substack list and total-count routes are proxied to Auth without requiring a
+  gateway-authenticated user.
 
 ## Auth Service
 
@@ -168,6 +175,7 @@ Main routes:
 - `POST /v1/auth/users/:userId/subscribe`
 - `DELETE /v1/auth/users/:userId/subscribe`
 - `GET /v1/substacks`
+- `GET /v1/substacks/total`
 - `GET /v1/substacks/:slug`
 - `POST /v1/substacks`
 - `POST /v1/substacks/:slug/subscribe`
@@ -441,14 +449,15 @@ Batch jobs:
 
 Path: `workspaces/dashboard`
 
-The dashboard is a TanStack Start app on port `4000`. It now includes auth UI,
-server routes, and a Better Auth wrapper that proxies Solvit Auth through the
-API Gateway.
+The dashboard is a TanStack Start app on port `4000`. It includes auth UI,
+server routes, a Better Auth wrapper, and a substack list slice that proxies
+through the API Gateway.
 
 Main UI routes:
 
 - `/`
 - `/about`
+- `/substacks`
 - `/sign-in`
 - `/sign-up`
 
@@ -459,6 +468,8 @@ Server/API routes:
 - `/api/portal/auth/sign-up`: direct server proxy to gateway `/v1/auth/sign-up`.
 - `/api/portal/auth/profile`: direct server proxy to gateway `/v1/auth/profile`.
 - `/api/portal/auth/sign-out`: clears dashboard auth cookies.
+- `/api/portal/substacks/`: direct server proxy to gateway `/v1/substacks`.
+- `/api/portal/substacks/total`: direct server proxy to gateway `/v1/substacks/total`.
 
 Important files:
 
@@ -469,9 +480,13 @@ Important files:
 - `src/routes/sign-up.tsx`
 - `src/routes/api/auth/$.ts`
 - `src/routes/api/portal/auth/*`
+- `src/routes/api/portal/substacks/*`
 - `src/features/auth/api/*`
 - `src/features/auth/components/AuthForm.tsx`
 - `src/features/auth/queries/authQueries.ts`
+- `src/features/substack/api/*`
+- `src/features/substack/components/SubstacksIsland.tsx`
+- `src/features/substack/queries/*`
 
 ## Data Ownership
 
