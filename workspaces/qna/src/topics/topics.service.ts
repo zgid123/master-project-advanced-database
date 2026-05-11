@@ -10,6 +10,7 @@ import { CommentsRepo } from '../comments/comments.repo';
 import { Types } from 'mongoose';
 import { SearchTopicDto } from './dto/search-topic.dto';
 import { SearchService } from 'src/search/search.service';
+import { randomUUID } from 'crypto';
 
 function slugify(text: string): string {
   return text
@@ -212,7 +213,9 @@ export class TopicsService {
   }
 
   async createTopic(dto: CreateTopicDto) {
-    const slug = slugify(dto.title);
+    const baseSlug = slugify(dto.title);
+
+    let slug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
 
     const topic = await this.topicsRepo.create({
       title: dto.title,

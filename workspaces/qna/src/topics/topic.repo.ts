@@ -34,6 +34,11 @@ export class TopicsRepo {
         });
     }
 
+    async isSlugTaken(slug: string) {
+        const existing = await this.model.findOne({ slug, deleted_at: null });
+        return !!existing;
+    }
+
     async markSolved(id: string) {
         return this.model.findByIdAndUpdate(id, {
             is_solved: true,
