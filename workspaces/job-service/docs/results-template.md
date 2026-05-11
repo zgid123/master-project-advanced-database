@@ -1,53 +1,82 @@
 # Job Service Benchmark Results
 
+Use this template for repeatable Job Service performance runs. Capture the
+dataset size, schema/index decisions, latency results, and query plans for each
+iteration.
+
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Client["Client/API Gateway"] --> JobService["Fastify Job Service"]
+  Client["Client or API Gateway"] --> JobService["Fastify Job Service"]
   JobService --> PgBouncer["PgBouncer transaction pool"]
   PgBouncer --> Postgres["PostgreSQL 16"]
-  JobService --> Redis["Redis cache + Streams"]
+  JobService --> Redis["Redis cache and streams"]
   JobService --> Outbox["event_outbox table"]
   Outbox --> Publisher["Outbox publisher"]
   Publisher --> Redis
 ```
 
-## DDL And Index Decisions
+## Run Context
+
+| Field | Value |
+| --- | --- |
+| Date | TBD |
+| Git commit | TBD |
+| Machine | TBD |
+| Node version | TBD |
+| PostgreSQL settings | TBD |
+| Redis settings | TBD |
+| Seed command | TBD |
+
+## Dataset
+
+| Entity | Count | Notes |
+| --- | ---: | --- |
+| Jobs | TBD | Seeded open/closed job mix |
+| Applications | TBD | Distribution per job TBD |
+| Event outbox rows | TBD | Sent/unsent split TBD |
+
+## Schema And Index Decisions
 
 | Area | Choice | Reason |
-|---|---|---|
+| --- | --- | --- |
 | Primary keys | BIGINT identity | Smaller B-tree indexes and sequential inserts |
-| Cross-service users | Logical FK only | Keeps User service decoupled |
-| Job status | PostgreSQL ENUM | Compact and type-safe for prototype scope |
-| Job list pagination | Keyset `(created_at, id)` | Avoids deep OFFSET scans |
-| Full-text search | Generated `tsvector` + GIN | Fast search without trigger maintenance |
-| JSONB metadata | PostgreSQL JSONB | Keeps metadata transactional with row data |
-| Hot reads | Redis cache-aside | Protects DB for job detail and applied checks |
+| Cross-service users | Logical FK only | Keeps Auth service decoupled |
+| Job status | PostgreSQL enum | Compact state representation |
+| Job list pagination | Keyset `(created_at, id)` | Avoids deep offset scans |
+| Full-text search | Generated `tsvector` plus GIN | Fast search without trigger maintenance |
+| JSON metadata | PostgreSQL JSONB | Keeps flexible metadata transactional |
+| Hot reads | Redis cache-aside | Protects database for repeated detail reads |
 
-Note: the prototype migration uses PostgreSQL `simple` text search config. If Vietnamese stemming/diacritics become a primary search requirement, add `unaccent` and benchmark the changed `search_vector`.
-
-## Latency Table
+## Latency Results
 
 | Scenario | Dataset | p50 | p95 | p99 | Notes |
-|---|---:|---:|---:|---:|---|
-| `GET /v1/jobs` | TBD | TBD | TBD | TBD | keyset + covering index |
-| `GET /v1/jobs/:id` cache miss | TBD | TBD | TBD | TBD | PK lookup |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `GET /v1/jobs` | TBD | TBD | TBD | TBD | Keyset list |
+| `GET /v1/jobs?q=...` | TBD | TBD | TBD | TBD | Full-text search |
+| `GET /v1/jobs/:id` cache miss | TBD | TBD | TBD | TBD | Primary key lookup |
 | `GET /v1/jobs/:id` cache hit | TBD | TBD | TBD | TBD | Redis |
-| `POST /v1/jobs/:id/applications` | TBD | TBD | TBD | TBD | transaction + outbox |
+| `POST /v1/jobs/:id/applications` | TBD | TBD | TBD | TBD | Transaction plus outbox |
 
-## EXPLAIN Snippets
+## Query Plans
 
-Paste `EXPLAIN (ANALYZE, BUFFERS)` output for the slowest query before and after each index or query rewrite.
+Paste `EXPLAIN (ANALYZE, BUFFERS)` output for the slowest query before and
+after each index or query rewrite.
 
 ## Iteration Log
 
 | Iteration | Observation | Action | Result |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | TBD | TBD | TBD |
 
-## Next Steps
+## Next Decisions
 
-- Add BRIN on `job_applications.created_at` after the table reaches several million rows and report workloads need time-range scans.
-- Add monthly range partitioning for `job_applications` when archival becomes a regular operation.
-- Introduce read replicas only after `pg_stat_statements` shows read saturation on primary.
+- Add BRIN on `job_applications.created_at` only after the table reaches
+  several million rows and time-range scans become common.
+- Add monthly range partitioning when archival or reporting needs make it
+  operationally useful.
+- Add read replicas only after `pg_stat_statements` shows primary read
+  saturation.
+- Add `unaccent` or language-specific text search only after search benchmarks
+  prove the default `simple` config is insufficient.

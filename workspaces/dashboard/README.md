@@ -1,236 +1,66 @@
-Welcome to your new TanStack Start app! 
+# Dashboard
 
-# Getting Started
+TanStack Start frontend for Solvit. It provides the browser UI and a small
+server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 
-To run this application:
+## Responsibilities
 
-```bash
-npm install
-npm run dev
+- Render the Solvit dashboard shell, feed, substack, question, and auth screens.
+- Provide sign-in and sign-up forms.
+- Proxy auth requests to the API Gateway from server routes.
+- Store `solvit_authToken` and `solvit_refreshToken` as HTTP-only cookies.
+- Expose Better Auth-compatible routes for the local auth client.
+
+## Runtime
+
+- Framework: TanStack Start, TanStack Router, Vite, React 19
+- Styling: Tailwind CSS, Radix UI primitives, lucide icons
+- Default port: `4000`
+- Gateway dependency: `API_GATEWAY_URL`, default `http://localhost:3000`
+
+## Server Route Surface
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/api/auth/$` | Better Auth handler |
+| `POST` | `/api/auth/$` | Better Auth handler |
+| `POST` | `/api/portal/auth/sign-in` | Proxy to Gateway `/v1/auth/sign-in` |
+| `POST` | `/api/portal/auth/sign-up` | Proxy to Gateway `/v1/auth/sign-up` |
+| `GET` | `/api/portal/auth/profile` | Proxy to Gateway `/v1/auth/profile` |
+| `POST` | `/api/portal/auth/sign-out` | Expire local auth cookies |
+
+The complete generated API inventory is in `../../API_REPORT.md`.
+
+## Local Commands
+
+```sh
+pnpm --filter dashboard dev
+pnpm --filter dashboard build
+pnpm --filter dashboard preview
+pnpm --filter dashboard test
 ```
 
-# Building For Production
+Run the gateway and its upstreams before using authenticated flows:
 
-To build this application for production:
-
-```bash
-npm run build
+```sh
+pnpm --filter auth dev
+pnpm --filter notifications dev
+pnpm --filter api-gateway dev
+pnpm --filter dashboard dev
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
-
-```bash
-npm run test
-```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
-
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-
-## Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   npx -y @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-npx -y @better-auth/cli migrate
-```
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `API_GATEWAY_URL` | `http://localhost:3000` | Gateway base URL for server proxy calls |
+| `BETTER_AUTH_URL` | `http://localhost:4000` | Better Auth local base URL |
+| `BETTER_AUTH_SECRET` | development fallback | Better Auth signing secret |
+
+## Architecture Notes
+
+- Dashboard does not call Auth directly; its server routes call API Gateway.
+- Better Auth is used as the browser/client integration surface, while the
+  actual credentials and tokens come from the Solvit Auth service.
+- The current UI is a product dashboard shell with mock domain views plus real
+  auth integration points.
