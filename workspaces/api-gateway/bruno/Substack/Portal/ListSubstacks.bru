@@ -1,0 +1,15 @@
+meta {
+  name: List Substacks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/substacks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}

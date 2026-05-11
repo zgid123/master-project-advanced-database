@@ -12,6 +12,10 @@ interface IProfileParams {
   authToken: string;
 }
 
+interface IListSubstacksParams {
+  search?: string;
+}
+
 export class AuthService {
   readonly #baseUrl: string;
 
@@ -61,6 +65,25 @@ export class AuthService {
     });
   }
 
+  public async listSubstacks({
+    search = '',
+  }: IListSubstacksParams = {}): Promise<Response> {
+    const upstreamUrl = new URL('/v1/substacks', this.#baseUrl);
+    upstreamUrl.search = search;
+
+    return this.#request({
+      method: 'GET',
+      path: `${upstreamUrl.pathname}${upstreamUrl.search}`,
+    });
+  }
+
+  public async getTotalSubstacks(): Promise<Response> {
+    return this.#request({
+      method: 'GET',
+      path: '/v1/substacks/total',
+    });
+  }
+
   async #post(
     path: string,
     { body, contentType = 'application/json' }: IAuthRequestParams,
@@ -88,6 +111,18 @@ export class AuthService {
       headers: {
         authorization: `Bearer ${authToken}`,
       },
+    });
+  }
+
+  async #request({
+    path,
+    method,
+  }: {
+    path: string;
+    method: 'GET';
+  }): Promise<Response> {
+    return fetch(new URL(path, this.#baseUrl), {
+      method,
     });
   }
 }

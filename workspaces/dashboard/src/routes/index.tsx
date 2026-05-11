@@ -12,61 +12,11 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-export const Route = createFileRoute('/')({ component: App });
+import { SubstacksIsland } from '#/features/substack/components';
 
-const substacks = [
-  {
-    name: 'Database Lab',
-    members: '12.4k',
-    unread: 18,
-    tone: 'bg-lagoon/18 text-lagoon-deep border-lagoon/28',
-  },
-  {
-    name: 'React Patterns',
-    members: '8.9k',
-    unread: 7,
-    tone: 'bg-[#f59e0b]/14 text-[#f7c46b] border-[#f59e0b]/24',
-  },
-  {
-    name: 'System Design',
-    members: '21.2k',
-    unread: 26,
-    tone: 'bg-[#8b5cf6]/14 text-[#c4b5fd] border-[#8b5cf6]/24',
-  },
-  {
-    name: 'DevOps Clinic',
-    members: '6.1k',
-    unread: 4,
-    tone: 'bg-[#f43f5e]/12 text-[#fda4af] border-[#f43f5e]/20',
-  },
-  {
-    name: 'API Gateway',
-    members: '5.7k',
-    unread: 11,
-    tone: 'bg-[#22c55e]/12 text-[#86efac] border-[#22c55e]/22',
-  },
-  {
-    name: 'Auth Systems',
-    members: '7.3k',
-    unread: 9,
-    tone: 'bg-[#38bdf8]/12 text-[#7dd3fc] border-[#38bdf8]/22',
-  },
-  {
-    name: 'Mongo Q&A',
-    members: '4.8k',
-    unread: 5,
-    tone: 'bg-[#84cc16]/12 text-[#bef264] border-[#84cc16]/22',
-  },
-  {
-    name: 'Product Feedback',
-    members: '3.2k',
-    unread: 3,
-    tone: 'bg-[#ec4899]/12 text-[#f9a8d4] border-[#ec4899]/22',
-  },
-];
-
-const totalSubstacks = 50;
-const visibleSubstacks = substacks.slice(0, 8);
+export const Route = createFileRoute('/')({
+  component: App,
+});
 
 const questions = [
   {
@@ -125,55 +75,8 @@ const discussions = [
 function App() {
   return (
     <main className='page-wrap px-4 pb-10 pt-8'>
-      <section className='grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)_280px]'>
-        <aside className='island-shell rise-in h-fit rounded-2xl p-4'>
-          <div className='mb-4 flex items-center justify-between gap-3'>
-            <div>
-              <p className='island-kicker mb-1'>Substacks</p>
-              <h1 className='m-0 text-lg font-bold text-sea-ink'>Communities</h1>
-            </div>
-            <button
-              aria-label='Create substack'
-              className='inline-flex size-9 items-center justify-center rounded-lg border border-lagoon/30 bg-lagoon/14 text-lagoon-deep hover:bg-lagoon/22'
-              type='button'
-            >
-              <Plus className='size-4' />
-            </button>
-          </div>
-
-          <div className='space-y-2'>
-            {visibleSubstacks.map((substack) => (
-              <button
-                className='grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:border-line hover:bg-white/5'
-                key={substack.name}
-                type='button'
-              >
-                <span>
-                  <span className='block text-sm font-semibold text-sea-ink'>
-                    {substack.name}
-                  </span>
-                  <span className='mt-0.5 flex items-center gap-1.5 text-xs text-sea-ink-soft'>
-                    <UsersRound className='size-3.5' />
-                    {substack.members}
-                  </span>
-                </span>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-xs font-bold ${substack.tone}`}
-                >
-                  {substack.unread}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <a
-            className='mt-4 flex h-10 items-center justify-center rounded-lg border border-line bg-white/5 px-3 text-sm font-bold text-lagoon-deep no-underline hover:bg-link-bg-hover'
-            href='/substacks'
-          >
-            View all {totalSubstacks} substacks
-          </a>
-        </aside>
-
+      <section className='grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_280px]'>
+        <SubstacksIsland />
         <section className='min-w-0 space-y-5'>
           <div className='island-shell rise-in rounded-2xl p-5 sm:p-6'>
             <div className='flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between'>
@@ -191,7 +94,6 @@ function App() {
                 Ask question
               </button>
             </div>
-
             <div className='mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]'>
               <label className='flex h-11 min-w-0 items-center gap-3 rounded-xl border border-line bg-chip-bg px-3 text-sea-ink-soft'>
                 <Search className='size-4 shrink-0' />
@@ -214,7 +116,6 @@ function App() {
               </div>
             </div>
           </div>
-
           <div className='space-y-3'>
             {questions.map((question, index) => (
               <article
@@ -257,7 +158,6 @@ function App() {
             ))}
           </div>
         </section>
-
         <aside className='space-y-5'>
           <section className='island-shell rise-in rounded-2xl p-4'>
             <div className='mb-4 flex items-center justify-between'>
@@ -285,7 +185,6 @@ function App() {
               </div>
             </div>
           </section>
-
           <section className='island-shell rise-in rounded-2xl p-4'>
             <div className='mb-4 flex items-center justify-between'>
               <p className='island-kicker m-0'>Activity</p>
@@ -316,7 +215,6 @@ function App() {
               ))}
             </div>
           </section>
-
           <section className='island-shell rise-in rounded-2xl p-4'>
             <p className='island-kicker mb-3'>Saved Work</p>
             <div className='grid grid-cols-2 gap-3'>
