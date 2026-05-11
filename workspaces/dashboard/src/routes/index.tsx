@@ -12,7 +12,9 @@ import {
   UsersRound,
 } from 'lucide-react';
 
+import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries';
 import { SubstacksIsland } from '#/features/substack/components';
 import { TopicCard } from '#/features/topic/components';
 
@@ -93,6 +95,13 @@ const discussions = [
 ];
 
 function App() {
+  const { data: session, isPending } = useSession();
+  const currentUser = session?.user;
+
+  if (isPending) {
+    return null;
+  }
+
   return (
     <section className='grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_280px]'>
       <SubstacksIsland />
@@ -107,6 +116,13 @@ function App() {
             </div>
             <Button
               className='h-10 min-w-36 shrink-0 border border-lagoon/35 bg-lagoon/16 font-bold text-lagoon-deep hover:bg-lagoon/24'
+              onClick={() => {
+                if (!currentUser) {
+                  authEvents.emit('open', {
+                    message: 'You need to be logged in to ask a question.',
+                  });
+                }
+              }}
               type='button'
               variant='secondary'
             >

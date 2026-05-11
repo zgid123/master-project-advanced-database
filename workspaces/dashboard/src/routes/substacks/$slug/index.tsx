@@ -1,22 +1,20 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  Plus,
-  Search,
-  Share2,
-  ShieldCheck,
-  Star,
-  UsersRound,
-} from 'lucide-react';
+import { ArrowLeft, Plus, Search } from 'lucide-react';
 
 import { Button } from '#/components/ui/button';
-import { SubstacksIsland } from '#/features/substack/components';
+import {
+  SubstackBanner,
+  SubstackBannerSkeleton,
+  SubstacksIsland,
+  SubstacksIslandSkeleton,
+} from '#/features/substack/components';
 import { substackDetailQueryOptions } from '#/features/substack/queries';
 import { TopicCard } from '#/features/topic/components';
 
 export const Route = createFileRoute('/substacks/$slug/')({
   component: SubstackDetailPage,
+  pendingComponent: SubstackDetailSkeleton,
 });
 
 const mockTopics = [
@@ -67,6 +65,37 @@ const contributors = [
   { name: 'Dan Abramov', role: 'Contributor', points: '5.1k' },
 ];
 
+export function SubstackDetailSkeleton() {
+  return (
+    <div className='grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_280px]'>
+      <aside className='hidden space-y-5 lg:block'>
+        <div className='h-10 w-32 animate-pulse rounded-xl bg-line/20' />
+        <SubstacksIslandSkeleton />
+      </aside>
+      <main className='min-w-0 space-y-5'>
+        <SubstackBannerSkeleton />
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='h-10 w-48 animate-pulse rounded-xl bg-line/20' />
+          <div className='h-10 w-64 animate-pulse rounded-xl bg-line/20' />
+          <div className='h-10 w-32 animate-pulse rounded-xl bg-line/20' />
+        </div>
+        <div className='space-y-3'>
+          {[1, 2, 3].map((i) => (
+            <div
+              className='island-shell h-32 animate-pulse rounded-xl'
+              key={i}
+            />
+          ))}
+        </div>
+      </main>
+      <aside className='space-y-5'>
+        <div className='island-shell h-48 animate-pulse rounded-2xl' />
+        <div className='island-shell h-40 animate-pulse rounded-2xl' />
+      </aside>
+    </div>
+  );
+}
+
 function SubstackDetailPage() {
   const { slug } = Route.useParams();
   const { data: substack } = useSuspenseQuery(
@@ -77,7 +106,6 @@ function SubstackDetailPage() {
 
   return (
     <div className='grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_280px]'>
-      {/* Left Sidebar: Navigation & Context */}
       <aside className='hidden space-y-5 lg:block'>
         <Button
           asChild
@@ -91,73 +119,8 @@ function SubstackDetailPage() {
         </Button>
         <SubstacksIsland />
       </aside>
-
-      {/* Main Content: Community Hub */}
       <main className='min-w-0 space-y-5'>
-        {/* Header Island */}
-        <section className='island-shell rise-in overflow-hidden rounded-2xl'>
-          <div className='h-24 bg-linear-to-r from-lagoon/20 via-lagoon/10 to-transparent' />
-          <div className='relative px-6 pb-6'>
-            <div className='-mt-8 mb-4 flex items-end justify-between'>
-              <div className='flex size-20 items-center justify-center rounded-2xl border-4 border-[#0b1219] bg-lagoon-deep text-3xl font-bold text-white shadow-xl'>
-                {substack.name.charAt(0)}
-              </div>
-              <div className='flex gap-2'>
-                <Button
-                  className='size-10 rounded-xl border-line bg-white/5'
-                  size='icon'
-                  variant='outline'
-                >
-                  <Share2 className='size-4' />
-                </Button>
-                <Button className='h-10 rounded-xl bg-lagoon-deep px-6 font-bold text-white hover:bg-lagoon-deep/90'>
-                  Join Community
-                </Button>
-              </div>
-            </div>
-
-            <div className='space-y-1'>
-              <div className='flex items-center gap-2'>
-                <h1 className='display-title m-0 text-3xl font-bold text-sea-ink'>
-                  {substack.name}
-                </h1>
-                <ShieldCheck className='size-5 text-lagoon' />
-              </div>
-              <p className='island-kicker text-lagoon-deep'>
-                s/{substack.slug}
-              </p>
-            </div>
-
-            {substack.description && (
-              <p className='mt-4 max-w-2xl text-base leading-relaxed text-sea-ink-soft'>
-                {substack.description}
-              </p>
-            )}
-
-            <div className='mt-6 flex flex-wrap gap-6 border-t border-line/50 pt-6'>
-              <div className='flex items-center gap-2'>
-                <UsersRound className='size-5 text-sea-ink-soft' />
-                <div>
-                  <div className='text-sm font-bold text-sea-ink'>12.4k</div>
-                  <div className='text-[10px] font-bold uppercase tracking-wider text-sea-ink-soft'>
-                    Members
-                  </div>
-                </div>
-              </div>
-              <div className='flex items-center gap-2'>
-                <Star className='size-5 text-sea-ink-soft' />
-                <div>
-                  <div className='text-sm font-bold text-sea-ink'>Top 1%</div>
-                  <div className='text-[10px] font-bold uppercase tracking-wider text-sea-ink-soft'>
-                    Rank
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Filter & Search */}
+        <SubstackBanner substack={substack} />
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <div className='flex gap-1 rounded-xl border border-line bg-white/5 p-1'>
             {['Active', 'New', 'Solved'].map((f) => (
@@ -182,8 +145,6 @@ function SubstackDetailPage() {
             Ask Question
           </Button>
         </div>
-
-        {/* Topics Feed */}
         <div className='space-y-3'>
           {mockTopics.map((topic, i) => (
             <TopicCard
@@ -195,8 +156,6 @@ function SubstackDetailPage() {
           ))}
         </div>
       </main>
-
-      {/* Right Sidebar */}
       <aside className='space-y-5'>
         <section className='island-shell rise-in rounded-2xl p-5'>
           <p className='island-kicker mb-4'>Top Experts</p>
@@ -223,7 +182,6 @@ function SubstackDetailPage() {
             ))}
           </div>
         </section>
-
         <section className='island-shell rise-in rounded-2xl border border-lagoon/20 bg-lagoon/5 p-5'>
           <p className='island-kicker mb-2 text-lagoon-deep'>Community Focus</p>
           <p className='text-sm leading-6 text-sea-ink-soft'>
