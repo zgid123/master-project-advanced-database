@@ -18,6 +18,8 @@ const PUBLIC_ROUTES = new Set([
   '/v1/substacks/total',
 ]);
 
+const SUBSTACK_DETAIL_PATTERN = /^\/v1\/substacks\/[^/]+$/;
+
 function getAuthToken(c: Context): string {
   const authorization = c.req.header('authorization') ?? '';
   const [scheme, token] = authorization.split(' ');
@@ -32,7 +34,11 @@ function getAuthToken(c: Context): string {
 function isPublicRoute(c: Context): boolean {
   const { pathname } = new URL(c.req.url);
 
-  return PUBLIC_ROUTES.has(pathname);
+  if (PUBLIC_ROUTES.has(pathname)) {
+    return true;
+  }
+
+  return c.req.method === 'GET' && SUBSTACK_DETAIL_PATTERN.test(pathname);
 }
 
 export const authMiddleware: MiddlewareHandler<

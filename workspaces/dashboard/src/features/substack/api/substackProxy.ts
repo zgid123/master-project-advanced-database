@@ -1,6 +1,9 @@
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
-type TSubstackProxyPath = '/v1/substacks' | '/v1/substacks/total';
+type TSubstackProxyPath =
+  | '/v1/substacks'
+  | '/v1/substacks/total'
+  | `/v1/substacks/${string}`;
 
 export async function proxySubstackRequest(
   request: Request,

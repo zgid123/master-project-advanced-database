@@ -21,7 +21,7 @@ export function SubstackListSkeleton() {
           length: 6,
         }).map((_, i) => (
           <div
-            className='island-shell h-64 animate-pulse rounded-2xl border border-line'
+            className='island-shell h-64 animate-pulse rounded-2xl'
             key={i}
           />
         ))}
