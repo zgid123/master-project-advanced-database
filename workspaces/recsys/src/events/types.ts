@@ -104,6 +104,7 @@ export const substackEventSchema = z.discriminatedUnion('type', [
     substackId: idSchema,
     createdAt: timestampSchema,
     subscriberCount: z.coerce.number().int().nonnegative().optional(),
+    subscriberCountAt: timestampSchema,
   }),
   baseEventSchema.extend({
     type: z.literal('substack.deleted'),
@@ -180,6 +181,17 @@ export function normalizeEventInput(input: unknown): unknown {
 
   if (raw.emittedAt && !normalized.createdAt)
     normalized.createdAt = raw.emittedAt;
+
+  if (
+    normalized.subscriberCount !== undefined &&
+    !normalized.subscriberCountAt
+  ) {
+    normalized.subscriberCountAt =
+      raw.emittedAt ??
+      payload.emittedAt ??
+      normalized.updatedAt ??
+      normalized.createdAt;
+  }
 
   if (normalized.votedAt && !normalized.createdAt)
     normalized.createdAt = normalized.votedAt;

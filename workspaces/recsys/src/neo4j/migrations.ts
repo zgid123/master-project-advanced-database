@@ -23,6 +23,8 @@ export const schemaStatements = [
   'MATCH ()-[r:VOTED]-() WHERE r.votedAt IS NULL OR r.votedAt = 0 SET r.votedAt = coalesce(r.createdAt, toInteger(timestamp() / 1000))',
   'MATCH ()-[r:VOTED]-() WHERE r.voteType IS NOT NULL REMOVE r.type',
   'MATCH (t:Topic) SET t.voteScore = coalesce(t.voteScore, t.score, 0.0), t.hotness = coalesce(t.hotness, t.score, t.voteScore, 0.0) REMOVE t.score',
+  'MATCH (s:Substack) WHERE s.subscriberCount IS NULL SET s.subscriberCount = 0',
+  'MATCH (s:Substack) WHERE s.subscriberCountAt IS NULL OR s.subscriberCountAt = 0 SET s.subscriberCountAt = toInteger(timestamp() / 1000)',
   'MATCH (t:Topic)-[r:IN_SUBSTACK]->() WHERE r.since IS NULL OR r.since = 0 SET r.since = coalesce(t.createdAt, toInteger(timestamp() / 1000))',
   'MATCH (t:Topic) WHERE t.authorId IS NOT NULL MERGE (u:User {id: t.authorId}) ON CREATE SET u.createdAt = coalesce(t.createdAt, toInteger(timestamp() / 1000)) MERGE (u)-[a:AUTHORED]->(t) ON CREATE SET a.at = coalesce(t.createdAt, toInteger(timestamp() / 1000))',
   'MATCH (c:Comment) WHERE c.authorId IS NOT NULL MERGE (u:User {id: c.authorId}) ON CREATE SET u.createdAt = coalesce(c.createdAt, toInteger(timestamp() / 1000)) MERGE (u)-[a:AUTHORED]->(c) ON CREATE SET a.at = coalesce(c.createdAt, toInteger(timestamp() / 1000))',

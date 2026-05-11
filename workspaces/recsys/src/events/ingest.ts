@@ -23,9 +23,18 @@ WITH ev, pe
 WHERE pe.processedAt IS NULL
 MERGE (s:Substack {id: ev.substackId})
   ON CREATE SET s.createdAt = ev.createdAt,
-                s.subscriberCount = coalesce(ev.subscriberCount, 0)
-SET s.updatedAt = timestamp(),
-    s.subscriberCount = coalesce(s.subscriberCount, 0)
+                s.subscriberCount = coalesce(ev.subscriberCount, 0),
+                s.subscriberCountAt = ev.subscriberCountAt
+SET s.updatedAt = timestamp()
+FOREACH (_ IN CASE
+  WHEN ev.subscriberCount IS NOT NULL
+    AND ev.subscriberCountAt > coalesce(s.subscriberCountAt, -1)
+  THEN [1] ELSE [] END |
+  SET s.subscriberCount = ev.subscriberCount,
+      s.subscriberCountAt = ev.subscriberCountAt
+)
+SET s.subscriberCount = coalesce(s.subscriberCount, 0),
+    s.subscriberCountAt = coalesce(s.subscriberCountAt, ev.subscriberCountAt)
 SET pe.processedAt = timestamp()
 RETURN count(pe) AS processed
 `;
@@ -242,7 +251,15 @@ MERGE (s:Substack {id: ev.targetId})
 MERGE (u)-[r:SUBSCRIBED]->(s)
   ON CREATE SET r.createdAt = ev.createdAt,
                 r.since = ev.createdAt,
-                s.subscriberCount = coalesce(s.subscriberCount, 0) + 1
+                r.countedEventId = ev.eventId
+WITH ev, pe, s, r, r.countedEventId = ev.eventId AS created
+FOREACH (_ IN CASE
+  WHEN created AND ev.createdAt >= coalesce(s.subscriberCountAt, -1)
+  THEN [1] ELSE [] END |
+  SET s.subscriberCount = coalesce(s.subscriberCount, 0) + 1,
+      s.subscriberCountAt = ev.createdAt
+)
+REMOVE r.countedEventId
 SET r.createdAt = ev.createdAt,
     r.since = ev.createdAt
 SET pe.processedAt = timestamp()
@@ -278,11 +295,14 @@ WITH ev, pe
 WHERE pe.processedAt IS NULL
 OPTIONAL MATCH (:User {id: ev.userId})-[r:SUBSCRIBED]->(s:Substack {id: ev.targetId})
 WITH ev, pe, r, s
-FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END |
+FOREACH (_ IN CASE
+  WHEN s IS NOT NULL AND ev.createdAt >= coalesce(s.subscriberCountAt, -1)
+  THEN [1] ELSE [] END |
   SET s.subscriberCount = CASE
     WHEN coalesce(s.subscriberCount, 0) > 0 THEN s.subscriberCount - 1
     ELSE 0
-  END
+  END,
+      s.subscriberCountAt = ev.createdAt
 )
 DELETE r
 SET pe.processedAt = timestamp()
