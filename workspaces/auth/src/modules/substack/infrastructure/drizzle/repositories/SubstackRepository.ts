@@ -1,6 +1,7 @@
 import { and, eq, isNull } from '@alphacifer/drizzle/core';
 import {
   type IApproveSubstackParams,
+  type ICountSubstackParams,
   type IFindOneSubstackParams,
   type IFindSubstackParams,
   type ISubstackRepository,
@@ -53,10 +54,21 @@ export class SubstackRepository implements ISubstackRepository {
     return SubstackEntity.create(createdSubstack);
   }
 
+  public async count({ approved }: ICountSubstackParams): Promise<number> {
+    return this.#drizzle.$count(
+      substacks,
+      approved === undefined
+        ? isNull(substacks.deletedAt)
+        : and(eq(substacks.approved, approved), isNull(substacks.deletedAt)),
+    );
+  }
+
   public async find({
+    limit,
     approved,
   }: IFindSubstackParams): Promise<SubstackEntity[]> {
     const foundSubstacks = await this.#drizzle.query.substacks.findMany({
+      limit,
       where: (substacks, { and, eq, isNull }) => {
         if (approved === undefined) {
           return isNull(substacks.deletedAt);

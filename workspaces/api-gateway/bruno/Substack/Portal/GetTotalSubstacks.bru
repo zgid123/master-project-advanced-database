@@ -1,0 +1,15 @@
+meta {
+  name: Get Total Substacks
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/substacks/total
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}

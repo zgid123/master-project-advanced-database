@@ -149,6 +149,9 @@ importers:
       '@node/hono':
         specifier: workspace:^
         version: link:../../packages/@node/hono
+      '@node/utils':
+        specifier: workspace:^
+        version: link:../../packages/@node/utils
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
