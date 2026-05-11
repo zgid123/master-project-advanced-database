@@ -104,3 +104,23 @@ export async function getTotalSubstacks({
     signal,
   );
 }
+
+interface IGetSubstackBySlugParams {
+  slug: string;
+  signal?: AbortSignal;
+}
+
+export async function getSubstackBySlug({
+  slug,
+  signal,
+}: IGetSubstackBySlugParams): Promise<TSubstackEntity> {
+  const encoded = encodeURIComponent(slug);
+
+  return getApi<TSubstackEntity>(
+    createApiUrl(
+      `/api/portal/substacks/${encoded}`,
+      `/v1/substacks/${encoded}`,
+    ),
+    signal,
+  );
+}

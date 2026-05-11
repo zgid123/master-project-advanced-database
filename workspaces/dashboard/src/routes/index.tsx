@@ -14,6 +14,7 @@ import {
 
 import { Button } from '#/components/ui/button';
 import { SubstacksIsland } from '#/features/substack/components';
+import { TopicCard } from '#/features/topic/components';
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -21,37 +22,55 @@ export const Route = createFileRoute('/')({
 
 const questions = [
   {
+    id: '1',
     title: 'How should we model Reddit-style subscriptions with Q&A voting?',
-    substack: 'Database Lab',
-    excerpt:
-      'I need users to subscribe to substacks, follow topics, and still keep accepted answers searchable.',
-    votes: 42,
-    answers: 9,
+    substackId: 'Database Lab',
+    body: 'I need users to subscribe to substacks, follow topics, and still keep accepted answers searchable.',
+    voteScore: 42,
+    commentsCount: 9,
     views: '1.8k',
     tags: ['schema-design', 'postgres', 'drizzle'],
     status: 'Answered',
+    isSolved: true,
+    slug: 'reddit-style-subscriptions',
+    userId: 'user-1',
+    createdAt: '2023-10-01T10:00:00Z',
+    updatedAt: '2023-10-01T10:00:00Z',
+    subscriptionsCount: 5,
   },
   {
+    id: '2',
     title: 'Best way to merge StackOverflow answers and threaded comments?',
-    substack: 'System Design',
-    excerpt:
-      'Answers need canonical ranking, but each answer should support discussion without diluting the main solution.',
-    votes: 31,
-    answers: 6,
+    substackId: 'System Design',
+    body: 'Answers need canonical ranking, but each answer should support discussion without diluting the main solution.',
+    voteScore: 31,
+    commentsCount: 6,
     views: '940',
     tags: ['qna', 'comments', 'ranking'],
     status: 'Hot',
+    isSolved: false,
+    slug: 'merge-stackoverflow-answers',
+    userId: 'user-2',
+    createdAt: '2023-10-02T11:00:00Z',
+    updatedAt: '2023-10-02T11:00:00Z',
+    subscriptionsCount: 3,
   },
   {
+    id: '3',
     title: 'Should substack moderators approve every new post?',
-    substack: 'React Patterns',
-    excerpt:
-      'We want community-level moderation, creator ownership, and low friction posting for trusted members.',
-    votes: 18,
-    answers: 3,
+    substackId: 'React Patterns',
+    body: 'We want community-level moderation, creator ownership, and low friction posting for trusted members.',
+    voteScore: 18,
+    commentsCount: 3,
     views: '512',
     tags: ['moderation', 'roles', 'ux'],
     status: 'Needs review',
+    isSolved: false,
+    slug: 'substack-moderators-approve',
+    userId: 'user-3',
+    createdAt: '2023-10-03T12:00:00Z',
+    updatedAt: '2023-10-03T12:00:00Z',
+    subscriptionsCount: 1,
   },
 ];
 
@@ -120,43 +139,12 @@ function App() {
         </div>
         <div className='space-y-3'>
           {questions.map((question, index) => (
-            <article
-              className='feature-card rise-in grid gap-4 rounded-2xl border border-line p-4 md:grid-cols-[88px_minmax(0,1fr)]'
+            <TopicCard
+              data={question}
+              index={index}
               key={question.title}
-              style={{ animationDelay: `${index * 80 + 120}ms` }}
-            >
-              <div className='grid grid-cols-3 gap-2 text-center md:grid-cols-1'>
-                <Metric label='votes' value={question.votes} />
-                <Metric label='answers' strong value={question.answers} />
-                <Metric label='views' value={question.views} />
-              </div>
-              <div className='min-w-0'>
-                <div className='mb-2 flex flex-wrap items-center gap-2'>
-                  <span className='rounded-full border border-lagoon/24 bg-lagoon/12 px-2.5 py-1 text-xs font-bold text-lagoon-deep'>
-                    {question.substack}
-                  </span>
-                  <span className='rounded-full border border-[#f59e0b]/24 bg-[#f59e0b]/12 px-2.5 py-1 text-xs font-bold text-[#f7c46b]'>
-                    {question.status}
-                  </span>
-                </div>
-                <h3 className='m-0 text-lg font-bold leading-snug text-sea-ink'>
-                  {question.title}
-                </h3>
-                <p className='my-2 text-sm leading-6 text-sea-ink-soft'>
-                  {question.excerpt}
-                </p>
-                <div className='flex flex-wrap gap-2'>
-                  {question.tags.map((tag) => (
-                    <span
-                      className='rounded-md border border-line bg-chip-bg px-2 py-1 text-xs font-semibold text-sea-ink-soft'
-                      key={tag}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </article>
+              variant='feed'
+            />
           ))}
         </div>
       </section>
@@ -244,31 +232,6 @@ function App() {
         </section>
       </aside>
     </section>
-  );
-}
-
-function Metric({
-  label,
-  strong,
-  value,
-}: {
-  label: string;
-  strong?: boolean;
-  value: number | string;
-}) {
-  return (
-    <div
-      className={`rounded-xl border px-2 py-2 ${
-        strong
-          ? 'border-lagoon/30 bg-lagoon/12 text-lagoon-deep'
-          : 'border-line bg-white/5 text-sea-ink-soft'
-      }`}
-    >
-      <div className='text-base font-extrabold text-sea-ink'>{value}</div>
-      <div className='text-[0.68rem] font-bold uppercase tracking-[0.12em]'>
-        {label}
-      </div>
-    </div>
   );
 }
 

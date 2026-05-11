@@ -50,27 +50,35 @@ export function SubstacksIsland() {
         {substacks.map((substack, index) => {
           return (
             <Button
+              asChild
               className='flex h-auto w-full items-start justify-between gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:border-line hover:bg-white/5'
               key={substack.id}
               variant='ghost'
             >
-              <span className='flex flex-1 flex-col gap-1'>
-                <span className='block whitespace-normal text-sm font-semibold leading-tight text-sea-ink'>
-                  {substack.name}
-                </span>
-                <span className='flex items-center gap-1.5 text-xs text-sea-ink-soft'>
-                  <UsersRound className='size-3.5 shrink-0' />
-                  {(substack.name.length * 1.2).toFixed(1)}k
-                </span>
-              </span>
-              <span
-                className={cn(
-                  'shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold',
-                  tones[index % tones.length],
-                )}
+              <Link
+                params={{
+                  slug: substack.slug,
+                }}
+                to='/substacks/$slug'
               >
-                {substack.name.length}
-              </span>
+                <span className='flex flex-1 flex-col gap-1'>
+                  <span className='block whitespace-normal text-sm font-semibold leading-tight text-sea-ink'>
+                    {substack.name}
+                  </span>
+                  <span className='flex items-center gap-1.5 text-xs text-sea-ink-soft'>
+                    <UsersRound className='size-3.5 shrink-0' />
+                    {(substack.name.length * 1.2).toFixed(1)}k
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold',
+                    tones[index % tones.length],
+                  )}
+                >
+                  {substack.name.length}
+                </span>
+              </Link>
             </Button>
           );
         })}

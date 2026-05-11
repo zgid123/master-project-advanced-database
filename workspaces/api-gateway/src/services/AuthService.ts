@@ -16,6 +16,10 @@ interface IListSubstacksParams {
   search?: string;
 }
 
+interface IGetSubstackBySlugParams {
+  slug: string;
+}
+
 export class AuthService {
   readonly #baseUrl: string;
 
@@ -81,6 +85,15 @@ export class AuthService {
     return this.#request({
       method: 'GET',
       path: '/v1/substacks/total',
+    });
+  }
+
+  public async getSubstackBySlug({
+    slug,
+  }: IGetSubstackBySlugParams): Promise<Response> {
+    return this.#request({
+      method: 'GET',
+      path: `/v1/substacks/${encodeURIComponent(slug)}`,
     });
   }
 

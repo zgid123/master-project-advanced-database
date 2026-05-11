@@ -9,24 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SubstacksRouteImport } from './routes/substacks'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SubstacksIndexRouteImport } from './routes/substacks/index'
+import { Route as SubstacksSlugRouteRouteImport } from './routes/substacks/$slug/route'
+import { Route as SubstacksSlugIndexRouteImport } from './routes/substacks/$slug/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiPortalSubstacksIndexRouteImport } from './routes/api/portal/substacks/index'
 import { Route as ApiPortalSubstacksTotalRouteImport } from './routes/api/portal/substacks/total'
+import { Route as ApiPortalSubstacksSlugRouteImport } from './routes/api/portal/substacks/$slug'
 import { Route as ApiPortalAuthSignUpRouteImport } from './routes/api/portal/auth/sign-up'
 import { Route as ApiPortalAuthSignOutRouteImport } from './routes/api/portal/auth/sign-out'
 import { Route as ApiPortalAuthSignInRouteImport } from './routes/api/portal/auth/sign-in'
 import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
 
-const SubstacksRoute = SubstacksRouteImport.update({
-  id: '/substacks',
-  path: '/substacks',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -47,6 +45,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubstacksIndexRoute = SubstacksIndexRouteImport.update({
+  id: '/substacks/',
+  path: '/substacks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubstacksSlugRouteRoute = SubstacksSlugRouteRouteImport.update({
+  id: '/substacks/$slug',
+  path: '/substacks/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubstacksSlugIndexRoute = SubstacksSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SubstacksSlugRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -60,6 +73,11 @@ const ApiPortalSubstacksIndexRoute = ApiPortalSubstacksIndexRouteImport.update({
 const ApiPortalSubstacksTotalRoute = ApiPortalSubstacksTotalRouteImport.update({
   id: '/api/portal/substacks/total',
   path: '/api/portal/substacks/total',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalSubstacksSlugRoute = ApiPortalSubstacksSlugRouteImport.update({
+  id: '/api/portal/substacks/$slug',
+  path: '/api/portal/substacks/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPortalAuthSignUpRoute = ApiPortalAuthSignUpRouteImport.update({
@@ -88,12 +106,15 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/substacks': typeof SubstacksRoute
+  '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
+  '/substacks/': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
   '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
 }
@@ -102,12 +123,14 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/substacks': typeof SubstacksRoute
+  '/substacks': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/substacks/$slug': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
   '/api/portal/substacks': typeof ApiPortalSubstacksIndexRoute
 }
@@ -117,12 +140,15 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/substacks': typeof SubstacksRoute
+  '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
+  '/substacks/': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
   '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
 }
@@ -133,12 +159,15 @@ export interface FileRouteTypes {
     | '/about'
     | '/sign-in'
     | '/sign-up'
-    | '/substacks'
+    | '/substacks/$slug'
+    | '/substacks/'
     | '/api/auth/$'
+    | '/substacks/$slug/'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/total'
     | '/api/portal/substacks/'
   fileRoutesByTo: FileRoutesByTo
@@ -149,10 +178,12 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/substacks'
     | '/api/auth/$'
+    | '/substacks/$slug'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/total'
     | '/api/portal/substacks'
   id:
@@ -161,12 +192,15 @@ export interface FileRouteTypes {
     | '/about'
     | '/sign-in'
     | '/sign-up'
-    | '/substacks'
+    | '/substacks/$slug'
+    | '/substacks/'
     | '/api/auth/$'
+    | '/substacks/$slug/'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/total'
     | '/api/portal/substacks/'
   fileRoutesById: FileRoutesById
@@ -176,25 +210,20 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
-  SubstacksRoute: typeof SubstacksRoute
+  SubstacksSlugRouteRoute: typeof SubstacksSlugRouteRouteWithChildren
+  SubstacksIndexRoute: typeof SubstacksIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPortalAuthProfileRoute: typeof ApiPortalAuthProfileRoute
   ApiPortalAuthSignInRoute: typeof ApiPortalAuthSignInRoute
   ApiPortalAuthSignOutRoute: typeof ApiPortalAuthSignOutRoute
   ApiPortalAuthSignUpRoute: typeof ApiPortalAuthSignUpRoute
+  ApiPortalSubstacksSlugRoute: typeof ApiPortalSubstacksSlugRoute
   ApiPortalSubstacksTotalRoute: typeof ApiPortalSubstacksTotalRoute
   ApiPortalSubstacksIndexRoute: typeof ApiPortalSubstacksIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/substacks': {
-      id: '/substacks'
-      path: '/substacks'
-      fullPath: '/substacks'
-      preLoaderRoute: typeof SubstacksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -223,6 +252,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/substacks/': {
+      id: '/substacks/'
+      path: '/substacks'
+      fullPath: '/substacks/'
+      preLoaderRoute: typeof SubstacksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/substacks/$slug': {
+      id: '/substacks/$slug'
+      path: '/substacks/$slug'
+      fullPath: '/substacks/$slug'
+      preLoaderRoute: typeof SubstacksSlugRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/substacks/$slug/': {
+      id: '/substacks/$slug/'
+      path: '/'
+      fullPath: '/substacks/$slug/'
+      preLoaderRoute: typeof SubstacksSlugIndexRouteImport
+      parentRoute: typeof SubstacksSlugRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -242,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/api/portal/substacks/total'
       fullPath: '/api/portal/substacks/total'
       preLoaderRoute: typeof ApiPortalSubstacksTotalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/substacks/$slug': {
+      id: '/api/portal/substacks/$slug'
+      path: '/api/portal/substacks/$slug'
+      fullPath: '/api/portal/substacks/$slug'
+      preLoaderRoute: typeof ApiPortalSubstacksSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/portal/auth/sign-up': {
@@ -275,17 +332,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SubstacksSlugRouteRouteChildren {
+  SubstacksSlugIndexRoute: typeof SubstacksSlugIndexRoute
+}
+
+const SubstacksSlugRouteRouteChildren: SubstacksSlugRouteRouteChildren = {
+  SubstacksSlugIndexRoute: SubstacksSlugIndexRoute,
+}
+
+const SubstacksSlugRouteRouteWithChildren =
+  SubstacksSlugRouteRoute._addFileChildren(SubstacksSlugRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
-  SubstacksRoute: SubstacksRoute,
+  SubstacksSlugRouteRoute: SubstacksSlugRouteRouteWithChildren,
+  SubstacksIndexRoute: SubstacksIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPortalAuthProfileRoute: ApiPortalAuthProfileRoute,
   ApiPortalAuthSignInRoute: ApiPortalAuthSignInRoute,
   ApiPortalAuthSignOutRoute: ApiPortalAuthSignOutRoute,
   ApiPortalAuthSignUpRoute: ApiPortalAuthSignUpRoute,
+  ApiPortalSubstacksSlugRoute: ApiPortalSubstacksSlugRoute,
   ApiPortalSubstacksTotalRoute: ApiPortalSubstacksTotalRoute,
   ApiPortalSubstacksIndexRoute: ApiPortalSubstacksIndexRoute,
 }

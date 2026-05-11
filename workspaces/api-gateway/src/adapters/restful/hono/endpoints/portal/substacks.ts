@@ -15,4 +15,11 @@ export const substackEndpoints = new Hono<IApiGatewayContextVariables>()
     const response = await c.var.authService.getTotalSubstacks();
 
     return forwardUpstreamResponse(c, response);
+  })
+  .get('/:slug', async (c) => {
+    const response = await c.var.authService.getSubstackBySlug({
+      slug: c.req.param('slug'),
+    });
+
+    return forwardUpstreamResponse(c, response);
   });
