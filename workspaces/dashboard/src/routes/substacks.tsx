@@ -1,9 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/substacks')({
-  component: RouteComponent,
-});
+import {
+  SubstackList,
+  SubstackListSkeleton,
+} from '#/features/substack/components';
+import { substackListQueryOptions } from '#/features/substack/queries';
 
-function RouteComponent() {
-  return <div>Hello "/substacks"!</div>;
-}
+export const Route = createFileRoute('/substacks')({
+  component: SubstackList,
+  loader: ({ context: { queryClient } }) => {
+    return queryClient.ensureQueryData(substackListQueryOptions());
+  },
+  pendingComponent: SubstackListSkeleton,
+});

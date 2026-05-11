@@ -52,7 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className='font-sans antialiased wrap-anywhere selection:bg-lagoon/24'>
         <Header />
-        {children}
+        <main className='page-wrap px-4 pb-10 pt-8'>{children}</main>
         <Footer />
         <TanStackDevtools
           config={{
