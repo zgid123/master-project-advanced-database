@@ -9,6 +9,7 @@ import { TopicSubscriptionsRepo } from '../topic_subscriptions/topic_subscriptio
 import { CommentsRepo } from '../comments/comments.repo';
 import { Types } from 'mongoose';
 import { SearchTopicDto } from './dto/search-topic.dto';
+import { SearchService } from 'src/search/search.service';
 
 function slugify(text: string): string {
   return text
@@ -26,6 +27,7 @@ export class TopicsService {
     private readonly votesRepo: VotesRepo,
     private readonly topicSubscriptionsRepo: TopicSubscriptionsRepo,
     private readonly commentsRepo: CommentsRepo,
+    private readonly searchService: SearchService,
   ) { }
 
   async voteTopic(topicId: string, dto: VoteTopicDto) {
@@ -144,9 +146,32 @@ export class TopicsService {
   }
 
   async searchTopics(dto: SearchTopicDto, user_id?: string) {
-    const { query, page, limit } = dto;
+    const { query, page, limit, substack_id } = dto;
 
-    const { topics, total } = await this.topicsRepo.getTopicsWithAggregates(query, page, limit);
+    // const { topics, total } = await this.topicsRepo.getTopicsWithAggregates(query, page, limit);
+
+    const searchResult = await this.searchService.searchTopics(
+      query,
+      page,
+      limit,
+      substack_id,
+    );
+
+    const topics = await this.topicsRepo.findByIds(
+      searchResult.ids.filter((id): id is string => typeof id === 'string'),
+      substack_id,
+    );
+
+    const topicMap = new Map(
+      topics.map(topic => [topic._id.toString(), topic]),
+    );
+
+    const orderedTopics = searchResult.ids
+      .filter((id): id is string => typeof id === 'string')
+      .map(id => topicMap.get(id))
+      .filter(Boolean);
+
+    const total = searchResult.total;
 
     const topicIds = topics.map((t: any) => t._id);
 
@@ -161,7 +186,7 @@ export class TopicsService {
     const voteScoreMap = Object.fromEntries(voteScores.map((v: any) => [v._id.toString(), v.score]));
 
     return {
-      data: topics.map((topic: any, i: number) => ({
+      data: orderedTopics.map((topic: any, i: number) => ({
         id: topic._id,
         title: topic.title,
         body: topic.body,
@@ -196,6 +221,8 @@ export class TopicsService {
       user_id: dto.user_id,
       substack_id: dto.substack_id ? dto.substack_id : undefined,
     });
+
+    await this.searchService.indexTopic(topic);
 
     return {
       id: topic._id,
@@ -234,6 +261,8 @@ export class TopicsService {
       throw new NotFoundException('Topic not found after update');
     }
 
+    await this.searchService.updateTopic(updated);
+
     return {
       id: updated._id,
       title: updated.title,
@@ -257,6 +286,8 @@ export class TopicsService {
     }
 
     await this.topicsRepo.softDelete(id);
+
+    await this.searchService.deleteTopic(id);
 
     return { message: 'Topic deleted successfully' };
   }

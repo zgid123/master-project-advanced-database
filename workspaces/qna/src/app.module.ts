@@ -7,6 +7,7 @@ import { VotesModule } from './votes/votes.module';
 import { TopicSubscriptionsModule } from './topic_subscriptions/topic_subscriptions.module';
 import { MongoModule } from './database/mongo.module';
 import { ConfigModule } from '@nestjs/config';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -15,7 +16,9 @@ import { ConfigModule } from '@nestjs/config';
     CommentsModule,
     VotesModule,
     TopicSubscriptionsModule,
-    MongoModule],
+    MongoModule,
+    SearchModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

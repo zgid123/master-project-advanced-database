@@ -40,6 +40,21 @@ export class TopicsRepo {
         });
     }
 
+    async findByIds(ids: string[], substack_id?: string) {
+        const filter: any = {
+            _id: { $in: ids },
+            deleted_at: null,
+        };
+
+        if (substack_id) {
+            filter.substack_id = substack_id;
+        } else {
+            filter.substack_id = { $exists: false };
+        }
+
+        return this.model.find(filter);
+    }
+
     async getTopicDetails(id: string) {
         const topic = await this.model.findOne({ _id: id, deleted_at: null });
         if (!topic) return null;
