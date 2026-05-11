@@ -1,7 +1,7 @@
 import type { TNotification } from '@domain/notification';
-import { type Model, model, models, Schema } from 'mongoose';
+import mongoose, { type Model } from 'mongoose';
 
-const notificationSchema = new Schema<TNotification>(
+const notificationSchema = new mongoose.Schema<TNotification>(
   {
     title: {
       type: String,
@@ -24,7 +24,7 @@ const notificationSchema = new Schema<TNotification>(
       default: false,
     },
     metadata: {
-      type: Schema.Types.Mixed,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     userId: {
@@ -52,5 +52,5 @@ notificationSchema.index({
 });
 
 export const NotificationModel =
-  (models.Notification as Model<TNotification> | undefined) ||
-  model<TNotification>('Notification', notificationSchema);
+  (mongoose.models.Notification as Model<TNotification> | undefined) ||
+  mongoose.model<TNotification>('Notification', notificationSchema);

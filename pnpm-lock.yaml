@@ -180,6 +180,15 @@ importers:
 
   workspaces/dashboard:
     dependencies:
+      '@alphacifer/react':
+        specifier: ^0.1.3
+        version: 0.1.3(@types/react@19.2.14)(use-sync-external-store@1.6.0(react@19.2.6))
+      '@domain/auth':
+        specifier: workspace:^
+        version: link:../../packages/@domain/auth
+      '@domain/notification':
+        specifier: workspace:^
+        version: link:../../packages/@domain/notification
       '@tailwindcss/vite':
         specifier: ^4.2.4
         version: 4.2.4(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.3))
@@ -462,6 +471,9 @@ packages:
 
   '@alphacifer/hono@0.0.6':
     resolution: {integrity: sha512-1zV65qCWohLJ5u4bM9tCvg1L0KLPUn1gokv18I3c01lNHD/6RSAzSplYFk4kzvmdUD0VPwPxWCtD/1QdlFedhQ==}
+
+  '@alphacifer/react@0.1.3':
+    resolution: {integrity: sha512-wxe6Dvd416A8XOFh6BycRyI5CUrbb8y00YlBHFGDQ6mnJpRQJFAcnojimUaXESHBWbateSGc4Y7PLRm3DUIL0w==}
 
   '@alphacifer/tsconfig@0.0.15':
     resolution: {integrity: sha512-GOWcajRa8n22Aqzf6vjzzxYbe29GerdZG9jhQ5PiMd0b5nnN1J06IZmjcqQWCqtS50KABMbLOhrxYDA+cNc8vw==}
@@ -5181,6 +5193,9 @@ packages:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
+  immer@11.1.8:
+    resolution: {integrity: sha512-/tbkHMW7y10Lx6i1crLjD4/OhNkRG+Fo7byZHtah0547nIeXYcpIXaUh0IAQY6gO5459qpGGYapcEOHtFXkIuA==}
+
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
     engines: {node: '>=6'}
@@ -6344,6 +6359,9 @@ packages:
   remeda@2.33.7:
     resolution: {integrity: sha512-cXlyjevWx5AcslOUEETG4o8XYi9UkoCXcJmj7XhPFVbla+ITuOBxv6ijBrmbeg+ZhzmDThkNdO+iXKUfrJep1w==}
 
+  remeda@2.34.0:
+    resolution: {integrity: sha512-zL4cEPkLHxwmlDRPyvJZjojpG5M5HXrDiABNKof+dq7kkuyQttP6NrF2uJB0DKIU09K8cTq+sQDlbo2r7mdR5Q==}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -7325,6 +7343,24 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+  zustand@5.0.13:
+    resolution: {integrity: sha512-efI2tVaVQPqtOh114loML/Z80Y4NP3yc+Ff0fYiZJPauNeWZeIp/bRFD7I9bfmCOYBh/PHxlglQ9+wvlwnPikQ==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
 snapshots:
 
   '@alphacifer/biome@0.0.11': {}
@@ -7385,6 +7421,18 @@ snapshots:
       zod: 4.3.6
     transitivePeerDependencies:
       - '@standard-schema/spec'
+
+  '@alphacifer/react@0.1.3(@types/react@19.2.14)(use-sync-external-store@1.6.0(react@19.2.6))':
+    dependencies:
+      '@tanstack/react-query': 5.100.9(react@19.2.6)
+      '@tanstack/react-query-devtools': 5.100.9(@tanstack/react-query@5.100.9(react@19.2.6))(react@19.2.6)
+      immer: 11.1.8
+      react: 19.2.6
+      remeda: 2.34.0
+      zustand: 5.0.13(@types/react@19.2.14)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
+    transitivePeerDependencies:
+      - '@types/react'
+      - use-sync-external-store
 
   '@alphacifer/tsconfig@0.0.15': {}
 
@@ -12164,6 +12212,8 @@ snapshots:
 
   ignore@7.0.5: {}
 
+  immer@11.1.8: {}
+
   import-fresh@3.3.1:
     dependencies:
       parent-module: 1.0.1
@@ -13441,6 +13491,8 @@ snapshots:
 
   remeda@2.33.7: {}
 
+  remeda@2.34.0: {}
+
   require-directory@2.1.1: {}
 
   require-from-string@2.0.2: {}
@@ -14458,3 +14510,10 @@ snapshots:
   zod@4.3.6: {}
 
   zod@4.4.3: {}
+
+  zustand@5.0.13(@types/react@19.2.14)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6)):
+    optionalDependencies:
+      '@types/react': 19.2.14
+      immer: 11.1.8
+      react: 19.2.6
+      use-sync-external-store: 1.6.0(react@19.2.6)

@@ -4,6 +4,7 @@ import { type ServerType, serve } from '@hono/node-server';
 import type { ICoreDrizzleContextVariables } from '@node/hono/interfaces';
 import {
   createDrizzleMiddleware,
+  createLoggerMiddleware,
   createRegisterIoCMiddleware,
 } from '@node/hono/middlewares';
 import { detect } from 'detect-port';
@@ -52,6 +53,11 @@ export async function initHono({
   });
 
   app
+    .use(
+      createLoggerMiddleware({
+        serverName: 'auth',
+      }),
+    )
     .use(
       createDrizzleMiddleware({
         drizzle,

@@ -1,46 +1,62 @@
 import { Link } from '@tanstack/react-router';
+import { LogOut, UserRound } from 'lucide-react';
 
-import { authClient } from '#/lib/auth-client';
+import {
+  useCurrentUserQuery,
+  useSignOutCommand,
+} from '#/features/auth/queries';
 
 export default function BetterAuthHeader() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: currentUser, isPending } = useCurrentUserQuery();
+  const signOutCommand = useSignOutCommand();
 
   if (isPending) {
     return (
-      <div className='h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse' />
+      <div className='h-9 w-24 animate-pulse rounded-md border border-chip-line bg-chip-bg' />
     );
   }
 
-  if (session?.user) {
+  if (currentUser) {
+    const displayName =
+      currentUser.displayName ||
+      [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') ||
+      currentUser.email;
+
     return (
       <div className='flex items-center gap-2'>
-        {session.user.image ? (
-          <img alt='' className='h-8 w-8' src={session.user.image} />
-        ) : (
-          <div className='h-8 w-8 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center'>
-            <span className='text-xs font-medium text-neutral-600 dark:text-neutral-400'>
-              {session.user.name?.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
-        )}
+        <div className='hidden max-w-45 items-center gap-2 rounded-full border border-chip-line bg-chip-bg px-3 py-1.5 text-sm font-semibold text-sea-ink sm:flex'>
+          <UserRound className='size-4' />
+          <span className='truncate'>{displayName}</span>
+        </div>
         <button
-          className='flex-1 h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors'
+          className='inline-flex h-9 items-center gap-2 rounded-md border border-chip-line bg-chip-bg px-3 text-sm font-semibold text-sea-ink hover:bg-link-bg-hover'
+          disabled={signOutCommand.isPending}
           onClick={() => {
-            void authClient.signOut();
+            signOutCommand.mutate();
           }}
+          type='button'
         >
-          Sign out
+          <LogOut className='size-4' />
+          <span className='hidden sm:inline'>Sign out</span>
         </button>
       </div>
     );
   }
 
   return (
-    <Link
-      className='h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors inline-flex items-center'
-      to='/demo/better-auth'
-    >
-      Sign in
-    </Link>
+    <div className='flex items-center gap-2'>
+      <Link
+        className='inline-flex h-9 items-center rounded-md border border-chip-line bg-chip-bg px-3 text-sm font-semibold text-sea-ink no-underline hover:bg-link-bg-hover'
+        to='/sign-in'
+      >
+        Sign in
+      </Link>
+      <Link
+        className='hidden h-9 items-center rounded-md bg-sea-ink px-3 text-sm font-semibold text-white no-underline hover:bg-lagoon-deep sm:inline-flex'
+        to='/sign-up'
+      >
+        Sign up
+      </Link>
+    </div>
   );
 }

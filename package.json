@@ -10,7 +10,8 @@
     "serve": "turbo run serve --parallel --no-cache",
     "build": "turbo run build",
     "update-packages": "pnpm update -i -r --latest",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "server:dev": "turbo run dev --filter=\"api-gateway\" --filter=\"auth\" --filter=\"notifications\" --parallel --no-cache"
   },
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {

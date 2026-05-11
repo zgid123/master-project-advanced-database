@@ -9,10 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiPortalAuthSignUpRouteImport } from './routes/api/portal/auth/sign-up'
+import { Route as ApiPortalAuthSignOutRouteImport } from './routes/api/portal/auth/sign-out'
+import { Route as ApiPortalAuthSignInRouteImport } from './routes/api/portal/auth/sign-in'
+import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
 
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -28,39 +44,125 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPortalAuthSignUpRoute = ApiPortalAuthSignUpRouteImport.update({
+  id: '/api/portal/auth/sign-up',
+  path: '/api/portal/auth/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalAuthSignOutRoute = ApiPortalAuthSignOutRouteImport.update({
+  id: '/api/portal/auth/sign-out',
+  path: '/api/portal/auth/sign-out',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalAuthSignInRoute = ApiPortalAuthSignInRouteImport.update({
+  id: '/api/portal/auth/sign-in',
+  path: '/api/portal/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalAuthProfileRoute = ApiPortalAuthProfileRouteImport.update({
+  id: '/api/portal/auth/profile',
+  path: '/api/portal/auth/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
+  '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
+  '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
+  '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
+  '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
+  '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
+  '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
+  '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
+  '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
+  '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/sign-in'
+    | '/sign-up'
+    | '/api/auth/$'
+    | '/api/portal/auth/profile'
+    | '/api/portal/auth/sign-in'
+    | '/api/portal/auth/sign-out'
+    | '/api/portal/auth/sign-up'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/api/auth/$'
-  id: '__root__' | '/' | '/about' | '/api/auth/$'
+  to:
+    | '/'
+    | '/about'
+    | '/sign-in'
+    | '/sign-up'
+    | '/api/auth/$'
+    | '/api/portal/auth/profile'
+    | '/api/portal/auth/sign-in'
+    | '/api/portal/auth/sign-out'
+    | '/api/portal/auth/sign-up'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/sign-in'
+    | '/sign-up'
+    | '/api/auth/$'
+    | '/api/portal/auth/profile'
+    | '/api/portal/auth/sign-in'
+    | '/api/portal/auth/sign-out'
+    | '/api/portal/auth/sign-up'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPortalAuthProfileRoute: typeof ApiPortalAuthProfileRoute
+  ApiPortalAuthSignInRoute: typeof ApiPortalAuthSignInRoute
+  ApiPortalAuthSignOutRoute: typeof ApiPortalAuthSignOutRoute
+  ApiPortalAuthSignUpRoute: typeof ApiPortalAuthSignUpRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -82,13 +184,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/portal/auth/sign-up': {
+      id: '/api/portal/auth/sign-up'
+      path: '/api/portal/auth/sign-up'
+      fullPath: '/api/portal/auth/sign-up'
+      preLoaderRoute: typeof ApiPortalAuthSignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/auth/sign-out': {
+      id: '/api/portal/auth/sign-out'
+      path: '/api/portal/auth/sign-out'
+      fullPath: '/api/portal/auth/sign-out'
+      preLoaderRoute: typeof ApiPortalAuthSignOutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/auth/sign-in': {
+      id: '/api/portal/auth/sign-in'
+      path: '/api/portal/auth/sign-in'
+      fullPath: '/api/portal/auth/sign-in'
+      preLoaderRoute: typeof ApiPortalAuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/auth/profile': {
+      id: '/api/portal/auth/profile'
+      path: '/api/portal/auth/profile'
+      fullPath: '/api/portal/auth/profile'
+      preLoaderRoute: typeof ApiPortalAuthProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPortalAuthProfileRoute: ApiPortalAuthProfileRoute,
+  ApiPortalAuthSignInRoute: ApiPortalAuthSignInRoute,
+  ApiPortalAuthSignOutRoute: ApiPortalAuthSignOutRoute,
+  ApiPortalAuthSignUpRoute: ApiPortalAuthSignUpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
