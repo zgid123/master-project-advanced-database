@@ -46,13 +46,13 @@ export default function BetterAuthHeader() {
   return (
     <div className='flex items-center gap-2'>
       <Link
-        className='inline-flex h-9 items-center rounded-md border border-chip-line bg-chip-bg px-3 text-sm font-semibold text-sea-ink no-underline hover:bg-link-bg-hover'
+        className='inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-chip-line bg-chip-bg px-3 text-sm font-semibold text-sea-ink no-underline hover:bg-link-bg-hover'
         to='/sign-in'
       >
         Sign in
       </Link>
       <Link
-        className='hidden h-9 items-center rounded-md bg-sea-ink px-3 text-sm font-semibold text-white no-underline hover:bg-lagoon-deep sm:inline-flex'
+        className='inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-lagoon/35 bg-lagoon/16 px-3 text-sm font-bold text-lagoon-deep no-underline shadow-[0_10px_24px_rgba(79,184,178,0.12)] hover:bg-lagoon/24'
         to='/sign-up'
       >
         Sign up
