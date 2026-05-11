@@ -2,6 +2,7 @@ import { onError } from '@alphacifer/hono/core';
 import { type ServerType, serve } from '@hono/node-server';
 import type { ICoreMongooseContextVariables } from '@node/hono/interfaces';
 import {
+  createLoggerMiddleware,
   createMongooseMiddleware,
   createRegisterIoCMiddleware,
 } from '@node/hono/middlewares';
@@ -44,6 +45,11 @@ export async function initHono({
   });
 
   app
+    .use(
+      createLoggerMiddleware({
+        serverName: 'notifications',
+      }),
+    )
     .use(
       createMongooseMiddleware({
         mongoose,

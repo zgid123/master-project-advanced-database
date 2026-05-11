@@ -5,7 +5,18 @@ interface IForwardUpstreamResponseOptions {
   excludedHeaders?: string[];
 }
 
-const DEFAULT_EXCLUDED_HEADERS = ['content-encoding', 'content-length'];
+const DEFAULT_EXCLUDED_HEADERS = [
+  'connection',
+  'content-encoding',
+  'content-length',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+];
 
 export function createUpstreamResponseHeaders(
   response: Response,

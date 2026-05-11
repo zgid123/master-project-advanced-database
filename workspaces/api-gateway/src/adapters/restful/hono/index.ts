@@ -1,5 +1,8 @@
 import { type ServerType, serve } from '@hono/node-server';
-import { createRegisterIoCMiddleware } from '@node/hono/middlewares';
+import {
+  createLoggerMiddleware,
+  createRegisterIoCMiddleware,
+} from '@node/hono/middlewares';
 import { Hono } from 'hono';
 import type { ExtractSchema } from 'hono/types';
 
@@ -27,6 +30,12 @@ export function initHono({
 }: IInitHonoParams = {}): IInitHonoReturn {
   const app = new Hono<IApiGatewayContextVariables>();
   const ioc = registerIoC();
+
+  app.use(
+    createLoggerMiddleware({
+      serverName: 'api-gateway',
+    }),
+  );
 
   app.use(
     createRegisterIoCMiddleware({

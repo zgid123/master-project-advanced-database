@@ -6,12 +6,15 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 4000",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
+    "@alphacifer/react": "^0.1.3",
+    "@domain/auth": "workspace:^",
+    "@domain/notification": "workspace:^",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-form": "latest",

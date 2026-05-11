@@ -107,6 +107,11 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
       }),
     });
   })
+  .get('/profile', (c) => {
+    return c.json({
+      data: c.get('currentUser'),
+    });
+  })
   .post('/users/:userId/subscribe', async (c) => {
     const response = await c.var.authService.subscribeUser({
       userId: c.req.param('userId'),
