@@ -6,6 +6,27 @@ const idSchema = z
   .union([z.string().min(1), z.number().int()])
   .transform(String);
 const nowSeconds = () => Math.floor(Date.now() / 1_000);
+const timestampSchema = z
+  .union([z.string().min(1), z.number()])
+  .optional()
+  .transform((value) => {
+    if (value === undefined) return nowSeconds();
+    if (typeof value === 'number') return Math.floor(value);
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return Math.floor(numeric);
+
+    const parsed = Date.parse(value);
+    if (Number.isNaN(parsed)) return nowSeconds();
+    return Math.floor(parsed / 1_000);
+  });
+
+const voteTypeSchema = z
+  .union([z.enum(['up', 'down']), z.literal(1), z.literal(-1)])
+  .transform((value) => {
+    if (value === 1 || value === 'up') return 'up';
+    return 'down';
+  });
 
 const baseEventSchema = z.object({
   eventId: z
@@ -20,8 +41,9 @@ export const voteEventSchema = z.discriminatedUnion('type', [
     userId: idSchema,
     targetType: z.enum(['topic', 'comment']),
     targetId: idSchema,
-    voteType: z.enum(['up', 'down']),
-    createdAt: z.coerce.number().int().nonnegative().default(nowSeconds),
+    voteType: voteTypeSchema,
+    substackId: idSchema.optional(),
+    createdAt: timestampSchema,
   }),
   baseEventSchema.extend({
     type: z.literal('vote.deleted'),
@@ -37,7 +59,7 @@ export const subscriptionEventSchema = z.discriminatedUnion('type', [
     userId: idSchema,
     targetType: z.enum(['substack', 'topic']),
     targetId: idSchema,
-    createdAt: z.coerce.number().int().nonnegative().default(nowSeconds),
+    createdAt: timestampSchema,
   }),
   baseEventSchema.extend({
     type: z.literal('subscription.deleted'),
@@ -47,26 +69,47 @@ export const subscriptionEventSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
-export const topicEventSchema = baseEventSchema.extend({
-  type: z.literal('topic.upsert'),
-  topicId: idSchema,
-  substackId: idSchema.nullable().optional(),
-  createdAt: z.coerce.number().int().nonnegative().default(nowSeconds),
-  score: z.coerce.number().default(0),
-});
+export const topicEventSchema = z.discriminatedUnion('type', [
+  baseEventSchema.extend({
+    type: z.literal('topic.upsert'),
+    topicId: idSchema,
+    authorId: idSchema.optional(),
+    substackId: idSchema.nullable().optional(),
+    createdAt: timestampSchema,
+    score: z.coerce.number().default(0),
+  }),
+  baseEventSchema.extend({
+    type: z.literal('topic.deleted'),
+    topicId: idSchema,
+  }),
+]);
 
-export const commentEventSchema = baseEventSchema.extend({
-  type: z.literal('comment.upsert'),
-  commentId: idSchema,
-  topicId: idSchema,
-  createdAt: z.coerce.number().int().nonnegative().default(nowSeconds),
-});
+export const commentEventSchema = z.discriminatedUnion('type', [
+  baseEventSchema.extend({
+    type: z.literal('comment.upsert'),
+    commentId: idSchema,
+    topicId: idSchema,
+    authorId: idSchema.optional(),
+    createdAt: timestampSchema,
+  }),
+  baseEventSchema.extend({
+    type: z.literal('comment.deleted'),
+    commentId: idSchema,
+  }),
+]);
 
-export const substackEventSchema = baseEventSchema.extend({
-  type: z.literal('substack.upsert'),
-  substackId: idSchema,
-  createdAt: z.coerce.number().int().nonnegative().default(nowSeconds),
-});
+export const substackEventSchema = z.discriminatedUnion('type', [
+  baseEventSchema.extend({
+    type: z.literal('substack.upsert'),
+    substackId: idSchema,
+    createdAt: timestampSchema,
+    subscriberCount: z.coerce.number().int().nonnegative().optional(),
+  }),
+  baseEventSchema.extend({
+    type: z.literal('substack.deleted'),
+    substackId: idSchema,
+  }),
+]);
 
 export const eventBodySchemas = {
   vote: voteEventSchema,
@@ -114,8 +157,68 @@ export function normalizeBodyToEvents<T>(
   body: unknown,
 ): T[] {
   if (Array.isArray(body)) {
-    return body.map((item) => schema.parse(item));
+    return body.map((item) => schema.parse(normalizeEventInput(item)));
   }
 
-  return [schema.parse(body)];
+  return [schema.parse(normalizeEventInput(body))];
+}
+
+export function normalizeEventInput(input: unknown): unknown {
+  if (!input || typeof input !== 'object') return input;
+
+  const raw = input as Record<string, unknown>;
+  const eventType = raw.eventType ?? raw.type;
+  const payload =
+    raw.payload && typeof raw.payload === 'object'
+      ? (raw.payload as Record<string, unknown>)
+      : raw;
+  const normalized: Record<string, unknown> = {
+    ...payload,
+    eventId: raw.eventId ?? payload.eventId ?? randomUUID(),
+    type: normalizeEventType(String(eventType ?? payload.type ?? '')),
+  };
+
+  if (raw.emittedAt && !normalized.createdAt)
+    normalized.createdAt = raw.emittedAt;
+
+  if (normalized.votedAt && !normalized.createdAt)
+    normalized.createdAt = normalized.votedAt;
+  if (normalized.since && !normalized.createdAt)
+    normalized.createdAt = normalized.since;
+
+  if (
+    !normalized.targetId &&
+    normalized.topicId &&
+    normalized.type?.toString().startsWith('vote.')
+  ) {
+    normalized.targetType = 'topic';
+    normalized.targetId = normalized.topicId;
+  }
+
+  if (
+    !normalized.targetId &&
+    normalized.commentId &&
+    normalized.type?.toString().startsWith('vote.')
+  ) {
+    normalized.targetType = 'comment';
+    normalized.targetId = normalized.commentId;
+  }
+
+  return normalized;
+}
+
+function normalizeEventType(type: string): string {
+  switch (type) {
+    case 'topic.created':
+    case 'topic.updated':
+      return 'topic.upsert';
+    case 'comment.created':
+    case 'comment.updated':
+      return 'comment.upsert';
+    case 'substack.created':
+    case 'substack.updated':
+      return 'substack.upsert';
+    default:
+      return type;
+  }
 }

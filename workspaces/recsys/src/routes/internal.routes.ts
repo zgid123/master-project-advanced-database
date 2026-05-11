@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { z } from 'zod';
 
+import { invalidateUserFeed } from '../cache/feed-cache.js';
 import { config } from '../config.js';
 import { HttpError } from '../errors.js';
 import { appendEventsToStream } from '../events/stream.js';
@@ -15,6 +17,32 @@ import {
 } from '../events/types.js';
 
 export async function internalRoutes(app: FastifyInstance) {
+  app.post(
+    '/internal/reindex/user/:userId',
+    {
+      schema: {
+        tags: ['Internal Events'],
+        summary: 'Invalidate cached recommendation state for one user',
+        params: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string' },
+          },
+          required: ['userId'],
+        },
+        headers: internalHeadersSchema,
+      },
+    },
+    async (request, reply) => {
+      assertInternal(request);
+      const { userId } = z
+        .object({ userId: z.string().min(1) })
+        .parse(request.params);
+      await invalidateUserFeed(userId);
+      return reply.code(202).send({ accepted: 1 });
+    },
+  );
+
   app.post(
     '/v1/internal/events/vote',
     {
@@ -113,13 +141,7 @@ function eventRouteSchema(summary: string) {
   return {
     tags: ['Internal Events'],
     summary,
-    headers: {
-      type: 'object',
-      properties: {
-        'x-internal-service-secret': { type: 'string' },
-      },
-      required: ['x-internal-service-secret'],
-    },
+    headers: internalHeadersSchema,
     body: {
       oneOf: [
         { type: 'object', additionalProperties: true },
@@ -140,3 +162,11 @@ function eventRouteSchema(summary: string) {
     },
   } as const;
 }
+
+const internalHeadersSchema = {
+  type: 'object',
+  properties: {
+    'x-internal-service-secret': { type: 'string' },
+  },
+  required: ['x-internal-service-secret'],
+} as const;

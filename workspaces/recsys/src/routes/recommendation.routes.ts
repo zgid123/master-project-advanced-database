@@ -5,6 +5,7 @@ import { HttpError } from '../errors.js';
 import {
   getPersonalizedFeed,
   getSimilarTopics,
+  getTrendingFeed,
   suggestSubstacks,
 } from '../recommendation/service.js';
 
@@ -20,6 +21,10 @@ const feedQuerySchema = z.object({
 
 const limitQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const trendingQuerySchema = limitQuerySchema.extend({
+  substackId: idSchema.optional(),
 });
 
 const topicParamSchema = z.object({
@@ -67,11 +72,60 @@ export async function recommendationRoutes(app: FastifyInstance) {
   );
 
   app.get(
+    '/v1/trending',
+    {
+      schema: {
+        tags: ['Recommendations'],
+        summary: 'Get global or substack-scoped trending topics',
+        querystring: {
+          type: 'object',
+          properties: {
+            substackId: { type: 'string' },
+            limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        },
+      },
+    },
+    async (request) => {
+      const { limit, substackId } = trendingQuerySchema.parse(request.query);
+      return getTrendingFeed(limit, substackId ?? null);
+    },
+  );
+
+  app.get(
     '/v1/topics/:id/similar',
     {
       schema: {
         tags: ['Recommendations'],
         summary: 'Get topics related to the supplied topic id',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+          },
+          required: ['id'],
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        },
+      },
+    },
+    async (request) => {
+      const { id } = topicParamSchema.parse(request.params);
+      const { limit } = limitQuerySchema.parse(request.query);
+      return getSimilarTopics(id, limit);
+    },
+  );
+
+  app.get(
+    '/v1/similar/topics/:id',
+    {
+      schema: {
+        tags: ['Recommendations'],
+        summary: 'Get topics similar to a given topic',
         params: {
           type: 'object',
           properties: {

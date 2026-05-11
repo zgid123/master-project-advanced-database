@@ -16,16 +16,32 @@ import {
 import type { Candidate, SuggestedSubstack } from './types.js';
 
 const collaborativeCandidatesCypher = `
-MATCH (me:User {id: $userId})-[:VOTED {type: 'up'}]->(:Topic)
-      <-[:VOTED {type: 'up'}]-(peer:User)
-      -[:VOTED {type: 'up'}]->(candidate:Topic)
-WHERE candidate.createdAt > $cutoff
+MATCH (me:User {id: $userId})-[myVote:VOTED]->(seed:Topic)
+WHERE coalesce(myVote.voteType, CASE myVote.type WHEN 'up' THEN 1 ELSE -1 END) = 1
+  AND coalesce(myVote.votedAt, myVote.createdAt, 0) > $cutoff
+WITH me, collect(DISTINCT seed) AS myTopics
+WITH me, myTopics WHERE size(myTopics) >= $minVotes
+UNWIND myTopics AS seed
+MATCH (seed)<-[peerVote:VOTED]-(peer:User)
+WHERE peer.id <> $userId
+  AND coalesce(peerVote.voteType, CASE peerVote.type WHEN 'up' THEN 1 ELSE -1 END) = 1
+  AND coalesce(peerVote.votedAt, peerVote.createdAt, 0) > $cutoff
+WITH me, peer, count(*) AS overlap
+WHERE overlap >= 2
+ORDER BY overlap DESC
+LIMIT $peerLimit
+MATCH (peer)-[recVote:VOTED]->(candidate:Topic)
+WHERE coalesce(recVote.voteType, CASE recVote.type WHEN 'up' THEN 1 ELSE -1 END) = 1
+  AND coalesce(recVote.votedAt, recVote.createdAt, 0) > $cutoff
+  AND candidate.createdAt > $cutoff
   AND NOT EXISTS { MATCH (me)-[:VOTED]->(candidate) }
+OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       coalesce(candidate.score, 0.0) AS popularity,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
        count(DISTINCT peer) AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
 ORDER BY peerCount DESC, popularity DESC
 LIMIT $limit
@@ -39,23 +55,48 @@ WHERE candidate.createdAt > $cutoff
 RETURN candidate.id AS topicId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       coalesce(candidate.score, 0.0) AS popularity,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
        0 AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
        true AS subscribed
-ORDER BY candidate.createdAt DESC
+ORDER BY candidate.createdAt DESC, popularity DESC
 LIMIT $limit
 `;
 
 const trendingCandidatesCypher = `
 MATCH (candidate:Topic)
 WHERE candidate.createdAt > $cutoff
+  AND ($substackId IS NULL OR candidate.substackId = $substackId)
+OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       coalesce(candidate.score, 0.0) AS popularity,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
        0 AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
 ORDER BY popularity DESC, candidate.createdAt DESC
+LIMIT $limit
+`;
+
+const similarUserCandidatesCypher = `
+MATCH (me:User {id: $userId})-[sim:SIMILAR_TO]->(peer:User)
+WITH me, peer, sim.score AS similarity
+ORDER BY similarity DESC
+LIMIT $peerLimit
+MATCH (peer)-[recVote:VOTED]->(candidate:Topic)
+WHERE coalesce(recVote.voteType, CASE recVote.type WHEN 'up' THEN 1 ELSE -1 END) = 1
+  AND candidate.createdAt > $cutoff
+  AND NOT EXISTS { MATCH (me)-[:VOTED]->(candidate) }
+OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
+RETURN candidate.id AS topicId,
+       coalesce(candidate.createdAt, 0) AS createdAt,
+       candidate.substackId AS substackId,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
+       count(DISTINCT peer) AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
+       false AS subscribed
+ORDER BY peerCount DESC, popularity DESC
 LIMIT $limit
 `;
 
@@ -68,11 +109,13 @@ const relatedByVotesCypher = `
 MATCH (source:Topic {id: $topicId})<-[:VOTED {type: 'up'}]-(u:User)-[:VOTED {type: 'up'}]->(candidate:Topic)
 WHERE candidate.id <> source.id
   AND candidate.createdAt > $cutoff
+OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       coalesce(candidate.score, 0.0) AS popularity,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
        count(DISTINCT u) AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
 ORDER BY peerCount DESC, popularity DESC
 LIMIT $limit
@@ -84,11 +127,13 @@ MATCH (candidate:Topic)
 WHERE candidate.id <> source.id
   AND candidate.substackId = source.substackId
   AND candidate.createdAt > $cutoff
+OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       coalesce(candidate.score, 0.0) AS popularity,
+       CASE WHEN coalesce(candidate.hotness, 0.0) <> 0.0 THEN candidate.hotness ELSE coalesce(candidate.score, candidate.voteScore, 0.0) END AS popularity,
        0 AS peerCount,
+       coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
 ORDER BY popularity DESC, candidate.createdAt DESC
 LIMIT $limit
@@ -113,7 +158,13 @@ export async function getCollaborativeCandidates(
 ): Promise<Candidate[]> {
   return readTransaction(
     collaborativeCandidatesCypher,
-    { userId, cutoff, limit: toNeo4jInteger(limit) },
+    {
+      userId,
+      cutoff,
+      minVotes: toNeo4jInteger(10),
+      peerLimit: toNeo4jInteger(50),
+      limit: toNeo4jInteger(limit),
+    },
     (record) => mapCandidate(record, 'collaborative'),
   );
 }
@@ -133,18 +184,36 @@ export async function getSubstackCandidates(
 export async function getTrendingCandidates(
   cutoff: number,
   limit: number,
+  substackId: string | null = null,
 ): Promise<Candidate[]> {
-  const cached = await getCachedTrending<Candidate>();
+  const cached = await getCachedTrending<Candidate>(substackId);
   if (cached) return cached.slice(0, limit);
 
   const candidates = await readTransaction(
     trendingCandidatesCypher,
-    { cutoff, limit: toNeo4jInteger(limit) },
+    { cutoff, substackId, limit: toNeo4jInteger(limit) },
     (record) => mapCandidate(record, 'trending'),
   );
 
-  await setCachedTrending(candidates);
+  await setCachedTrending(candidates, substackId);
   return candidates;
+}
+
+export async function getSimilarUserCandidates(
+  userId: string,
+  cutoff: number,
+  limit: number,
+): Promise<Candidate[]> {
+  return readTransaction(
+    similarUserCandidatesCypher,
+    {
+      userId,
+      cutoff,
+      peerLimit: toNeo4jInteger(30),
+      limit: toNeo4jInteger(limit),
+    },
+    (record) => mapCandidate(record, 'similar-user'),
+  );
 }
 
 export async function getUserSubscribedSubstackIds(
@@ -217,13 +286,32 @@ export function dedupeCandidates(candidates: Candidate[]): Candidate[] {
       ...current,
       peerCount: Math.max(current.peerCount, candidate.peerCount),
       popularity: Math.max(current.popularity, candidate.popularity),
+      subscriberCount: Math.max(
+        current.subscriberCount,
+        candidate.subscriberCount,
+      ),
       subscribed: current.subscribed || candidate.subscribed,
-      source:
-        current.source === 'collaborative' ? current.source : candidate.source,
+      sources: [...new Set([...current.sources, ...candidate.sources])],
+      source: choosePrimarySource(current.source, candidate.source),
     });
   }
 
   return [...byId.values()];
+}
+
+function choosePrimarySource(
+  current: Candidate['source'],
+  next: Candidate['source'],
+): Candidate['source'] {
+  const priority: Record<Candidate['source'], number> = {
+    collaborative: 4,
+    'similar-user': 3,
+    substack: 2,
+    trending: 1,
+    similar: 1,
+  };
+
+  return priority[next] > priority[current] ? next : current;
 }
 
 function mapCandidate(
@@ -236,7 +324,9 @@ function mapCandidate(
     substackId: toOptionalNativeString(record.get('substackId')),
     popularity: toNativeNumber(record.get('popularity')),
     peerCount: toNativeNumber(record.get('peerCount')),
+    subscriberCount: toNativeNumber(record.get('subscriberCount')),
     source,
+    sources: [source],
     subscribed: Boolean(record.get('subscribed')),
   };
 }

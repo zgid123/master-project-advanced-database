@@ -4,12 +4,14 @@ import type { Redis } from 'ioredis';
 import { getRedis } from '../cache/redis.js';
 import { config } from '../config.js';
 import { logger } from '../observability/logger.js';
+import { ingestBatchSize } from '../observability/metrics.js';
 import { ingestBatch } from './ingest.js';
 import {
   commentEventSchema,
   type EventKind,
   emptyIngestBatch,
   type IngestBatch,
+  normalizeEventInput,
   type RecSysEvent,
   subscriptionEventSchema,
   substackEventSchema,
@@ -88,6 +90,9 @@ export async function ensureConsumerGroups(redis: Redis): Promise<void> {
 }
 
 export async function readAndIngestOnce(redis: Redis): Promise<number> {
+  const claimed = await claimAndIngest(redis);
+  if (claimed > 0) return claimed;
+
   const streams = Object.values(streamByKind);
   const response = (await redis.xreadgroup(
     'GROUP',
@@ -123,6 +128,47 @@ export async function readAndIngestOnce(redis: Redis): Promise<number> {
 
   await ingestBatch(batch);
   await ackStreams(redis, ackByStream);
+  ingestBatchSize.observe(seen);
+  return seen;
+}
+
+async function claimAndIngest(redis: Redis): Promise<number> {
+  const ackByStream = new Map<string, string[]>();
+  const batch = emptyIngestBatch();
+  let seen = 0;
+
+  for (const stream of Object.values(streamByKind)) {
+    const response = (await redis.xautoclaim(
+      stream,
+      config.events.consumerGroup,
+      config.events.consumerName,
+      config.events.claimIdleMs,
+      '0-0',
+      'COUNT',
+      50,
+    )) as [string, RedisStreamEntry[], string[]?];
+    const entries = response[1] ?? [];
+
+    for (const [id, fields] of entries) {
+      seen += 1;
+      pushAck(ackByStream, stream, id);
+
+      try {
+        pushEvent(batch, parseStreamEvent(stream, fields));
+      } catch (error) {
+        logger.warn(
+          { error, stream, id },
+          'dropping invalid claimed recsys event',
+        );
+      }
+    }
+  }
+
+  if (seen === 0) return 0;
+
+  await ingestBatch(batch);
+  await ackStreams(redis, ackByStream);
+  ingestBatchSize.observe(seen);
   return seen;
 }
 
@@ -174,17 +220,19 @@ function parseStreamEvent(stream: string, fields: string[]): RecSysEvent {
     payload.type = inferEventType(kind, payload);
   }
 
+  const normalized = normalizeEventInput(payload);
+
   switch (kind) {
     case 'vote':
-      return voteEventSchema.parse(payload);
+      return voteEventSchema.parse(normalized);
     case 'subscription':
-      return subscriptionEventSchema.parse(payload);
+      return subscriptionEventSchema.parse(normalized);
     case 'topic':
-      return topicEventSchema.parse(payload);
+      return topicEventSchema.parse(normalized);
     case 'comment':
-      return commentEventSchema.parse(payload);
+      return commentEventSchema.parse(normalized);
     case 'substack':
-      return substackEventSchema.parse(payload);
+      return substackEventSchema.parse(normalized);
   }
 }
 
@@ -212,12 +260,15 @@ function pushEvent(batch: IngestBatch, event: RecSysEvent): void {
       batch.subscriptions.push(event);
       return;
     case 'topic.upsert':
+    case 'topic.deleted':
       batch.topics.push(event);
       return;
     case 'comment.upsert':
+    case 'comment.deleted':
       batch.comments.push(event);
       return;
     case 'substack.upsert':
+    case 'substack.deleted':
       batch.substacks.push(event);
       return;
   }

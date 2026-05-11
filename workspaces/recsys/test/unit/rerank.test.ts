@@ -29,7 +29,9 @@ function scored(
     createdAt: 1,
     popularity: 0,
     peerCount: 0,
+    subscriberCount: 0,
     source: 'collaborative',
+    sources: ['collaborative'],
     subscribed: false,
   };
 }

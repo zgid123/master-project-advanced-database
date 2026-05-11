@@ -1,6 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: API response fields and domain type aliases are intentional.
 export type CandidateSource =
   | 'collaborative'
+  | 'similar-user'
   | 'substack'
   | 'trending'
   | 'similar';
@@ -11,7 +12,9 @@ export type Candidate = {
   substackId: string | null;
   popularity: number;
   peerCount: number;
+  subscriberCount: number;
   source: CandidateSource;
+  sources: CandidateSource[];
   subscribed: boolean;
 };
 
@@ -30,11 +33,15 @@ export type FeedItem = {
   score: number;
   substackId: string | null;
   source: CandidateSource;
+  sources: CandidateSource[];
 };
 
 export type FeedResponse = {
   items: FeedItem[];
   next_cursor: string | null;
+  nextCursor: string | null;
+  generatedAt: string;
+  cacheHit: boolean;
 };
 
 export type SuggestedSubstack = {

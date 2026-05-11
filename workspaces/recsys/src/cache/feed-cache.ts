@@ -1,9 +1,13 @@
+import { randomUUID } from 'node:crypto';
+
 import { config } from '../config.js';
 import type { FeedResponse } from '../recommendation/types.js';
 import { getRedis } from './redis.js';
 
-const feedKey = (userId: string) => `feed:${userId}`;
-const trendingKey = 'trending:global';
+const feedKey = (userId: string) => `feed:user:${userId}`;
+const feedLockKey = (userId: string) => `lock:feed:${userId}`;
+const trendingKey = (substackId: string | null = null) =>
+  substackId ? `trending:substack:${substackId}` : 'trending:global';
 const userSubsKey = (userId: string) => `user:subs:${userId}`;
 const popularityKey = (topicId: string) => `popularity:${topicId}`;
 
@@ -12,7 +16,12 @@ export async function getCachedFeed(
 ): Promise<FeedResponse | null> {
   const redis = await getRedis();
   const raw = await redis.get(feedKey(userId));
-  return raw ? (JSON.parse(raw) as FeedResponse) : null;
+  return raw
+    ? {
+        ...(JSON.parse(raw) as FeedResponse),
+        cacheHit: true,
+      }
+    : null;
 }
 
 export async function setCachedFeed(
@@ -33,25 +42,68 @@ export async function invalidateUserFeed(userId: string): Promise<void> {
   await redis.del(feedKey(userId));
 }
 
-export async function getCachedTrending<T>(): Promise<T[] | null> {
+export async function acquireFeedLock(userId: string): Promise<string | null> {
   const redis = await getRedis();
-  const raw = await redis.get(trendingKey);
+  const token = randomUUID();
+  const result = await redis.set(feedLockKey(userId), token, 'PX', 5_000, 'NX');
+  return result === 'OK' ? token : null;
+}
+
+export async function releaseFeedLock(
+  userId: string,
+  token: string,
+): Promise<void> {
+  const redis = await getRedis();
+  await redis.eval(
+    `
+    if redis.call("GET", KEYS[1]) == ARGV[1] then
+      return redis.call("DEL", KEYS[1])
+    end
+    return 0
+    `,
+    1,
+    feedLockKey(userId),
+    token,
+  );
+}
+
+export async function waitForCachedFeed(
+  userId: string,
+  attempts = 5,
+  delayMs = 50,
+): Promise<FeedResponse | null> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    const cached = await getCachedFeed(userId);
+    if (cached) return cached;
+  }
+
+  return null;
+}
+
+export async function getCachedTrending<T>(
+  substackId: string | null = null,
+): Promise<T[] | null> {
+  const redis = await getRedis();
+  const raw = await redis.get(trendingKey(substackId));
   return raw ? (JSON.parse(raw) as T[]) : null;
 }
 
-export async function setCachedTrending<T>(items: T[]): Promise<void> {
+export async function setCachedTrending<T>(
+  items: T[],
+  substackId: string | null = null,
+): Promise<void> {
   const redis = await getRedis();
-  await redis.set(
-    trendingKey,
-    JSON.stringify(items),
-    'EX',
-    config.trendingCacheTtlSeconds,
-  );
+  const ttl = substackId
+    ? Math.min(config.trendingCacheTtlSeconds * 2, 120)
+    : config.trendingCacheTtlSeconds;
+  await redis.set(trendingKey(substackId), JSON.stringify(items), 'EX', ttl);
 }
 
 export async function invalidateTrending(): Promise<void> {
   const redis = await getRedis();
-  await redis.del(trendingKey);
+  const keys = await redis.keys('trending:*');
+  if (keys.length > 0) await redis.del(...keys);
 }
 
 export async function getCachedUserSubscriptions(

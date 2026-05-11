@@ -123,8 +123,26 @@ export async function buildApp() {
       return metricsRegistry.metrics();
     },
   );
+  app.get(
+    '/internal/metrics',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Prometheus metrics alias for internal scrape targets',
+      },
+    },
+    async (_request, reply) => {
+      reply.header('content-type', metricsRegistry.contentType);
+      return metricsRegistry.metrics();
+    },
+  );
 
   app.get('/health', { schema: { hide: true } }, healthHandler);
+  app.get('/internal/health', { schema: { hide: true } }, async () => ({
+    status: 'ok',
+    service: 'recsys',
+  }));
+  app.get('/internal/ready', { schema: { hide: true } }, healthHandler);
   app.get(
     '/v1/health',
     {

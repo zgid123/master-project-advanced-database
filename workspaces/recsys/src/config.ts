@@ -40,6 +40,7 @@ const envSchema = z.object({
   EVENTS_CONSUMER_NAME: z.string().default(`recsys-${process.pid}`),
   EVENTS_BATCH_SIZE: z.coerce.number().int().positive().default(500),
   EVENTS_BLOCK_MS: z.coerce.number().int().nonnegative().default(2_000),
+  EVENTS_CLAIM_IDLE_MS: z.coerce.number().int().positive().default(60_000),
   EVENTS_VOTE_STREAM: z.string().default('events:vote'),
   EVENTS_SUBSCRIPTION_STREAM: z.string().default('events:subscription'),
   EVENTS_TOPIC_STREAM: z.string().default('events:topic'),
@@ -80,6 +81,7 @@ export const config = {
     consumerName: env.EVENTS_CONSUMER_NAME,
     batchSize: env.EVENTS_BATCH_SIZE,
     blockMs: env.EVENTS_BLOCK_MS,
+    claimIdleMs: env.EVENTS_CLAIM_IDLE_MS,
     streams: {
       vote: env.EVENTS_VOTE_STREAM,
       subscription: env.EVENTS_SUBSCRIPTION_STREAM,

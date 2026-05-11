@@ -1,25 +1,33 @@
 import type { Candidate, ScoredCandidate, UserContext } from './types.js';
 
+const daySeconds = 24 * 60 * 60;
+const voteHalfLifeDays = 7;
+const hotnessHalfLifeDays = 1;
+
 export function scoreCandidate(candidate: Candidate, ctx: UserContext): number {
-  const ageHours = Math.max(0, (ctx.nowSeconds - candidate.createdAt) / 3_600);
-  const timeDecay = Math.exp(-0.02 * ageHours);
-  const collaborativeBoost =
-    candidate.peerCount > 0 ? Math.log1p(candidate.peerCount) : 0;
-  const popularityScore = candidate.popularity * 0.3;
+  const ageDays = Math.max(
+    0,
+    (ctx.nowSeconds - candidate.createdAt) / daySeconds,
+  );
+  const voteDecay = halfLifeDecay(ageDays, voteHalfLifeDays);
+  const hotnessDecay = halfLifeDecay(ageDays, hotnessHalfLifeDays);
+  const personalSignal =
+    candidate.peerCount > 0 ? Math.log1p(candidate.peerCount) * voteDecay : 0;
+  const normalizedPopularity =
+    candidate.popularity / Math.max(1, Math.log1p(candidate.subscriberCount));
   const subscribedBoost =
     candidate.substackId && ctx.subscribedSubstacks.has(candidate.substackId)
-      ? 0.5
+      ? 1
       : 0;
-  const sourceBoost =
-    candidate.source === 'substack'
-      ? 0.25
-      : candidate.source === 'trending'
-        ? 0.1
-        : 0;
+  const multiSourceBoost = Math.max(0, candidate.sources.length - 1) * 0.05;
+  const freshBoost = ageDays < 1 ? 1 + 0.2 * Math.exp(-(ageDays * 24) / 12) : 1;
 
   return (
-    timeDecay *
-    (collaborativeBoost + popularityScore + subscribedBoost + sourceBoost)
+    (0.6 * personalSignal +
+      0.3 * normalizedPopularity * hotnessDecay +
+      0.1 * subscribedBoost +
+      multiSourceBoost) *
+    freshBoost
   );
 }
 
@@ -31,4 +39,8 @@ export function scoreCandidates(
     ...candidate,
     score: scoreCandidate(candidate, ctx),
   }));
+}
+
+function halfLifeDecay(ageDays: number, halfLifeDays: number): number {
+  return Math.exp((-Math.log(2) * ageDays) / halfLifeDays);
 }
