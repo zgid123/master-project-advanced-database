@@ -39,6 +39,10 @@ export class AuthService {
     return this.#post('/v1/auth/refresh', params);
   }
 
+  public async signOut(params: IAuthRequestParams): Promise<Response> {
+    return this.#post('/v1/auth/sign-out', params);
+  }
+
   public async profile({ authToken }: IProfileParams): Promise<Response> {
     return this.#authenticatedRequest({
       authToken,

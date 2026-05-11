@@ -1,6 +1,7 @@
 import {
   AllowedTokenEntity,
   type IAllowedTokenRepository,
+  type IDeleteAllowedTokenParams,
   type IFindOneAllowedTokenParams,
   type IUserRepository,
   type TCreateAllowedToken,
@@ -126,5 +127,12 @@ export class AllowedTokenRepository implements IAllowedTokenRepository {
       updatedAt: now,
       id: allowedToken.id,
     });
+  }
+
+  public async delete({
+    refreshToken,
+  }: IDeleteAllowedTokenParams): Promise<void> {
+    const redis = await getRedis();
+    await redis.del(createRefreshTokenKey(refreshToken));
   }
 }

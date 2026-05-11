@@ -13,7 +13,6 @@
   "framework": "react",
   "chosenAddOns": [
     "shadcn",
-    "better-auth",
     "tanstack-query",
     "form"
   ]

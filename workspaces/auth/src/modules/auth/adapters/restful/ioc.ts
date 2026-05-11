@@ -3,6 +3,7 @@ import type { TDrizzle } from '#/infrastructure/drizzle/config';
 import {
   RefreshTokenCommand,
   SignInCommand,
+  SignOutCommand,
   SignUpCommand,
   SignUserCommand,
   SubscribeUserCommand,
@@ -22,6 +23,7 @@ export interface IAuthIoC {
     getUserQuery: GetUserQuery;
     signInCommand: SignInCommand;
     signUpCommand: SignUpCommand;
+    signOutCommand: SignOutCommand;
     signUserCommand: SignUserCommand;
     notificationService: NotificationService;
     refreshTokenCommand: RefreshTokenCommand;
@@ -45,6 +47,7 @@ export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
   const signUserCommand = new SignUserCommand(allowedTokenRepository);
   const signUpCommand = new SignUpCommand(userRepository, roleRepository);
   const refreshTokenCommand = new RefreshTokenCommand(allowedTokenRepository);
+  const signOutCommand = new SignOutCommand(allowedTokenRepository);
   const subscribeUserCommand = new SubscribeUserCommand(
     userRepository,
     userSubscriptionRepository,
@@ -61,6 +64,7 @@ export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
       getUserQuery,
       signInCommand,
       signUpCommand,
+      signOutCommand,
       signUserCommand,
       notificationService,
       refreshTokenCommand,

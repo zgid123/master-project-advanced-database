@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 
+import { AuthModal } from '../components/AuthModal';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
@@ -41,6 +42,12 @@ export const Route = createRootRouteWithContext<IMyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => (
+    <div className='flex flex-col items-center justify-center py-20 text-center'>
+      <h1 className='text-4xl font-bold text-sea-ink'>404</h1>
+      <p className='mt-2 text-sea-ink-soft'>Page not found</p>
+    </div>
+  ),
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -54,6 +61,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Header />
         <main className='page-wrap px-4 pb-10 pt-8'>{children}</main>
         <Footer />
+        <AuthModal />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

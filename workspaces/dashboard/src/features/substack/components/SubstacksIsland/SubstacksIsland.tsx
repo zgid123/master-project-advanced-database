@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Plus, UsersRound } from 'lucide-react';
 
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries/authQueries';
 import {
   substackListQueryOptions,
   totalSubstacksQueryOptions,
@@ -29,6 +30,12 @@ export function SubstacksIsland() {
   const {
     data: { totalSubstacks },
   } = useSuspenseQuery(totalSubstacksQueryOptions());
+  const { data: session, isPending } = useSession();
+  const currentUser = session?.user;
+
+  if (isPending) {
+    return null;
+  }
 
   return (
     <aside className='island-shell rise-in h-fit rounded-2xl p-4'>
@@ -37,14 +44,16 @@ export function SubstacksIsland() {
           <p className='island-kicker mb-1'>Substacks</p>
           <h1 className='m-0 text-lg font-bold text-sea-ink'>Communities</h1>
         </div>
-        <Button
-          aria-label='Create substack'
-          className='size-9 border border-lagoon/30 bg-lagoon/14 text-lagoon-deep hover:bg-lagoon/22'
-          size='icon'
-          variant='secondary'
-        >
-          <Plus className='size-4' />
-        </Button>
+        {currentUser && (
+          <Button
+            aria-label='Create substack'
+            className='size-9 border border-lagoon/30 bg-lagoon/14 text-lagoon-deep hover:bg-lagoon/22'
+            size='icon'
+            variant='secondary'
+          >
+            <Plus className='size-4' />
+          </Button>
+        )}
       </div>
       <div className='space-y-2'>
         {substacks.map((substack, index) => {

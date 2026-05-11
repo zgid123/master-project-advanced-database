@@ -1,13 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { LogOut, UserRound } from 'lucide-react';
 
-import {
-  useCurrentUserQuery,
-  useSignOutCommand,
-} from '#/features/auth/queries';
+import { Button } from '#/components/ui/button';
+import { useSession, useSignOutCommand } from '#/features/auth/queries';
 
 export default function BetterAuthHeader() {
-  const { data: currentUser, isPending } = useCurrentUserQuery();
+  const { data: session, isPending } = useSession();
   const signOutCommand = useSignOutCommand();
 
   if (isPending) {
@@ -16,11 +14,13 @@ export default function BetterAuthHeader() {
     );
   }
 
-  if (currentUser) {
+  if (session?.user) {
     const displayName =
-      currentUser.displayName ||
-      [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') ||
-      currentUser.email;
+      session.user.displayName ||
+      [session.user.firstName, session.user.lastName]
+        .filter(Boolean)
+        .join(' ') ||
+      session.user.email;
 
     return (
       <div className='flex items-center gap-2'>
@@ -28,17 +28,18 @@ export default function BetterAuthHeader() {
           <UserRound className='size-4' />
           <span className='truncate'>{displayName}</span>
         </div>
-        <button
+        <Button
           className='inline-flex h-9 items-center gap-2 rounded-md border border-chip-line bg-chip-bg px-3 text-sm font-semibold text-sea-ink hover:bg-link-bg-hover'
           disabled={signOutCommand.isPending}
           onClick={() => {
             signOutCommand.mutate();
           }}
           type='button'
+          variant='ghost'
         >
           <LogOut className='size-4' />
           <span className='hidden sm:inline'>Sign out</span>
-        </button>
+        </Button>
       </div>
     );
   }

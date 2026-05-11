@@ -5,7 +5,12 @@ export interface IFindOneAllowedTokenParams {
   refreshToken: string;
 }
 
+export interface IDeleteAllowedTokenParams {
+  refreshToken: string;
+}
+
 export interface IAllowedTokenRepository {
+  delete(params: IDeleteAllowedTokenParams): Promise<void>;
   create(params: TCreateAllowedToken): Promise<AllowedTokenEntity>;
   findOne(
     params: IFindOneAllowedTokenParams,

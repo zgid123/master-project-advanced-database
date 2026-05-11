@@ -2,12 +2,19 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries/authQueries';
 import { substackListQueryOptions } from '#/features/substack/queries';
 
 import { SubstackCard } from '../SubstackCard';
 
 export function SubstackList() {
   const { data: substacks } = useSuspenseQuery(substackListQueryOptions());
+  const { data: session, isPending } = useSession();
+  const currentUser = session?.user;
+
+  if (isPending) {
+    return null;
+  }
 
   return (
     <>
@@ -22,13 +29,15 @@ export function SubstackList() {
             updated with the latest in your field of expertise.
           </p>
         </div>
-        <Button
-          className='h-11 rounded-xl bg-lagoon-deep px-5 text-sm font-bold text-white hover:bg-lagoon-deep/90'
-          type='button'
-        >
-          <Plus className='size-5' />
-          Create Substack
-        </Button>
+        {currentUser && (
+          <Button
+            className='h-12 rounded-xl border border-lagoon/30 bg-lagoon/14 px-5 text-sm font-bold text-lagoon-deep hover:bg-lagoon/22'
+            type='button'
+          >
+            <Plus className='size-5' />
+            Create Substack
+          </Button>
+        )}
       </div>
       <div className='mb-8 flex flex-col gap-4 sm:flex-row'>
         <label className='flex h-12 flex-1 items-center gap-3 rounded-xl border border-line bg-chip-bg px-4 text-sea-ink-soft'>

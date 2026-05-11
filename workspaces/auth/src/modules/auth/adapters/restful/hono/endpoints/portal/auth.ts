@@ -115,6 +115,18 @@ export const authEndpoints = new Hono<IAuthContextVariables>()
       });
     },
   )
+  .post('/sign-out', async (c) => {
+    const { req, var: v } = c;
+    const { token = '' } = await req.json();
+
+    await v.auth.portal.signOutCommand.exec({
+      refreshToken: token,
+    });
+
+    return c.json({
+      data: null,
+    });
+  })
   .get(
     '/profile',
     authenticatedUserMiddleware,

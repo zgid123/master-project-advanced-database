@@ -107,6 +107,23 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
       }),
     });
   })
+  .post('/sign-out', async (c) => {
+    const { req, var: v } = c;
+
+    const response = await v.authService.signOut({
+      body: await req.text(),
+      contentType: 'application/json',
+    });
+    const body = await response.text();
+
+    return c.newResponse(body, {
+      statusText: response.statusText,
+      status: response.status as StatusCode,
+      headers: createUpstreamResponseHeaders(response, {
+        excludedHeaders: ['set-cookie'],
+      }),
+    });
+  })
   .get('/profile', (c) => {
     return c.json({
       data: c.get('currentUser'),

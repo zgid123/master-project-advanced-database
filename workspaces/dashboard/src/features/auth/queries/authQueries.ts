@@ -1,20 +1,12 @@
 import {
   type IErrorProps,
-  type TQueryKey,
   type UseMutationOptions,
   useCommand,
-  useQuery,
-  useQueryClient,
 } from '@alphacifer/react/query';
 import type { TSignIn, TSignUp } from '@domain/auth';
 
-import {
-  getCurrentUser,
-  signIn,
-  signOut,
-  signUp,
-  type TAuthPayload,
-} from '#/features/auth/api';
+import { signIn, signOut, signUp } from '#/features/auth/api';
+import { useAuthStore } from '#/features/auth/store/authStore';
 
 export const AUTH_MUTATION_KEYS = {
   signIn: ['mk_authSignIn'],
@@ -22,74 +14,42 @@ export const AUTH_MUTATION_KEYS = {
   signOut: ['mk_authSignOut'],
 } as const;
 
-export const AUTH_QUERY_KEYS = {
-  currentUser: 'qk_authCurrentUser' satisfies TQueryKey,
-} as const;
-
-const CURRENT_USER_QUERY_KEY: [typeof AUTH_QUERY_KEYS.currentUser, []] = [
-  AUTH_QUERY_KEYS.currentUser,
-  [],
-];
-
 type TAuthMutationOptions<TVariables> = Omit<
-  UseMutationOptions<TAuthPayload, IErrorProps, TVariables>,
+  UseMutationOptions<void, IErrorProps, TVariables>,
   'mutationFn'
 >;
 
-export function useSignInCommand(options?: TAuthMutationOptions<TSignIn>) {
-  const queryClient = useQueryClient();
+export function useSession() {
+  const user = useAuthStore.use.user();
+  return {
+    isPending: false,
+    data: user
+      ? {
+          user,
+        }
+      : null,
+  };
+}
 
+export function useSignInCommand(options?: TAuthMutationOptions<TSignIn>) {
   return useCommand(signIn, {
     mutationKey: AUTH_MUTATION_KEYS.signIn,
     ...options,
-    onSuccess: (...params) => {
-      void queryClient.invalidateQueries({
-        queryKey: CURRENT_USER_QUERY_KEY,
-      });
-      options?.onSuccess?.(...params);
-    },
   });
 }
 
 export function useSignUpCommand(options?: TAuthMutationOptions<TSignUp>) {
-  const queryClient = useQueryClient();
-
   return useCommand(signUp, {
     mutationKey: AUTH_MUTATION_KEYS.signUp,
     ...options,
-    onSuccess: (...params) => {
-      void queryClient.invalidateQueries({
-        queryKey: CURRENT_USER_QUERY_KEY,
-      });
-      options?.onSuccess?.(...params);
-    },
   });
 }
 
-export function useCurrentUserQuery() {
-  return useQuery(
-    getCurrentUser,
-    CURRENT_USER_QUERY_KEY,
-    {
-      retry: false,
-      staleTime: 30_000,
-    },
-    {
-      defaultValue: null,
-    },
-  );
-}
-
-export function useSignOutCommand() {
-  const queryClient = useQueryClient();
-
+export function useSignOutCommand(
+  options?: Omit<UseMutationOptions<void, IErrorProps, void>, 'mutationFn'>,
+) {
   return useCommand(signOut, {
     mutationKey: AUTH_MUTATION_KEYS.signOut,
-    onSuccess: () => {
-      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
-      void queryClient.invalidateQueries({
-        queryKey: CURRENT_USER_QUERY_KEY,
-      });
-    },
+    ...options,
   });
 }
