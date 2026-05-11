@@ -1,5 +1,6 @@
 import { arkValidator } from '@alphacifer/hono/core';
 import { CreateSubstack } from '@domain/auth';
+import { parsePagy } from '@node/utils';
 import { Hono, type ValidationTargets } from 'hono';
 
 import {
@@ -11,15 +12,30 @@ import { getUserDisplayName } from '#/utils/userUtils';
 import type { ISubstackContextVariables } from '../../../context';
 
 const CreateSubstackRequest = CreateSubstack.omit('ownerId');
+const MAX_SUBSTACK_LIMIT = 50;
 
 export const substackEndpoints = new Hono<ISubstackContextVariables>()
   .use(authenticatedUserMiddleware)
-  .use(requiredUserMiddleware)
   .get('/', async (c) => {
-    const substacks = await c.var.substack.portal.getSubstacksQuery.exec();
+    const { limit } = c.req.query();
+    const pagy = limit ? parsePagy({ limit }) : undefined;
+
+    const substacks = await c.var.substack.portal.getSubstacksQuery.exec({
+      limit: pagy ? Math.min(pagy.limit, MAX_SUBSTACK_LIMIT) : undefined,
+    });
 
     return c.json({
       data: substacks,
+    });
+  })
+  .get('/total', async (c) => {
+    const totalSubstacks =
+      await c.var.substack.portal.getTotalSubstacksQuery.exec();
+
+    return c.json({
+      data: {
+        totalSubstacks,
+      },
     });
   })
   .get('/:slug', async (c) => {
@@ -31,6 +47,7 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
       data: substack,
     });
   })
+  .use(requiredUserMiddleware)
   .post('/:slug/subscribe', async (c) => {
     const currentUser = c.get('currentUser');
     const { created, substack } =

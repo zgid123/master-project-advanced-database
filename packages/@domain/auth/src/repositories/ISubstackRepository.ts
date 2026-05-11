@@ -7,6 +7,11 @@ export interface IFindOneSubstackParams {
 }
 
 export interface IFindSubstackParams {
+  limit?: number;
+  approved?: boolean;
+}
+
+export interface ICountSubstackParams {
   approved?: boolean;
 }
 
@@ -15,9 +20,10 @@ export interface IApproveSubstackParams {
 }
 
 export interface ISubstackRepository {
-  approve(params: IApproveSubstackParams): Promise<SubstackEntity>;
+  count(params: ICountSubstackParams): Promise<number>;
   create(params: TCreateSubstack): Promise<SubstackEntity>;
   find(params: IFindSubstackParams): Promise<SubstackEntity[]>;
+  approve(params: IApproveSubstackParams): Promise<SubstackEntity>;
   findOne(params: IFindOneSubstackParams): Promise<SubstackEntity>;
   findPartialOne(
     params: IFindOneSubstackParams,

@@ -9,6 +9,7 @@ import {
 import {
   GetSubstackQuery,
   GetSubstacksQuery,
+  GetTotalSubstacksQuery,
 } from '../../application/portal/v1/queries';
 import {
   SubstackRepository,
@@ -25,6 +26,7 @@ export interface ISubstackIoC {
     getSubstackQuery: GetSubstackQuery;
     getSubstacksQuery: GetSubstacksQuery;
     createSubstackCommand: CreateSubstackCommand;
+    getTotalSubstacksQuery: GetTotalSubstacksQuery;
     subscribeSubstackCommand: SubscribeSubstackCommand;
     unsubscribeSubstackCommand: UnsubscribeSubstackCommand;
   };
@@ -53,6 +55,7 @@ export function registerSubstackIoC({
   );
   const getSubstackQuery = new GetSubstackQuery(substackRepository);
   const getSubstacksQuery = new GetSubstacksQuery(substackRepository);
+  const getTotalSubstacksQuery = new GetTotalSubstacksQuery(substackRepository);
   const approveSubstackCommand = new ApproveSubstackCommand(substackRepository);
   const subscribeSubstackCommand = new SubscribeSubstackCommand(
     substackRepository,
@@ -71,6 +74,7 @@ export function registerSubstackIoC({
       getSubstackQuery,
       getSubstacksQuery,
       createSubstackCommand,
+      getTotalSubstacksQuery,
       subscribeSubstackCommand,
       unsubscribeSubstackCommand,
     },

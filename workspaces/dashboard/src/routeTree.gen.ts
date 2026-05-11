@@ -9,16 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubstacksRouteImport } from './routes/substacks'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiPortalSubstacksIndexRouteImport } from './routes/api/portal/substacks/index'
+import { Route as ApiPortalSubstacksTotalRouteImport } from './routes/api/portal/substacks/total'
 import { Route as ApiPortalAuthSignUpRouteImport } from './routes/api/portal/auth/sign-up'
 import { Route as ApiPortalAuthSignOutRouteImport } from './routes/api/portal/auth/sign-out'
 import { Route as ApiPortalAuthSignInRouteImport } from './routes/api/portal/auth/sign-in'
 import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
 
+const SubstacksRoute = SubstacksRouteImport.update({
+  id: '/substacks',
+  path: '/substacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -42,6 +50,16 @@ const IndexRoute = IndexRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalSubstacksIndexRoute = ApiPortalSubstacksIndexRouteImport.update({
+  id: '/api/portal/substacks/',
+  path: '/api/portal/substacks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalSubstacksTotalRoute = ApiPortalSubstacksTotalRouteImport.update({
+  id: '/api/portal/substacks/total',
+  path: '/api/portal/substacks/total',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPortalAuthSignUpRoute = ApiPortalAuthSignUpRouteImport.update({
@@ -70,22 +88,28 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/substacks': typeof SubstacksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/substacks': typeof SubstacksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/substacks': typeof ApiPortalSubstacksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,11 +117,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/substacks': typeof SubstacksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/auth/sign-in': typeof ApiPortalAuthSignInRoute
   '/api/portal/auth/sign-out': typeof ApiPortalAuthSignOutRoute
   '/api/portal/auth/sign-up': typeof ApiPortalAuthSignUpRoute
+  '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,33 +133,42 @@ export interface FileRouteTypes {
     | '/about'
     | '/sign-in'
     | '/sign-up'
+    | '/substacks'
     | '/api/auth/$'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/total'
+    | '/api/portal/substacks/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/sign-in'
     | '/sign-up'
+    | '/substacks'
     | '/api/auth/$'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/total'
+    | '/api/portal/substacks'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/sign-in'
     | '/sign-up'
+    | '/substacks'
     | '/api/auth/$'
     | '/api/portal/auth/profile'
     | '/api/portal/auth/sign-in'
     | '/api/portal/auth/sign-out'
     | '/api/portal/auth/sign-up'
+    | '/api/portal/substacks/total'
+    | '/api/portal/substacks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -140,15 +176,25 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SubstacksRoute: typeof SubstacksRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPortalAuthProfileRoute: typeof ApiPortalAuthProfileRoute
   ApiPortalAuthSignInRoute: typeof ApiPortalAuthSignInRoute
   ApiPortalAuthSignOutRoute: typeof ApiPortalAuthSignOutRoute
   ApiPortalAuthSignUpRoute: typeof ApiPortalAuthSignUpRoute
+  ApiPortalSubstacksTotalRoute: typeof ApiPortalSubstacksTotalRoute
+  ApiPortalSubstacksIndexRoute: typeof ApiPortalSubstacksIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/substacks': {
+      id: '/substacks'
+      path: '/substacks'
+      fullPath: '/substacks'
+      preLoaderRoute: typeof SubstacksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -182,6 +228,20 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/substacks/': {
+      id: '/api/portal/substacks/'
+      path: '/api/portal/substacks'
+      fullPath: '/api/portal/substacks/'
+      preLoaderRoute: typeof ApiPortalSubstacksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/substacks/total': {
+      id: '/api/portal/substacks/total'
+      path: '/api/portal/substacks/total'
+      fullPath: '/api/portal/substacks/total'
+      preLoaderRoute: typeof ApiPortalSubstacksTotalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/portal/auth/sign-up': {
@@ -220,11 +280,14 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SubstacksRoute: SubstacksRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPortalAuthProfileRoute: ApiPortalAuthProfileRoute,
   ApiPortalAuthSignInRoute: ApiPortalAuthSignInRoute,
   ApiPortalAuthSignOutRoute: ApiPortalAuthSignOutRoute,
   ApiPortalAuthSignUpRoute: ApiPortalAuthSignUpRoute,
+  ApiPortalSubstacksTotalRoute: ApiPortalSubstacksTotalRoute,
+  ApiPortalSubstacksIndexRoute: ApiPortalSubstacksIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
