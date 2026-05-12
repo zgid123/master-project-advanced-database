@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "@domain/core": "workspace:^",
-    "arktype": "^2.2.0"
+    "arktype": "2.2.0"
   }
 }

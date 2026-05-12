@@ -8,6 +8,6 @@
     "build": "tsc"
   },
   "dependencies": {
-    "arktype": "^2.2.0"
+    "arktype": "2.2.0"
   }
 }
