@@ -2,3 +2,12 @@ packages:
   - '@types/**'
   - packages/**
   - workspaces/**
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - '@scarf/scarf'
+  - '@swc/core'
+  - bcrypt
+  - msgpackr-extract
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook

@@ -16,6 +16,10 @@ export const CreateSubstack = Substack.pick(
   'ownerId',
 );
 
+export const NewSubstack = Substack.pick('name', 'description');
+
 export type TSubstack = typeof Substack.infer;
 
 export type TCreateSubstack = typeof CreateSubstack.infer;
+
+export type TNewSubstack = typeof NewSubstack.infer;
