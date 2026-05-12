@@ -1,80 +1,77 @@
-import type { PgClient } from '../../db/pool.js';
-import { pool } from '../../db/pool.js';
+import { Int32, ObjectId, type ClientSession, type Collection, type Filter, type Sort } from 'mongodb';
+import { getDb } from '../../db/mongo.js';
 import type { KeysetCursor } from '../pagination.js';
-import type { CreateJobInput, JobListRow, JobRow, JobSearchRow, JobStatus, UpdateJobInput } from './job.types.js';
+import { objectIdOrNull, parseObjectId } from '../object-id.js';
+import type { CreateJobInput, JobDoc, JobListDoc, JobSearchDoc, UpdateJobInput } from './job.types.js';
 
-type JobMutationTarget = Pick<JobRow, 'id' | 'posted_by_user_id' | 'status'>;
+type JobMutationTarget = Pick<JobDoc, '_id' | 'postedByUserId' | 'status'>;
 
-const updateColumnMap = {
-  name: 'name',
-  slug: 'slug',
-  content: 'content',
-  status: 'status',
-  job_type: 'job_type',
-  location: 'location',
-  salary_min: 'salary_min',
-  salary_max: 'salary_max',
-  currency: 'currency',
-  tags: 'tags',
-  metadata: 'metadata',
-  valid_to: 'valid_to',
-} as const;
+const updateFieldNames = ['title', 'content', 'status', 'jobType', 'location', 'tags', 'metadata'] as const;
+
+async function jobsCollection(): Promise<Collection<JobDoc>> {
+  return (await getDb()).collection<JobDoc>('jobs');
+}
+
+function keysetFilter(cursor: KeysetCursor | null): Filter<JobDoc> {
+  if (!cursor) return {};
+
+  return {
+    $or: [
+      { createdAt: { $lt: cursor.createdAt } },
+      { createdAt: cursor.createdAt, _id: { $lt: cursor._id } },
+    ],
+  };
+}
 
 export const JobRepo = {
-  async findById(id: string, client: PgClient | typeof pool = pool): Promise<JobRow | null> {
-    const result = await client.query<JobRow>({
-      name: 'job-by-id',
-      text: 'SELECT * FROM jobs WHERE id = $1 AND deleted_at IS NULL',
-      values: [id],
-    });
+  async findById(id: string, session?: ClientSession): Promise<JobDoc | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    return result.rows[0] ?? null;
+    const collection = await jobsCollection();
+    return collection.findOne(
+      { _id, deletedAt: null },
+      session ? { session } : undefined,
+    );
   },
 
-  async findMutationTarget(id: string, client: PgClient): Promise<JobMutationTarget | null> {
-    const result = await client.query<JobMutationTarget>({
-      name: 'job-mutation-target-for-update',
-      text: `
-        SELECT id, posted_by_user_id, status
-        FROM jobs
-        WHERE id = $1
-          AND deleted_at IS NULL
-        FOR UPDATE
-      `,
-      values: [id],
-    });
+  async findMutationTarget(id: string, session: ClientSession): Promise<JobMutationTarget | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    return result.rows[0] ?? null;
+    const collection = await jobsCollection();
+    return collection.findOne(
+      { _id, deletedAt: null },
+      {
+        session,
+        projection: { _id: 1, postedByUserId: 1, status: 1 },
+      },
+    );
   },
 
-  async listOpenKeyset(cursor: KeysetCursor | null, limit: number): Promise<JobListRow[]> {
-    const values: unknown[] = [];
-    let cursorFilter = '';
+  async listOpenKeyset(cursor: KeysetCursor | null, limit: number): Promise<JobListDoc[]> {
+    const collection = await jobsCollection();
+    const filter: Filter<JobDoc> = {
+      status: 'open',
+      deletedAt: null,
+      ...keysetFilter(cursor),
+    };
 
-    if (cursor) {
-      values.push(cursor.createdAt, cursor.id);
-      cursorFilter = 'AND (created_at, id) < ($1::timestamptz, $2::bigint)';
-    }
-
-    values.push(limit);
-    const limitParam = values.length;
-
-    const result = await pool.query<JobListRow>({
-      name: cursor ? 'job-list-open-keyset-cursor' : 'job-list-open-keyset-first',
-      text: `
-        SELECT id, name, slug, location, salary_min, salary_max,
-               currency, application_count, created_at
-        FROM jobs
-        WHERE deleted_at IS NULL
-          AND status = 'open'
-          ${cursorFilter}
-        ORDER BY created_at DESC, id DESC
-        LIMIT $${limitParam}
-      `,
-      values,
-    });
-
-    return result.rows;
+    return collection
+      .find(filter, {
+        projection: {
+          _id: 1,
+          title: 1,
+          location: 1,
+          jobType: 1,
+          status: 1,
+          createdAt: 1,
+          applicationCount: 1,
+        },
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .toArray() as Promise<JobListDoc[]>;
   },
 
   async fullTextSearch(
@@ -82,128 +79,136 @@ export const JobRepo = {
     location: string | null,
     type: string | null,
     limit: number,
-  ): Promise<JobSearchRow[]> {
-    const result = await pool.query<JobSearchRow>({
-      name: 'job-full-text-search',
-      text: `
-        SELECT id, name, slug, location, created_at, ts_rank(search_vector, query) AS rank
-        FROM jobs, plainto_tsquery('simple', $1) AS query
-        WHERE deleted_at IS NULL
-          AND status = 'open'
-          AND search_vector @@ query
-          AND ($2::text IS NULL OR location ILIKE '%' || $2 || '%')
-          AND ($3::job_type IS NULL OR job_type = $3::job_type)
-        ORDER BY rank DESC, created_at DESC, id DESC
-        LIMIT $4
-      `,
-      values: [q, location, type, limit],
-    });
+  ): Promise<JobSearchDoc[]> {
+    const collection = await jobsCollection();
+    const filter: Filter<JobDoc> = {
+      $text: { $search: q },
+      status: 'open',
+      deletedAt: null,
+    };
 
-    return result.rows;
+    if (location) {
+      filter.location = { $regex: location, $options: 'i' };
+    }
+
+    if (type) {
+      filter.jobType = type as NonNullable<JobDoc['jobType']>;
+    }
+
+    return collection
+      .find(filter, {
+        projection: {
+          _id: 1,
+          title: 1,
+          location: 1,
+          jobType: 1,
+          status: 1,
+          createdAt: 1,
+          applicationCount: 1,
+          score: { $meta: 'textScore' },
+        },
+      })
+      .sort({ score: { $meta: 'textScore' }, createdAt: -1, _id: -1 } as Sort)
+      .limit(limit)
+      .toArray() as unknown as Promise<JobSearchDoc[]>;
   },
 
-  async create(input: CreateJobInput, client: PgClient | typeof pool = pool): Promise<JobRow> {
-    const result = await client.query<JobRow>({
-      name: 'job-create',
-      text: `
-        INSERT INTO jobs (
-          posted_by_user_id, name, slug, content, status, job_type, location,
-          salary_min, salary_max, currency, tags, metadata, valid_to
-        )
-        VALUES (
-          $1, $2, $3, $4, $5::job_status, $6::job_type, $7,
-          $8, $9, $10, $11::text[], $12::jsonb, $13::timestamptz
-        )
-        RETURNING *
-      `,
-      values: [
-        input.posted_by_user_id,
-        input.name,
-        input.slug,
-        input.content,
-        input.status,
-        input.job_type ?? null,
-        input.location ?? null,
-        input.salary_min ?? null,
-        input.salary_max ?? null,
-        input.currency ?? null,
-        input.tags,
-        JSON.stringify(input.metadata),
-        input.valid_to ?? null,
-      ],
-    });
+  async create(input: CreateJobInput, session: ClientSession): Promise<JobDoc> {
+    const collection = await jobsCollection();
+    const now = new Date();
+    const doc: JobDoc = {
+      _id: new ObjectId(),
+      postedByUserId: parseObjectId(input.postedByUserId, 'INVALID_USER_SUBJECT'),
+      title: input.title,
+      content: input.content,
+      location: input.location ?? null,
+      jobType: input.jobType ?? null,
+      status: input.status,
+      tags: input.tags,
+      applicationCount: new Int32(0) as unknown as number,
+      metadata: input.metadata,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return result.rows[0] as JobRow;
+    await collection.insertOne(doc, { session });
+    return doc;
   },
 
   async updateCAS(
     id: string,
     patch: UpdateJobInput,
-    client: PgClient | typeof pool = pool,
-  ): Promise<JobRow | null> {
-    const entries = Object.entries(patch).filter(([key]) => key !== 'expected_status') as Array<
-      [keyof typeof updateColumnMap, unknown]
-    >;
-    const values: unknown[] = [];
-    const setClauses = entries.map(([key, value], index) => {
-      values.push(key === 'metadata' ? JSON.stringify(value) : value);
-      return `${updateColumnMap[key]} = $${index + 1}`;
-    });
+    session: ClientSession,
+  ): Promise<JobDoc | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    values.push(id);
-    const idParam = values.length;
-    let expectedStatusFilter = '';
+    const $set: Partial<JobDoc> = {
+      updatedAt: new Date(),
+    };
 
-    if (patch.expected_status) {
-      values.push(patch.expected_status);
-      expectedStatusFilter = `AND status = $${values.length}::job_status`;
+    for (const field of updateFieldNames) {
+      if (field in patch) {
+        Object.assign($set, { [field]: patch[field] ?? null });
+      }
     }
 
-    const result = await client.query<JobRow>({
-      name: 'job-update-cas',
-      text: `
-        UPDATE jobs
-        SET ${setClauses.join(', ')}
-        WHERE id = $${idParam}
-          AND deleted_at IS NULL
-          ${expectedStatusFilter}
-        RETURNING *
-      `,
-      values,
-    });
+    const filter: Filter<JobDoc> = {
+      _id,
+      deletedAt: null,
+    };
 
-    return result.rows[0] ?? null;
+    if (patch.expectedStatus) {
+      filter.status = patch.expectedStatus;
+    }
+
+    const collection = await jobsCollection();
+    return collection.findOneAndUpdate(
+      filter,
+      { $set },
+      {
+        session,
+        returnDocument: 'after',
+      },
+    );
   },
 
-  async softDelete(id: string, client: PgClient): Promise<JobRow | null> {
-    const result = await client.query<JobRow>({
-      name: 'job-soft-delete',
-      text: `
-        UPDATE jobs
-        SET deleted_at = now()
-        WHERE id = $1
-          AND deleted_at IS NULL
-        RETURNING *
-      `,
-      values: [id],
-    });
+  async softDelete(id: string, session: ClientSession): Promise<JobDoc | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    return result.rows[0] ?? null;
+    const now = new Date();
+    const collection = await jobsCollection();
+    return collection.findOneAndUpdate(
+      { _id, deletedAt: null },
+      { $set: { deletedAt: now, updatedAt: now } },
+      {
+        session,
+        returnDocument: 'after',
+      },
+    );
   },
 
   async appendEvent(
-    client: PgClient,
-    eventType: 'job.created' | 'job.updated' | 'job.closed' | 'job.deleted',
+    session: ClientSession,
+    topic: 'job.created' | 'job.status_changed' | 'job.deleted',
     payload: Record<string, unknown>,
   ): Promise<void> {
-    await client.query({
-      name: 'outbox-append-job-event',
-      text: 'INSERT INTO event_outbox(event_type, payload) VALUES ($1, $2::jsonb)',
-      values: [eventType, JSON.stringify(payload)],
-    });
+    const outbox = (await getDb()).collection('job_outbox');
+    const now = new Date();
+    await outbox.insertOne(
+      {
+        _id: new ObjectId(),
+        topic,
+        payload,
+        status: 'pending',
+        publishedAt: null,
+        attempts: new Int32(0),
+        createdAt: now,
+        updatedAt: now,
+      },
+      { session },
+    );
   },
 };
-
-export function isTerminalStatus(status: JobStatus): boolean {
-  return ['closed', 'filled', 'expired', 'archived'].includes(status);
-}

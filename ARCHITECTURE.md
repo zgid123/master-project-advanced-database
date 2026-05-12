@@ -35,7 +35,7 @@ flowchart LR
   Qna --> Elasticsearch["Elasticsearch"]
   Qna --> NotificationsInternal
 
-  Jobs --> JobsPg["PostgreSQL / PgBouncer\nJobs schema"]
+  Jobs --> JobsMongo["MongoDB\njobs database"]
   Jobs --> Redis
   Jobs --> JobsOutbox["Redis stream\njobs.events"]
 
@@ -52,7 +52,7 @@ flowchart LR
 | Auth | `workspaces/auth` | Hono | PostgreSQL, Redis, Notifications | Identity, JWTs, user follows, substacks |
 | Notifications | `workspaces/notifications` | Hono | MongoDB | Notification storage and internal notification creation |
 | Q&A | `workspaces/qna` | NestJS | MongoDB, Elasticsearch, Notifications | Topics, comments, votes, topic subscriptions, search |
-| Job Service | `workspaces/job-service` | Fastify | PostgreSQL, PgBouncer, Redis | Jobs, applications, job/application outbox events |
+| Job Service | `workspaces/job-service` | Fastify | MongoDB, Redis | Jobs, applications, job/application outbox events |
 | RecSys | `workspaces/recsys` | Fastify | Neo4j, Redis, BullMQ | Personalized feed, similar topics/users, graph ingestion |
 | Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Better Auth wrapper | Frontend shell, auth proxy, and substack list/detail UI |
 
@@ -333,8 +333,8 @@ Search behavior:
 
 Path: `workspaces/job-service`
 
-Job Service is a Fastify service with PostgreSQL as source of truth and Redis
-for caching, rate limiting, idempotency caching, and outbox publishing.
+Job Service is a Fastify service with MongoDB as source of truth and Redis for
+caching, rate limiting, idempotency caching, and outbox publishing.
 
 Main routes:
 
@@ -352,7 +352,8 @@ Main routes:
 
 Primary storage:
 
-- PostgreSQL tables: `jobs`, `job_applications`, `event_outbox`.
+- MongoDB collections: `jobs`, `job_applications`, `job_outbox`,
+  `idempotency_keys`.
 - Redis cache keys for job reads and idempotent application submissions.
 - Redis rate-limit keys for application submission throttling.
 - Redis stream `jobs.events` for published outbox events.
@@ -368,11 +369,11 @@ Important files:
 
 Data patterns:
 
-- Listing uses keyset cursor pagination.
-- Search uses PostgreSQL full-text search over a generated `search_vector`.
-- Mutations run in PostgreSQL transactions.
-- Job/application changes insert an outbox event inside the same transaction.
-- `publish-outbox` reads unsent outbox rows and emits to Redis Stream `jobs.events`.
+- Listing uses keyset cursor pagination over `{createdAt, _id}`.
+- Search uses MongoDB text index over `title`, `content`, and `location`.
+- Mutations run in MongoDB transactions.
+- Job/application changes insert a `job_outbox` event inside the same transaction.
+- `publish-outbox` reads pending outbox documents and emits to Redis Stream `jobs.events`.
 
 ## Recommendation Service
 
@@ -524,8 +525,8 @@ Important files:
 | Notifications | Notifications | MongoDB | User-addressed notification documents |
 | Topics, comments, votes | Q&A | MongoDB | Gateway-proxied calls carry the resolved user id as `x-user-id`; direct service calls still depend on caller-supplied user context |
 | Topic search documents | Q&A | Elasticsearch | Derived from MongoDB topic lifecycle |
-| Jobs, applications | Job Service | PostgreSQL | Independent numeric user id assumption |
-| Job/application events | Job Service | PostgreSQL outbox, Redis stream | Publishes to `jobs.events` |
+| Jobs, applications | Job Service | MongoDB | Logical user references use ObjectId hex strings |
+| Job/application events | Job Service | MongoDB outbox, Redis stream | Publishes to `jobs.events` |
 | Recommendation graph | RecSys | Neo4j | Derived behavioral/structural graph |
 | Recommendation streams/caches | RecSys | Redis | Streams, feed cache, trending cache, BullMQ |
 
@@ -584,14 +585,14 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant API as Job API
-  participant Pg as PostgreSQL
+  participant Mongo as MongoDB
   participant Publisher
   participant Redis
 
-  API->>Pg: Mutate job/application and insert event_outbox row
-  Publisher->>Pg: Read unsent row FOR UPDATE SKIP LOCKED
+  API->>Mongo: Mutate job/application and insert job_outbox document
+  Publisher->>Mongo: Claim pending outbox document
   Publisher->>Redis: XADD jobs.events
-  Publisher->>Pg: Mark sent_at
+  Publisher->>Mongo: Mark publishedAt
 ```
 
 ## Local Infrastructure
@@ -601,7 +602,8 @@ Root `docker-compose.yml` provides:
 - PostgreSQL 16 on `5432`
 - PgBouncer on `6432`
 - Redis 7 on `6379`
-- MongoDB 7 on `27017`
+- MongoDB 7 replica set on `27017`
+- Mongo Express on `8081`
 - Neo4j 5 on `7474` and `7687`
 - RecSys container on `3020`
 

@@ -1,97 +1,113 @@
-import type { PgClient } from '../../db/pool.js';
-import { pool } from '../../db/pool.js';
+import { Int32, ObjectId, type ClientSession, type Collection, type Filter } from 'mongodb';
+import { getDb } from '../../db/mongo.js';
+import type { JobDoc } from '../jobs/job.types.js';
+import { objectIdOrNull, parseObjectId } from '../object-id.js';
 import type { KeysetCursor } from '../pagination.js';
 import type {
-  ApplicationRow,
+  ApplicationDoc,
   ApplicationStatus,
   SubmitApplicationInput,
-  UserApplicationRow,
 } from './application.types.js';
 
-type ApplicationMutationTarget = Pick<ApplicationRow, 'id' | 'job_id' | 'status'> & {
-  posted_by_user_id: string;
-};
+type ApplicationMutationTarget = Pick<ApplicationDoc, '_id' | 'jobId' | 'status' | 'denormalized'>;
+
+async function applicationsCollection(): Promise<Collection<ApplicationDoc>> {
+  return (await getDb()).collection<ApplicationDoc>('job_applications');
+}
+
+async function jobsCollection(): Promise<Collection<JobDoc>> {
+  return (await getDb()).collection<JobDoc>('jobs');
+}
+
+function keysetFilter(cursor: KeysetCursor | null): Filter<ApplicationDoc> {
+  if (!cursor) return {};
+
+  return {
+    $or: [
+      { createdAt: { $lt: cursor.createdAt } },
+      { createdAt: cursor.createdAt, _id: { $lt: cursor._id } },
+    ],
+  };
+}
 
 export const ApplicationRepo = {
   async findByIdempotency(
     applicantUserId: string,
     idempotencyKey: string,
-  ): Promise<ApplicationRow | null> {
-    const result = await pool.query<ApplicationRow>({
-      name: 'application-by-idempotency',
-      text: `
-        SELECT *
-        FROM job_applications
-        WHERE applicant_user_id = $1
-          AND idempotency_key = $2
-        LIMIT 1
-      `,
-      values: [applicantUserId, idempotencyKey],
-    });
+  ): Promise<ApplicationDoc | null> {
+    const applicantObjectId = objectIdOrNull(applicantUserId);
+    if (!applicantObjectId) return null;
 
-    return result.rows[0] ?? null;
+    const collection = await applicationsCollection();
+    return collection.findOne({
+      applicantUserId: applicantObjectId,
+      idempotencyKey,
+    });
   },
 
-  async ensureOpenJob(client: PgClient, jobId: string): Promise<boolean> {
-    const result = await client.query<{ id: string }>({
-      name: 'application-ensure-open-job-locked',
-      text: `
-        SELECT id
-        FROM jobs
-        WHERE id = $1
-          AND status = 'open'
-          AND deleted_at IS NULL
-          AND (valid_to IS NULL OR valid_to > now())
-        LIMIT 1
-        FOR UPDATE
-      `,
-      values: [jobId],
-    });
+  async findOpenJob(session: ClientSession, jobId: string): Promise<JobDoc | null> {
+    const _id = objectIdOrNull(jobId);
+    if (!_id) return null;
 
-    return result.rowCount === 1;
+    const collection = await jobsCollection();
+    return collection.findOne(
+      {
+        _id,
+        status: 'open',
+        deletedAt: null,
+      },
+      { session },
+    );
   },
 
-  async createSubmitted(client: PgClient, input: SubmitApplicationInput): Promise<ApplicationRow> {
-    const result = await client.query<ApplicationRow>({
-      name: 'application-create-submitted',
-      text: `
-        INSERT INTO job_applications (
-          job_id, applicant_user_id, cover_letter, resume_url,
-          content, metadata, idempotency_key
-        )
-        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
-        RETURNING *
-      `,
-      values: [
-        input.job_id,
-        input.applicant_user_id,
-        input.cover_letter ?? null,
-        input.resume_url ?? null,
-        input.content ?? null,
-        JSON.stringify(input.metadata),
-        input.idempotency_key,
-      ],
-    });
+  async createSubmitted(
+    session: ClientSession,
+    input: SubmitApplicationInput,
+    job: Pick<JobDoc, '_id' | 'title' | 'postedByUserId'>,
+  ): Promise<ApplicationDoc> {
+    const collection = await applicationsCollection();
+    const now = new Date();
+    const doc: ApplicationDoc = {
+      _id: new ObjectId(),
+      jobId: parseObjectId(input.jobId, 'INVALID_JOB_ID'),
+      applicantUserId: parseObjectId(input.applicantUserId, 'INVALID_USER_SUBJECT'),
+      status: 'submitted',
+      ...(input.coverLetter ? { coverLetter: input.coverLetter } : {}),
+      ...(input.resumeUrl ? { resumeUrl: input.resumeUrl } : {}),
+      idempotencyKey: input.idempotencyKey,
+      denormalized: {
+        jobTitle: job.title,
+        jobPostedByUserId: job.postedByUserId,
+      },
+      metadata: input.metadata,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return result.rows[0] as ApplicationRow;
+    await collection.insertOne(doc, { session });
+    return doc;
   },
 
-  async incrementJobApplicationCount(client: PgClient, jobId: string): Promise<boolean> {
-    const result = await client.query<{ id: string }>({
-      name: 'application-increment-job-count-open',
-      text: `
-        UPDATE jobs
-        SET application_count = application_count + 1
-        WHERE id = $1
-          AND status = 'open'
-          AND deleted_at IS NULL
-          AND (valid_to IS NULL OR valid_to > now())
-        RETURNING id
-      `,
-      values: [jobId],
-    });
+  async incrementJobApplicationCount(session: ClientSession, jobId: string): Promise<boolean> {
+    const _id = objectIdOrNull(jobId);
+    if (!_id) return false;
 
-    return result.rowCount === 1;
+    const collection = await jobsCollection();
+    const result = await collection.updateOne(
+      {
+        _id,
+        status: 'open',
+        deletedAt: null,
+      },
+      {
+        $inc: { applicationCount: 1 },
+        $set: { updatedAt: new Date() },
+      },
+      { session },
+    );
+
+    return result.modifiedCount === 1;
   },
 
   async listForJob(
@@ -99,117 +115,123 @@ export const ApplicationRepo = {
     status: ApplicationStatus | null,
     cursor: KeysetCursor | null,
     limit: number,
-  ): Promise<ApplicationRow[]> {
-    const values: unknown[] = [jobId];
-    const filters = ['job_id = $1'];
+  ): Promise<ApplicationDoc[]> {
+    const jobObjectId = objectIdOrNull(jobId);
+    if (!jobObjectId) return [];
+
+    const filter: Filter<ApplicationDoc> = {
+      jobId: jobObjectId,
+      deletedAt: null,
+      ...keysetFilter(cursor),
+    };
 
     if (status) {
-      values.push(status);
-      filters.push(`status = $${values.length}::application_status`);
+      filter.status = status;
     }
 
-    if (cursor) {
-      values.push(cursor.createdAt, cursor.id);
-      filters.push(`(created_at, id) < ($${values.length - 1}::timestamptz, $${values.length}::bigint)`);
-    }
-
-    values.push(limit);
-
-    const result = await pool.query<ApplicationRow>({
-      name: 'applications-list-for-job',
-      text: `
-        SELECT *
-        FROM job_applications
-        WHERE ${filters.join(' AND ')}
-        ORDER BY created_at DESC, id DESC
-        LIMIT $${values.length}
-      `,
-      values,
-    });
-
-    return result.rows;
+    const collection = await applicationsCollection();
+    return collection
+      .find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .toArray();
   },
 
   async listForUser(
     applicantUserId: string,
     cursor: KeysetCursor | null,
     limit: number,
-  ): Promise<UserApplicationRow[]> {
-    const values: unknown[] = [applicantUserId];
-    let cursorFilter = '';
+  ): Promise<ApplicationDoc[]> {
+    const applicantObjectId = objectIdOrNull(applicantUserId);
+    if (!applicantObjectId) return [];
 
-    if (cursor) {
-      values.push(cursor.createdAt, cursor.id);
-      cursorFilter = `AND (a.created_at, a.id) < ($2::timestamptz, $3::bigint)`;
-    }
-
-    values.push(limit);
-
-    const result = await pool.query<UserApplicationRow>({
-      name: 'applications-list-for-user',
-      text: `
-        SELECT a.id, a.job_id, a.status, a.created_at, a.updated_at,
-               j.name AS job_name, j.slug AS job_slug
-        FROM job_applications a
-        JOIN jobs j ON j.id = a.job_id
-        WHERE a.applicant_user_id = $1
-          ${cursorFilter}
-        ORDER BY a.created_at DESC, a.id DESC
-        LIMIT $${values.length}
-      `,
-      values,
-    });
-
-    return result.rows;
+    const collection = await applicationsCollection();
+    return collection
+      .find({
+        applicantUserId: applicantObjectId,
+        deletedAt: null,
+        ...keysetFilter(cursor),
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .toArray();
   },
 
   async updateStatusCAS(
-    client: PgClient,
+    session: ClientSession,
     id: string,
     nextStatus: ApplicationStatus,
     expectedStatus: ApplicationStatus,
-  ): Promise<ApplicationRow | null> {
-    const result = await client.query<ApplicationRow>({
-      name: 'application-update-status-cas',
-      text: `
-        UPDATE job_applications
-        SET status = $2::application_status
-        WHERE id = $1
-          AND status = $3::application_status
-        RETURNING *
-      `,
-      values: [id, nextStatus, expectedStatus],
-    });
+  ): Promise<ApplicationDoc | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    return result.rows[0] ?? null;
+    const collection = await applicationsCollection();
+    return collection.findOneAndUpdate(
+      {
+        _id,
+        status: expectedStatus,
+        deletedAt: null,
+      },
+      {
+        $set: {
+          status: nextStatus,
+          updatedAt: new Date(),
+          ...(nextStatus === 'withdrawn' ? { deletedAt: new Date() } : {}),
+        },
+      },
+      {
+        session,
+        returnDocument: 'after',
+      },
+    );
   },
 
-  async findStatusMutationTarget(id: string, client: PgClient): Promise<ApplicationMutationTarget | null> {
-    const result = await client.query<ApplicationMutationTarget>({
-      name: 'application-status-mutation-target',
-      text: `
-        SELECT a.id, a.job_id, a.status, j.posted_by_user_id
-        FROM job_applications a
-        JOIN jobs j ON j.id = a.job_id
-        WHERE a.id = $1
-          AND j.deleted_at IS NULL
-        FOR UPDATE OF a
-      `,
-      values: [id],
-    });
+  async findStatusMutationTarget(id: string, session: ClientSession): Promise<ApplicationMutationTarget | null> {
+    const _id = objectIdOrNull(id);
+    if (!_id) return null;
 
-    return result.rows[0] ?? null;
+    const collection = await applicationsCollection();
+    return collection.findOne(
+      {
+        _id,
+        deletedAt: null,
+      },
+      {
+        session,
+        projection: { _id: 1, jobId: 1, status: 1, denormalized: 1 },
+      },
+    );
+  },
+
+  async findJobPosterId(session: ClientSession, jobId: ObjectId): Promise<ObjectId | null> {
+    const collection = await jobsCollection();
+    const job = await collection.findOne(
+      { _id: jobId, deletedAt: null },
+      { session, projection: { postedByUserId: 1 } },
+    );
+    return job?.postedByUserId ?? null;
   },
 
   async appendEvent(
-    client: PgClient,
-    eventType: 'application.submitted' | 'application.status_changed',
+    session: ClientSession,
+    topic: 'job.application.submitted' | 'job.application.withdrawn' | 'job.application.status_changed',
     payload: Record<string, unknown>,
   ): Promise<void> {
-    await client.query({
-      name: 'outbox-append-application-event',
-      text: 'INSERT INTO event_outbox(event_type, payload) VALUES ($1, $2::jsonb)',
-      values: [eventType, JSON.stringify(payload)],
-    });
+    const outbox = (await getDb()).collection('job_outbox');
+    const now = new Date();
+    await outbox.insertOne(
+      {
+        _id: new ObjectId(),
+        topic,
+        payload,
+        status: 'pending',
+        publishedAt: null,
+        attempts: new Int32(0),
+        createdAt: now,
+        updatedAt: now,
+      },
+      { session },
+    );
   },
 };

@@ -1,35 +1,31 @@
+import { MongoServerError } from 'mongodb';
 import { delKeys, getJson, setJson } from '../../cache/job-cache.js';
-import { withTransaction } from '../../db/pool.js';
+import { withMongoTransaction } from '../../db/mongo.js';
 import { HttpError } from '../errors.js';
 import type { KeysetCursor } from '../pagination.js';
 import { encodeCursor } from '../pagination.js';
 import { ApplicationRepo } from './application.repo.js';
-import type {
-  ApplicationRow,
-  ApplicationStatus,
-  SubmitApplicationInput,
-  UpdateApplicationStatusInput,
-  UserApplicationRow,
+import {
+  serializeApplication,
+  serializeUserApplication,
+  type ApplicationDoc,
+  type ApplicationResponse,
+  type ApplicationStatus,
+  type SubmitApplicationInput,
+  type UpdateApplicationStatusInput,
+  type UserApplicationResponse,
 } from './application.types.js';
 
 const allowedApplicationTransitions: Record<ApplicationStatus, ApplicationStatus[]> = {
-  submitted: ['under_review', 'shortlisted', 'rejected', 'withdrawn'],
-  under_review: ['shortlisted', 'interviewed', 'rejected', 'withdrawn'],
-  shortlisted: ['interviewed', 'rejected', 'withdrawn'],
-  interviewed: ['accepted', 'rejected', 'withdrawn'],
+  submitted: ['reviewing', 'accepted', 'rejected', 'withdrawn'],
+  reviewing: ['accepted', 'rejected', 'withdrawn'],
   accepted: ['withdrawn'],
   rejected: ['withdrawn'],
   withdrawn: [],
 };
 
-type PgError = Error & {
-  code?: string;
-  constraint?: string;
-};
-
-function isUniqueViolation(error: unknown, constraint: string): boolean {
-  const pgError = error as PgError;
-  return pgError.code === '23505' && pgError.constraint === constraint;
+function isDuplicateKey(error: unknown): boolean {
+  return error instanceof MongoServerError && error.code === 11000;
 }
 
 function assertApplicationStatusTransition(
@@ -49,68 +45,73 @@ function assertApplicationStatusTransition(
   }
 }
 
-function pageResponse<T extends { created_at: Date | string; id: string }>(rows: T[], limit: number) {
+function pageResponse<T extends { createdAt: Date; _id: { toHexString(): string } }, R>(
+  rows: T[],
+  limit: number,
+  serialize: (row: T) => R,
+) {
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+
   return {
-    items: rows,
-    next_cursor: rows.length === limit ? encodeCursor(rows[rows.length - 1] as T) : null,
+    items: items.map(serialize),
+    nextCursor: hasMore ? encodeCursor(items[items.length - 1] as T) : null,
   };
 }
 
 export const ApplicationService = {
-  async submit(input: SubmitApplicationInput): Promise<ApplicationRow> {
-    const idempotencyCacheKey = `idem:${input.applicant_user_id}:${input.idempotency_key}`;
-    const cached = await getJson<ApplicationRow>(idempotencyCacheKey);
+  async submit(input: SubmitApplicationInput): Promise<ApplicationResponse> {
+    const idempotencyCacheKey = `idem:${input.applicantUserId}:${input.idempotencyKey}`;
+    const cached = await getJson<ApplicationResponse>(idempotencyCacheKey);
     if (cached) return cached;
 
     const existing = await ApplicationRepo.findByIdempotency(
-      input.applicant_user_id,
-      input.idempotency_key,
+      input.applicantUserId,
+      input.idempotencyKey,
     );
 
     if (existing) {
-      await setJson(idempotencyCacheKey, existing, 86_400);
-      return existing;
+      const response = serializeApplication(existing);
+      await setJson(idempotencyCacheKey, response, 86_400);
+      return response;
     }
 
     try {
-      const application = await withTransaction(async (client) => {
-        const jobIsOpen = await ApplicationRepo.ensureOpenJob(client, input.job_id);
-        if (!jobIsOpen) {
+      const application = await withMongoTransaction(async (session) => {
+        const job = await ApplicationRepo.findOpenJob(session, input.jobId);
+        if (!job) {
           throw new HttpError(409, 'JOB_NOT_OPEN', 'Job is not open for applications');
         }
 
-        const created = await ApplicationRepo.createSubmitted(client, input);
-        const counterUpdated = await ApplicationRepo.incrementJobApplicationCount(client, input.job_id);
+        const created = await ApplicationRepo.createSubmitted(session, input, job);
+        const counterUpdated = await ApplicationRepo.incrementJobApplicationCount(session, input.jobId);
         if (!counterUpdated) {
           throw new HttpError(409, 'JOB_NOT_OPEN', 'Job is not open for applications');
         }
 
-        await ApplicationRepo.appendEvent(client, 'application.submitted', {
-          id: created.id,
-          job_id: created.job_id,
-          applicant_user_id: created.applicant_user_id,
-          status: created.status,
+        await ApplicationRepo.appendEvent(session, 'job.application.submitted', {
+          jobId: created.jobId.toHexString(),
+          applicationId: created._id.toHexString(),
+          applicantUserId: created.applicantUserId.toHexString(),
         });
         return created;
       });
 
-      await delKeys(`job:${input.job_id}`, `user:${input.applicant_user_id}:applied:${input.job_id}`);
-      await setJson(idempotencyCacheKey, application, 86_400);
-      return application;
+      const response = serializeApplication(application);
+      await delKeys(`job:${input.jobId}`, `user:${input.applicantUserId}:applied:${input.jobId}`);
+      await setJson(idempotencyCacheKey, response, 86_400);
+      return response;
     } catch (error) {
-      if (isUniqueViolation(error, 'uq_job_applications_idempotency')) {
+      if (isDuplicateKey(error)) {
         const idempotent = await ApplicationRepo.findByIdempotency(
-          input.applicant_user_id,
-          input.idempotency_key,
+          input.applicantUserId,
+          input.idempotencyKey,
         );
         if (idempotent) {
-          await setJson(idempotencyCacheKey, idempotent, 86_400);
-          return idempotent;
+          const response = serializeApplication(idempotent);
+          await setJson(idempotencyCacheKey, response, 86_400);
+          return response;
         }
-      }
-
-      if (isUniqueViolation(error, 'uq_job_applications_active')) {
-        throw new HttpError(409, 'ALREADY_APPLIED', 'User already has an active application for this job');
       }
 
       throw error;
@@ -123,37 +124,40 @@ export const ApplicationService = {
     cursor: KeysetCursor | null,
     limit: number,
   ) {
-    const rows = await ApplicationRepo.listForJob(jobId, status, cursor, limit);
-    return pageResponse<ApplicationRow>(rows, limit);
+    const rows = await ApplicationRepo.listForJob(jobId, status, cursor, limit + 1);
+    return pageResponse<ApplicationDoc, ApplicationResponse>(rows, limit, serializeApplication);
   },
 
   async listForUser(applicantUserId: string, cursor: KeysetCursor | null, limit: number) {
-    const rows = await ApplicationRepo.listForUser(applicantUserId, cursor, limit);
-    return pageResponse<UserApplicationRow>(rows, limit);
+    const rows = await ApplicationRepo.listForUser(applicantUserId, cursor, limit + 1);
+    return pageResponse<ApplicationDoc, UserApplicationResponse>(rows, limit, serializeUserApplication);
   },
 
   async updateStatus(
     id: string,
     input: UpdateApplicationStatusInput,
     actorUserId: string,
-  ): Promise<ApplicationRow> {
-    assertApplicationStatusTransition(input.expected_status, input.status);
+  ): Promise<ApplicationResponse> {
+    assertApplicationStatusTransition(input.expectedStatus, input.status);
 
-    const updated = await withTransaction(async (client) => {
-      const target = await ApplicationRepo.findStatusMutationTarget(id, client);
+    const updated = await withMongoTransaction(async (session) => {
+      const target = await ApplicationRepo.findStatusMutationTarget(id, session);
       if (!target) {
         throw new HttpError(404, 'NOT_FOUND', 'Application was not found');
       }
 
-      if (target.posted_by_user_id !== actorUserId) {
+      const jobPosterId = target.denormalized?.jobPostedByUserId
+        ?? await ApplicationRepo.findJobPosterId(session, target.jobId);
+
+      if (!jobPosterId || jobPosterId.toHexString() !== actorUserId) {
         throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can update application status');
       }
 
       const row = await ApplicationRepo.updateStatusCAS(
-        client,
+        session,
         id,
         input.status,
-        input.expected_status,
+        input.expectedStatus,
       );
 
       if (!row) {
@@ -164,17 +168,21 @@ export const ApplicationService = {
         );
       }
 
-      await ApplicationRepo.appendEvent(client, 'application.status_changed', {
-        id: row.id,
-        job_id: row.job_id,
-        applicant_user_id: row.applicant_user_id,
-        status: row.status,
-      });
+      await ApplicationRepo.appendEvent(
+        session,
+        input.status === 'withdrawn' ? 'job.application.withdrawn' : 'job.application.status_changed',
+        {
+          jobId: row.jobId.toHexString(),
+          applicationId: row._id.toHexString(),
+          applicantUserId: row.applicantUserId.toHexString(),
+          status: row.status,
+        },
+      );
 
       return row;
     });
 
-    await delKeys(`job:${updated.job_id}`, `user:${updated.applicant_user_id}:applied:${updated.job_id}`);
-    return updated;
+    await delKeys(`job:${updated.jobId.toHexString()}`, `user:${updated.applicantUserId.toHexString()}:applied:${updated.jobId.toHexString()}`);
+    return serializeApplication(updated);
   },
 };

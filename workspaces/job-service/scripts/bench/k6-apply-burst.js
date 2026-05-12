@@ -19,14 +19,14 @@ export const options = {
 
 const baseUrl = __ENV.BASE_URL ?? 'http://localhost:3010';
 const jwt = __ENV.JWT;
-const jobId = __ENV.JOB_ID ?? '1';
+const jobId = __ENV.JOB_ID ?? '000000000000000000000000';
 
 export default function () {
   const idem = `k6-${__VU}-${__ITER}-${Date.now()}`;
   const res = http.post(
     `${baseUrl}/v1/jobs/${jobId}/applications`,
     JSON.stringify({
-      content: 'k6 benchmark application',
+      coverLetter: 'k6 benchmark application',
       metadata: { source: 'k6' },
     }),
     {
