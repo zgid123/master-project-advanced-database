@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   Query,
+  Headers,
   HttpCode,
   HttpStatus,
   UsePipes,
@@ -56,7 +57,7 @@ export class TopicsController {
   })
   @ApiOkResponse(MessageResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async subscribeToTopic(@Param('id') id: string, @Body('user_id') user_id: string) {
+  async subscribeToTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.topicsService.subscribeTopic(id, user_id);
   }
 
@@ -74,7 +75,7 @@ export class TopicsController {
   })
   @ApiOkResponse(UnsubscribedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async unsubscribeFromTopic(@Param('id') id: string, @Body('user_id') user_id: string) {
+  async unsubscribeFromTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.topicsService.unsubscribeTopic(id, user_id);
   }
 
@@ -96,7 +97,8 @@ export class TopicsController {
   @ApiOkResponse(VoteRecordedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   @ApiBadRequestResponse({ description: 'Invalid vote value' })
-  async voteOnTopic(@Param('id') id: string, @Body() dto: VoteTopicDto) {
+  async voteOnTopic(@Param('id') id: string, @Body() dto: VoteTopicDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     return await this.topicsService.voteTopic(id, dto);
   }
 
@@ -106,7 +108,7 @@ export class TopicsController {
   @ApiQuery({ name: 'user_id', description: 'User ID of the voter', required: true })
   @ApiOkResponse(VoteRemovedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async removeVoteFromTopic(@Param('id') id: string, @Query('user_id') user_id: string) {
+  async removeVoteFromTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.topicsService.removeVote(id, user_id);
   }
 
@@ -128,7 +130,8 @@ export class TopicsController {
   })
   @ApiCreatedResponse(TopicCreatedResponseSwagger)
   @ApiBadRequestResponse({ description: 'Validation failed' })
-  async createTopic(@Body() dto: CreateTopicDto) {
+  async createTopic(@Body() dto: CreateTopicDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     const topic = await this.topicsService.createTopic(dto);
     return topic;
   }
@@ -136,8 +139,8 @@ export class TopicsController {
   @Get('search')
   @ApiOperation({ summary: 'Search topics by text' })
   @ApiOkResponse(SearchTopicsResponseSwagger)
-  async searchTopics(@Query() dto: SearchTopicDto) {
-    return await this.topicsService.searchTopics(dto);
+  async searchTopics(@Query() dto: SearchTopicDto, @Headers('x-user-id') user_id?: string) {
+    return await this.topicsService.searchTopics(dto, user_id);
   }
 
   @Patch(':id/solve')
@@ -147,7 +150,7 @@ export class TopicsController {
   @ApiOkResponse(MarkSolvedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
-  async markSolved(@Param('id') id: string, @Query('user_id') user_id: string) {
+  async markSolved(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.topicsService.markSolved(id, user_id);
   }
 
@@ -170,7 +173,8 @@ export class TopicsController {
   @ApiOkResponse(TopicUpdatedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
-  async updateTopic(@Param('id') id: string, @Body() dto: UpdateTopicDto) {
+  async updateTopic(@Param('id') id: string, @Body() dto: UpdateTopicDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     return await this.topicsService.updateTopic(id, dto);
   }
 
@@ -182,7 +186,7 @@ export class TopicsController {
   @ApiNotFoundResponse({ description: 'Topic not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
   @HttpCode(HttpStatus.OK)
-  async deleteTopic(@Param('id') id: string, @Query('user_id') user_id: string) {
+  async deleteTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.topicsService.deleteTopic(id, user_id);
   }
 
@@ -200,7 +204,7 @@ export class TopicsController {
   @ApiParam({ name: 'id', description: 'Topic ID' })
   @ApiOkResponse(GetTopicByIdResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async getTopicById(@Param('id') id: string) {
-    return await this.topicsService.getTopicById(id);
+  async getTopicById(@Param('id') id: string, @Headers('x-user-id') user_id?: string) {
+    return await this.topicsService.getTopicById(id, user_id);
   }
 }

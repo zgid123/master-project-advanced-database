@@ -19,7 +19,7 @@ flowchart LR
   Browser["Browser"] --> Dashboard["dashboard\nTanStack Start :4000"]
   Browser --> Gateway["api-gateway\nHono :3000"]
   Browser --> Jobs["job-service\nFastify :3010"]
-  Browser --> Qna["qna\nNestJS :3000 default"]
+  Browser --> Qna["qna\nNestJS :3005 default"]
   Browser --> RecSys["recsys\nFastify :3020"]
 
   Dashboard --> Gateway

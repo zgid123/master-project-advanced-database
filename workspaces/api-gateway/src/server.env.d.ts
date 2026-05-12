@@ -6,6 +6,7 @@ declare namespace NodeJS {
     AUTH_SERVICE_URL?: string;
     VITEST_WORKER_ID?: string;
     NOTIFICATIONS_SERVICE_URL?: string;
+    QNA_SERVICE_URL?: string;
     NODE_ENV: 'development' | 'production' | 'staging' | 'test';
   }
 }

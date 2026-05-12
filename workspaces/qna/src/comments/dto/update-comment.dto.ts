@@ -9,7 +9,7 @@ export class UpdateCommentDto {
   content?: string;
 
   @ApiProperty({ example: '6638e1f2c2a1b2c3d4e5f6b8', description: 'User ID of the commenter' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  user_id: string;
+  user_id?: string;
 }

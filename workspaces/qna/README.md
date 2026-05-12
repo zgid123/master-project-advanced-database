@@ -15,7 +15,7 @@ search.
 ## Runtime And Storage
 
 - Framework: NestJS
-- Default port: `3000` unless `PORT` is set
+- Default port: `3005` unless `PORT` is set
 - API docs: `/docs`
 - Primary store: MongoDB through Mongoose
 - Search store: Elasticsearch at `http://localhost:9200`
@@ -23,7 +23,7 @@ search.
   `INTERNAL_SERVICE_SECRET`
 
 When running with the API Gateway locally, set `PORT` to avoid the gateway's
-default `3000` port.
+default `3005` port.
 
 ## API Surface
 
@@ -53,7 +53,7 @@ The complete generated API inventory is in `../../API_REPORT.md`.
 
 ```sh
 docker compose -f workspaces/qna/docker-compose.yml up -d
-PORT=3003 pnpm --filter qna start:dev
+PORT=3005 pnpm --filter qna start:dev
 pnpm --filter qna build
 pnpm --filter qna test
 pnpm --filter qna test:e2e
@@ -62,7 +62,7 @@ pnpm --filter qna test:e2e
 PowerShell example:
 
 ```powershell
-$env:PORT='3003'; pnpm --filter qna start:dev
+$env:PORT='3005'; pnpm --filter qna start:dev
 ```
 
 ## Configuration
