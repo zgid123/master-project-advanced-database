@@ -1,6 +1,8 @@
 import { parseArgs } from 'node:util';
-import { Client } from 'pg';
-import { config } from '../src/config.js';
+import { Int32, ObjectId, type AnyBulkWriteOperation } from 'mongodb';
+import { closeMongo, getDb } from '../src/db/mongo.js';
+import type { ApplicationDoc } from '../src/domain/applications/application.types.js';
+import type { JobDoc, JobStatus, JobType } from '../src/domain/jobs/job.types.js';
 
 const cliArgs = process.argv.slice(2);
 if (cliArgs[0] === '--') {
@@ -29,148 +31,151 @@ if (![jobCount, applicationCount, userCount, batchSize].every(Number.isFinite)) 
 
 const jobTitles = [
   'Senior Backend Engineer',
-  'PostgreSQL Performance Engineer',
+  'MongoDB Performance Engineer',
   'Node.js Platform Developer',
   'Full Stack Engineer',
   'Data Infrastructure Engineer',
 ];
 
 const locations = ['Remote', 'Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Singapore'];
-const jobTypes = ['full_time', 'part_time', 'contract', 'internship', 'freelance'];
-const tagPool = ['nodejs', 'postgres', 'redis', 'typescript', 'fastify', 'database'];
+const jobTypes: JobType[] = ['full_time', 'part_time', 'contract', 'internship'];
+const tagPool = ['nodejs', 'mongodb', 'redis', 'typescript', 'fastify', 'database'];
+const userIds = Array.from({ length: userCount }, () => new ObjectId());
 
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)] as T;
 }
 
-function slug(value: string, index: number): string {
-  return `${value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}-${index}`;
-}
+async function insertJobs(): Promise<ObjectId[]> {
+  const db = await getDb();
+  const jobs = db.collection<JobDoc>('jobs');
+  const jobIds: ObjectId[] = [];
 
-function placeholders(rows: number, columns: number): string {
-  const parts: string[] = [];
-  for (let row = 0; row < rows; row += 1) {
-    const values: string[] = [];
-    for (let column = 0; column < columns; column += 1) {
-      values.push(`$${row * columns + column + 1}`);
-    }
-    parts.push(`(${values.join(', ')})`);
-  }
-  return parts.join(', ');
-}
-
-async function insertJobs(client: Client): Promise<void> {
   for (let offset = 0; offset < jobCount; offset += batchSize) {
     const rows = Math.min(batchSize, jobCount - offset);
-    const params: unknown[] = [];
+    const batch: JobDoc[] = [];
 
     for (let index = 0; index < rows; index += 1) {
       const absoluteIndex = offset + index + 1;
-      const title = pick(jobTitles);
+      const title = `${pick(jobTitles)} ${absoluteIndex}`;
       const location = pick(locations);
-      const selectedTags = [pick(tagPool), pick(tagPool)];
-      params.push(
-        String((absoluteIndex % userCount) + 1),
-        `${title} ${absoluteIndex}`,
-        slug(title, absoluteIndex),
-        `Seeded benchmark job ${absoluteIndex} focused on PostgreSQL and service performance.`,
-        absoluteIndex % 5 === 0 ? 'draft' : 'open',
-        pick(jobTypes),
+      const _id = new ObjectId();
+      jobIds.push(_id);
+
+      batch.push({
+        _id,
+        postedByUserId: userIds[absoluteIndex % userIds.length] as ObjectId,
+        title,
+        content: `Seeded benchmark job ${absoluteIndex} focused on MongoDB and service performance.`,
+        status: (absoluteIndex % 5 === 0 ? 'draft' : 'open') as JobStatus,
+        jobType: pick(jobTypes),
         location,
-        1_000 + (absoluteIndex % 300) * 10,
-        2_000 + (absoluteIndex % 500) * 10,
-        'USD',
-        selectedTags,
-        JSON.stringify({
-          company: `Company ${absoluteIndex % 1000}`,
-          experience_years: absoluteIndex % 8,
-          remote_policy: location === 'Remote' ? 'remote' : 'hybrid',
-        }),
-      );
+        tags: [pick(tagPool), pick(tagPool)],
+        applicationCount: new Int32(0) as unknown as number,
+        metadata: {
+          companyInfo: { name: `Company ${absoluteIndex % 1000}`, industry: 'software' },
+          seniority: absoluteIndex % 3 === 0 ? 'senior' : 'mid',
+          remote: location === 'Remote',
+          salaryRangeUSD: {
+            min: 40_000 + (absoluteIndex % 300) * 100,
+            max: 80_000 + (absoluteIndex % 500) * 100,
+          },
+        },
+        deletedAt: null,
+        createdAt: new Date(Date.now() - absoluteIndex * 1000),
+        updatedAt: new Date(),
+      });
     }
 
-    await client.query(
-      `
-        INSERT INTO jobs (
-          posted_by_user_id, name, slug, content, status, job_type, location,
-          salary_min, salary_max, currency, tags, metadata
-        )
-        VALUES ${placeholders(rows, 12)}
-        ON CONFLICT (slug) DO NOTHING
-      `,
-      params,
-    );
+    if (batch.length > 0) {
+      await jobs.bulkWrite(
+        batch.map((document) => ({ insertOne: { document } })),
+        { ordered: false },
+      );
+    }
 
     console.log(`seeded jobs: ${Math.min(offset + rows, jobCount)}/${jobCount}`);
   }
+
+  return jobIds;
 }
 
-async function insertApplications(client: Client): Promise<void> {
-  const range = await client.query<{ min: string; max: string }>('SELECT min(id), max(id) FROM jobs');
-  const minJobId = Number(range.rows[0]?.min);
-  const maxJobId = Number(range.rows[0]?.max);
-
-  if (!Number.isFinite(minJobId) || !Number.isFinite(maxJobId)) {
+async function insertApplications(jobIds: ObjectId[]): Promise<void> {
+  if (jobIds.length === 0) {
     throw new Error('Seed jobs before applications');
   }
 
+  const db = await getDb();
+  const applications = db.collection<ApplicationDoc>('job_applications');
+  const jobs = db.collection<JobDoc>('jobs');
+
   for (let offset = 0; offset < applicationCount; offset += batchSize) {
     const rows = Math.min(batchSize, applicationCount - offset);
-    const params: unknown[] = [];
+    const ops: AnyBulkWriteOperation<ApplicationDoc>[] = [];
 
     for (let index = 0; index < rows; index += 1) {
       const absoluteIndex = offset + index + 1;
-      const jobId = minJobId + Math.floor(Math.random() * (maxJobId - minJobId + 1));
-      const applicantUserId = (absoluteIndex % userCount) + 1;
-      params.push(
-        String(jobId),
-        String(applicantUserId),
-        `Seed application ${absoluteIndex}`,
-        JSON.stringify({
-          source: 'seed',
-          expected_salary: 1_500 + (absoluteIndex % 300) * 10,
-        }),
-        `seed-${absoluteIndex}`,
-      );
+      const jobId = pick(jobIds);
+      const applicantUserId = userIds[absoluteIndex % userIds.length] as ObjectId;
+      const now = new Date();
+
+      ops.push({
+        insertOne: {
+          document: {
+            _id: new ObjectId(),
+            jobId,
+            applicantUserId,
+            status: 'submitted',
+            coverLetter: `Seed application ${absoluteIndex}`,
+            idempotencyKey: `seed-${absoluteIndex}`,
+            metadata: {
+              source: 'seed',
+              expectedSalary: 1_500 + (absoluteIndex % 300) * 10,
+            },
+            deletedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      });
     }
 
-    await client.query(
-      `
-        INSERT INTO job_applications (
-          job_id, applicant_user_id, content, metadata, idempotency_key
-        )
-        VALUES ${placeholders(rows, 5)}
-        ON CONFLICT DO NOTHING
-      `,
-      params,
-    );
+    if (ops.length > 0) {
+      await applications.bulkWrite(ops, { ordered: false });
+    }
 
     console.log(`seeded applications: ${Math.min(offset + rows, applicationCount)}/${applicationCount}`);
   }
+
+  console.log('refreshing application counters');
+  const counts = applications.aggregate<{ _id: ObjectId; count: number }>([
+    { $match: { deletedAt: null } },
+    { $group: { _id: '$jobId', count: { $sum: 1 } } },
+  ]);
+
+  const updates: AnyBulkWriteOperation<JobDoc>[] = [];
+  for await (const count of counts) {
+    updates.push({
+      updateOne: {
+        filter: { _id: count._id },
+        update: { $set: { applicationCount: new Int32(count.count) as unknown as number, updatedAt: new Date() } },
+      },
+    });
+
+    if (updates.length >= batchSize) {
+      await jobs.bulkWrite(updates, { ordered: false });
+      updates.length = 0;
+    }
+  }
+
+  if (updates.length > 0) {
+    await jobs.bulkWrite(updates, { ordered: false });
+  }
 }
 
-const client = new Client({
-  connectionString: config.directDatabaseUrl,
-  application_name: 'job-service-seed',
-});
-
-await client.connect();
 try {
-  await insertJobs(client);
-  await insertApplications(client);
-  console.log('refreshing application counters');
-  await client.query(`
-    UPDATE jobs
-    SET application_count = counts.count
-    FROM (
-      SELECT job_id, count(*)::int AS count
-      FROM job_applications
-      GROUP BY job_id
-    ) counts
-    WHERE jobs.id = counts.job_id
-  `);
-  await client.query('VACUUM ANALYZE jobs');
-  await client.query('VACUUM ANALYZE job_applications');
+  const jobIds = await insertJobs();
+  await insertApplications(jobIds);
 } finally {
-  await client.end();
+  await closeMongo();
 }

@@ -11,7 +11,7 @@ organized as service workspaces plus shared domain/node packages.
 | `workspaces/auth` | Hono | Identity, JWT/refresh tokens, users, follows, substacks |
 | `workspaces/notifications` | Hono | User notification storage and internal notification creation |
 | `workspaces/qna` | NestJS | Topics, comments, votes, subscriptions, search |
-| `workspaces/job-service` | Fastify | Jobs, applications, PostgreSQL outbox, Redis publishing |
+| `workspaces/job-service` | Fastify | Jobs, applications, MongoDB outbox, Redis publishing |
 | `workspaces/recsys` | Fastify | Recommendation APIs, Neo4j graph, Redis stream ingestion |
 | `workspaces/dashboard` | TanStack Start | Frontend shell, auth proxy, substack list/detail UI |
 
@@ -73,6 +73,7 @@ pnpm -w build
 | PgBouncer | `6432` |
 | Redis | `6379` |
 | MongoDB | `27017` |
+| Mongo Express | `8081` |
 | Elasticsearch | `9200` |
 | Neo4j HTTP/Bolt | `7474` / `7687` |
 

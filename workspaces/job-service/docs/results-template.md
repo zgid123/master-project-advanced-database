@@ -9,10 +9,9 @@ iteration.
 ```mermaid
 flowchart LR
   Client["Client or API Gateway"] --> JobService["Fastify Job Service"]
-  JobService --> PgBouncer["PgBouncer transaction pool"]
-  PgBouncer --> Postgres["PostgreSQL 16"]
+  JobService --> Mongo["MongoDB 7 replica set"]
   JobService --> Redis["Redis cache and streams"]
-  JobService --> Outbox["event_outbox table"]
+  JobService --> Outbox["job_outbox collection"]
   Outbox --> Publisher["Outbox publisher"]
   Publisher --> Redis
 ```
@@ -25,7 +24,7 @@ flowchart LR
 | Git commit | TBD |
 | Machine | TBD |
 | Node version | TBD |
-| PostgreSQL settings | TBD |
+| MongoDB settings | TBD |
 | Redis settings | TBD |
 | Seed command | TBD |
 
@@ -41,12 +40,12 @@ flowchart LR
 
 | Area | Choice | Reason |
 | --- | --- | --- |
-| Primary keys | BIGINT identity | Smaller B-tree indexes and sequential inserts |
-| Cross-service users | Logical FK only | Keeps Auth service decoupled |
-| Job status | PostgreSQL enum | Compact state representation |
-| Job list pagination | Keyset `(created_at, id)` | Avoids deep offset scans |
-| Full-text search | Generated `tsvector` plus GIN | Fast search without trigger maintenance |
-| JSON metadata | PostgreSQL JSONB | Keeps flexible metadata transactional |
+| Primary keys | MongoDB `ObjectId` | 12-byte monotonic key with native driver support |
+| Cross-service users | Logical `ObjectId` reference only | Keeps Auth service decoupled |
+| Job status | String enum plus `$jsonSchema` | Readable in shell and enforced on writes |
+| Job list pagination | Keyset `{createdAt, _id}` | Avoids deep offset scans |
+| Full-text search | MongoDB text index | Prototype search without Atlas Search dependency |
+| Metadata | Embedded sub-document plus `metadata.$**` wildcard index | Keeps flexible metadata queryable |
 | Hot reads | Redis cache-aside | Protects database for repeated detail reads |
 
 ## Latency Results
@@ -61,8 +60,8 @@ flowchart LR
 
 ## Query Plans
 
-Paste `EXPLAIN (ANALYZE, BUFFERS)` output for the slowest query before and
-after each index or query rewrite.
+Paste `explain("executionStats")` output for the slowest query before and after
+each index or query rewrite.
 
 ## Iteration Log
 
@@ -72,11 +71,9 @@ after each index or query rewrite.
 
 ## Next Decisions
 
-- Add BRIN on `job_applications.created_at` only after the table reaches
-  several million rows and time-range scans become common.
-- Add monthly range partitioning when archival or reporting needs make it
-  operationally useful.
-- Add read replicas only after `pg_stat_statements` shows primary read
-  saturation.
-- Add `unaccent` or language-specific text search only after search benchmarks
-  prove the default `simple` config is insufficient.
+- Shard `job_applications` with hashed `jobId` only after the working set no
+  longer fits in memory or application volume crosses the planned threshold.
+- Move to Atlas Search when text search needs fuzzy matching, autocomplete, or
+  p95 search latency exceeds target.
+- Revisit `applicationCount` if write conflicts around hot jobs exceed the
+  accepted threshold.

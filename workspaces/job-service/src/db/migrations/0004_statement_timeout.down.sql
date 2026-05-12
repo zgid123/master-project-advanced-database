@@ -1,1 +1,0 @@
-ALTER ROLE CURRENT_USER RESET statement_timeout;

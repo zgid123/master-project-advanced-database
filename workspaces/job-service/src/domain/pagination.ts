@@ -1,16 +1,20 @@
 import { z } from 'zod';
 import { HttpError } from './errors.js';
+import { parseObjectId } from './object-id.js';
 
 const cursorSchema = z.object({
-  createdAt: z.string().datetime(),
-  id: z.string().regex(/^\d+$/),
+  t: z.string().datetime(),
+  i: z.string().regex(/^[0-9a-fA-F]{24}$/),
 });
 
-export type KeysetCursor = z.infer<typeof cursorSchema>;
+export type KeysetCursor = {
+  createdAt: Date;
+  _id: ReturnType<typeof parseObjectId>;
+};
 
-export function encodeCursor(row: { created_at: Date | string; id: string }): string {
-  const createdAt = row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
-  return Buffer.from(JSON.stringify({ createdAt, id: row.id })).toString('base64url');
+export function encodeCursor(doc: { createdAt: Date | string; _id: { toHexString(): string } }): string {
+  const createdAt = doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt;
+  return Buffer.from(JSON.stringify({ t: createdAt, i: doc._id.toHexString() })).toString('base64url');
 }
 
 export function decodeCursor(cursor: string | undefined): KeysetCursor | null {
@@ -18,7 +22,11 @@ export function decodeCursor(cursor: string | undefined): KeysetCursor | null {
 
   try {
     const decoded = Buffer.from(cursor, 'base64url').toString('utf8');
-    return cursorSchema.parse(JSON.parse(decoded));
+    const parsed = cursorSchema.parse(JSON.parse(decoded));
+    return {
+      createdAt: new Date(parsed.t),
+      _id: parseObjectId(parsed.i, 'INVALID_CURSOR'),
+    };
   } catch {
     throw new HttpError(400, 'INVALID_CURSOR', 'Cursor is not valid');
   }

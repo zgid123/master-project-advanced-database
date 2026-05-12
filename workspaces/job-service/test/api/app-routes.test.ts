@@ -31,58 +31,55 @@ import { buildApp } from '../../src/app.js';
 import { ApplicationService } from '../../src/domain/applications/application.service.js';
 import { JobService } from '../../src/domain/jobs/job.service.js';
 import { HttpError } from '../../src/domain/errors.js';
-import type { ApplicationRow } from '../../src/domain/applications/application.types.js';
-import type { JobListRow, JobRow } from '../../src/domain/jobs/job.types.js';
+import type { ApplicationResponse } from '../../src/domain/applications/application.types.js';
+import type { JobListResponse, JobResponse } from '../../src/domain/jobs/job.types.js';
 
-const now = new Date('2026-05-02T08:00:00.000Z');
+const now = '2026-05-02T08:00:00.000Z';
+const jobId = '664c4e9a5a3b2c7d1e0a1f88';
+const posterId = '664c4e9a5a3b2c7d1e0a1f10';
+const applicantId = '664c4e9a5a3b2c7d1e0a1f20';
+const applicationId = '664c4e9a5a3b2c7d1e0a1f99';
 
-const jobRow: JobRow = {
-  id: '101',
-  public_uid: 'job_101',
-  posted_by_user_id: '501',
-  name: 'Backend Engineer',
-  slug: 'backend-engineer',
+const jobResponse: JobResponse = {
+  id: jobId,
+  postedByUserId: posterId,
+  title: 'Backend Engineer',
   content: 'Build and operate the job service.',
   status: 'open',
-  job_type: 'full_time',
+  jobType: 'full_time',
   location: 'Remote',
-  salary_min: '1000.00',
-  salary_max: '2000.00',
-  currency: 'USD',
   tags: ['typescript'],
   metadata: {},
-  view_count: '0',
-  application_count: 0,
-  valid_to: null,
-  deleted_at: null,
-  created_at: now,
-  updated_at: now,
+  applicationCount: 0,
+  createdAt: now,
+  updatedAt: now,
 };
 
-const jobListRow: JobListRow = {
-  id: jobRow.id,
-  name: jobRow.name,
-  slug: jobRow.slug,
-  location: jobRow.location,
-  salary_min: jobRow.salary_min,
-  salary_max: jobRow.salary_max,
-  currency: jobRow.currency,
-  application_count: jobRow.application_count,
-  created_at: jobRow.created_at,
+const jobListResponse: JobListResponse = {
+  id: jobResponse.id,
+  title: jobResponse.title,
+  location: jobResponse.location,
+  jobType: jobResponse.jobType,
+  status: jobResponse.status,
+  applicationCount: jobResponse.applicationCount,
+  createdAt: jobResponse.createdAt,
 };
 
-const applicationRow: ApplicationRow = {
-  id: '900',
-  job_id: jobRow.id,
-  applicant_user_id: '700',
+const applicationResponse: ApplicationResponse = {
+  id: applicationId,
+  jobId,
+  applicantUserId: applicantId,
   status: 'submitted',
-  cover_letter: 'I can help build this service.',
-  resume_url: null,
-  content: null,
+  coverLetter: 'I can help build this service.',
+  resumeUrl: null,
+  idempotencyKey: 'idem-123456',
+  denormalized: {
+    jobTitle: 'Backend Engineer',
+    jobPostedByUserId: posterId,
+  },
   metadata: {},
-  idempotency_key: 'idem-123456',
-  created_at: now,
-  updated_at: now,
+  createdAt: now,
+  updatedAt: now,
 };
 
 describe('job-service HTTP API', () => {
@@ -141,8 +138,8 @@ describe('job-service HTTP API', () => {
 
   it('returns list jobs payloads from GET /v1/jobs', async () => {
     vi.mocked(JobService.listOpen).mockResolvedValue({
-      items: [jobListRow],
-      next_cursor: null,
+      items: [jobListResponse],
+      nextCursor: null,
     });
 
     const response = await app.inject({
@@ -155,27 +152,25 @@ describe('job-service HTTP API', () => {
     expect(response.json()).toMatchObject({
       items: [
         {
-          id: '101',
-          name: 'Backend Engineer',
-          slug: 'backend-engineer',
+          id: jobId,
+          title: 'Backend Engineer',
         },
       ],
-      next_cursor: null,
+      nextCursor: null,
     });
   });
 
   it('creates a job from POST /v1/jobs and injects the authenticated poster id', async () => {
-    vi.mocked(JobService.create).mockResolvedValue(jobRow);
+    vi.mocked(JobService.create).mockResolvedValue(jobResponse);
 
     const response = await app.inject({
       method: 'POST',
       url: '/v1/jobs',
       headers: {
-        authorization: bearerToken('501'),
+        authorization: bearerToken(posterId),
       },
       payload: {
-        name: 'Backend Engineer',
-        slug: 'backend-engineer',
+        title: 'Backend Engineer',
         content: 'Build and operate the job service.',
         status: 'open',
       },
@@ -184,14 +179,13 @@ describe('job-service HTTP API', () => {
     expect(response.statusCode).toBe(201);
     expect(JobService.create).toHaveBeenCalledWith(expect.objectContaining({
       content: 'Build and operate the job service.',
-      name: 'Backend Engineer',
-      posted_by_user_id: '501',
-      slug: 'backend-engineer',
+      title: 'Backend Engineer',
+      postedByUserId: posterId,
       status: 'open',
     }));
     expect(response.json()).toMatchObject({
-      id: '101',
-      posted_by_user_id: '501',
+      id: jobId,
+      postedByUserId: posterId,
       status: 'open',
     });
   });
@@ -201,7 +195,7 @@ describe('job-service HTTP API', () => {
       method: 'POST',
       url: '/v1/jobs',
       payload: {
-        name: 'Backend Engineer',
+        title: 'Backend Engineer',
         content: 'Build and operate the job service.',
       },
     });
@@ -218,11 +212,11 @@ describe('job-service HTTP API', () => {
       method: 'POST',
       url: '/v1/jobs',
       headers: {
-        authorization: bearerToken('501'),
+        authorization: bearerToken(posterId),
       },
       payload: {
-        name: 'No',
-        content: 'Too short name.',
+        title: 'No',
+        content: 'Too short title.',
       },
     });
 
@@ -239,10 +233,10 @@ describe('job-service HTTP API', () => {
       method: 'POST',
       url: '/v1/jobs',
       headers: {
-        authorization: bearerToken('501'),
+        authorization: bearerToken(posterId),
         'content-type': 'application/json',
       },
-      payload: '{"name":',
+      payload: '{"title":',
     });
 
     expect(response.statusCode).toBe(400);
@@ -272,12 +266,12 @@ describe('job-service HTTP API', () => {
 
     const response = await app.inject({
       method: 'PATCH',
-      url: '/v1/jobs/101',
+      url: `/v1/jobs/${jobId}`,
       headers: {
-        authorization: bearerToken('502'),
+        authorization: bearerToken('664c4e9a5a3b2c7d1e0a1f11'),
       },
       payload: {
-        name: 'Backend Platform Engineer',
+        title: 'Backend Platform Engineer',
       },
     });
 
@@ -289,32 +283,32 @@ describe('job-service HTTP API', () => {
 
   it('submits an application from POST /v1/jobs/:id/applications', async () => {
     vi.mocked(rateLimitApply).mockResolvedValue(undefined);
-    vi.mocked(ApplicationService.submit).mockResolvedValue(applicationRow);
+    vi.mocked(ApplicationService.submit).mockResolvedValue(applicationResponse);
 
     const response = await app.inject({
       method: 'POST',
-      url: '/v1/jobs/101/applications',
+      url: `/v1/jobs/${jobId}/applications`,
       headers: {
-        authorization: bearerToken('700'),
+        authorization: bearerToken(applicantId),
         'idempotency-key': 'idem-123456',
       },
       payload: {
-        cover_letter: 'I can help build this service.',
+        coverLetter: 'I can help build this service.',
       },
     });
 
     expect(response.statusCode).toBe(201);
-    expect(rateLimitApply).toHaveBeenCalledWith('700');
+    expect(rateLimitApply).toHaveBeenCalledWith(applicantId);
     expect(ApplicationService.submit).toHaveBeenCalledWith(expect.objectContaining({
-      applicant_user_id: '700',
-      cover_letter: 'I can help build this service.',
-      idempotency_key: 'idem-123456',
-      job_id: '101',
+      applicantUserId: applicantId,
+      coverLetter: 'I can help build this service.',
+      idempotencyKey: 'idem-123456',
+      jobId,
     }));
     expect(response.json()).toMatchObject({
-      id: '900',
-      job_id: '101',
-      applicant_user_id: '700',
+      id: applicationId,
+      jobId,
+      applicantUserId: applicantId,
       status: 'submitted',
     });
   });
@@ -322,13 +316,13 @@ describe('job-service HTTP API', () => {
   it('rejects invalid Idempotency-Key headers before submit handling', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/v1/jobs/101/applications',
+      url: `/v1/jobs/${jobId}/applications`,
       headers: {
-        authorization: bearerToken('700'),
+        authorization: bearerToken(applicantId),
         'idempotency-key': 'short',
       },
       payload: {
-        cover_letter: 'I can help build this service.',
+        coverLetter: 'I can help build this service.',
       },
     });
 
@@ -348,13 +342,13 @@ describe('job-service HTTP API', () => {
 
     const response = await app.inject({
       method: 'POST',
-      url: '/v1/jobs/101/applications',
+      url: `/v1/jobs/${jobId}/applications`,
       headers: {
-        authorization: bearerToken('700'),
+        authorization: bearerToken(applicantId),
         'idempotency-key': 'idem-123456',
       },
       payload: {
-        cover_letter: 'I can help build this service.',
+        coverLetter: 'I can help build this service.',
       },
     });
 

@@ -21,7 +21,7 @@ Generated: 2026-05-12T14:46:07.853Z
 | API Gateway | 20 | 28 | 18 | Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes. |
 | Auth Service | 74 | 15 | 71 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
 | Dashboard | 65 | 5 | 52 | TanStack Start UI, auth proxy routes, substack list/detail pages, and client/server API wrappers. |
-| Job Service | 24 | 11 | 17 | Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher. |
+| Job Service | 25 | 11 | 18 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 18 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
 | Q&A Service | 44 | 17 | 99 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
 | Recommendation Service | 29 | 19 | 63 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics. |
@@ -222,7 +222,7 @@ Representative callable/class APIs from the generated inventory:
 - Additional generated callable APIs: 40. See `API_INVENTORY.md` for the full list.
 
 ### Job Service
-Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher.
+Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher.
 
 Representative callable/class APIs from the generated inventory:
 - `buildApp(): Promise<FastifyInstance<Server<typeof IncomingMessage, typeof ServerResponse>, IncomingMessage, ServerResponse<IncomingMessage>, FastifyBaseLogger, FastifyTypeProviderDefault>>`
@@ -234,10 +234,13 @@ Representative callable/class APIs from the generated inventory:
 - `singleFlight(lockKey: string, cacheKey: string, load: () => Promise<T>): Promise<T>`
 - `rateLimitApply(userId: string, limit: number, windowSeconds: number): Promise<void>`
 - `getRedis(): Promise<Redis>`
-- `withTransaction(fn: (client: PgClient) => Promise<T>): Promise<T>`
+- `getMongoClient(): Promise<MongoClient>`
+- `getDb(): Promise<Db>`
+- `withMongoTransaction(fn: (session: ClientSession) => Promise<T>): Promise<T>`
+- `closeMongo(): Promise<void>`
 - `applicationRoutes(app: FastifyInstance): Promise<void>`
 - `HttpError`
-- Additional generated callable APIs: 5. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 6. See `API_INVENTORY.md` for the full list.
 
 ### Notifications Service
 Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping.

@@ -1,10 +1,9 @@
+import type { ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 export const applicationStatuses = [
   'submitted',
-  'under_review',
-  'shortlisted',
-  'interviewed',
+  'reviewing',
   'accepted',
   'rejected',
   'withdrawn',
@@ -15,43 +14,95 @@ export type ApplicationStatus = (typeof applicationStatuses)[number];
 const metadataSchema = z.record(z.string(), z.unknown());
 
 export const submitApplicationSchema = z.object({
-  cover_letter: z.string().max(10_000).nullable().optional(),
-  resume_url: z.string().url().nullable().optional(),
-  content: z.string().max(10_000).nullable().optional(),
+  coverLetter: z.string().max(5_000).nullable().optional(),
+  resumeUrl: z.string().url().max(500).nullable().optional(),
   metadata: metadataSchema.default({}),
 });
 
 export const updateApplicationStatusSchema = z.object({
   status: z.enum(applicationStatuses),
-  expected_status: z.enum(applicationStatuses),
+  expectedStatus: z.enum(applicationStatuses),
 });
 
 export type SubmitApplicationInput = z.infer<typeof submitApplicationSchema> & {
-  job_id: string;
-  applicant_user_id: string;
-  idempotency_key: string;
+  jobId: string;
+  applicantUserId: string;
+  idempotencyKey: string;
 };
 
 export type UpdateApplicationStatusInput = z.infer<typeof updateApplicationStatusSchema>;
 
-export type ApplicationRow = {
-  id: string;
-  job_id: string;
-  applicant_user_id: string;
+export type ApplicationDoc = {
+  _id: ObjectId;
+  jobId: ObjectId;
+  applicantUserId: ObjectId;
   status: ApplicationStatus;
-  cover_letter: string | null;
-  resume_url: string | null;
-  content: string | null;
+  coverLetter?: string;
+  resumeUrl?: string;
+  idempotencyKey?: string;
+  denormalized?: {
+    jobTitle?: string;
+    jobPostedByUserId?: ObjectId;
+  };
   metadata: Record<string, unknown>;
-  idempotency_key: string | null;
-  created_at: Date;
-  updated_at: Date;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-export type UserApplicationRow = Pick<
-  ApplicationRow,
-  'id' | 'job_id' | 'status' | 'created_at' | 'updated_at'
-> & {
-  job_name: string;
-  job_slug: string;
+export type ApplicationResponse = {
+  id: string;
+  jobId: string;
+  applicantUserId: string;
+  status: ApplicationStatus;
+  coverLetter: string | null;
+  resumeUrl: string | null;
+  idempotencyKey: string | null;
+  denormalized: {
+    jobTitle: string | null;
+    jobPostedByUserId: string | null;
+  };
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 };
+
+export type UserApplicationResponse = Pick<
+  ApplicationResponse,
+  'id' | 'jobId' | 'status' | 'denormalized' | 'createdAt' | 'updatedAt'
+>;
+
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+export function serializeApplication(doc: ApplicationDoc): ApplicationResponse {
+  return {
+    id: doc._id.toHexString(),
+    jobId: doc.jobId.toHexString(),
+    applicantUserId: doc.applicantUserId.toHexString(),
+    status: doc.status,
+    coverLetter: doc.coverLetter ?? null,
+    resumeUrl: doc.resumeUrl ?? null,
+    idempotencyKey: doc.idempotencyKey ?? null,
+    denormalized: {
+      jobTitle: doc.denormalized?.jobTitle ?? null,
+      jobPostedByUserId: doc.denormalized?.jobPostedByUserId?.toHexString() ?? null,
+    },
+    metadata: doc.metadata,
+    createdAt: toIso(doc.createdAt),
+    updatedAt: toIso(doc.updatedAt),
+  };
+}
+
+export function serializeUserApplication(doc: ApplicationDoc): UserApplicationResponse {
+  const serialized = serializeApplication(doc);
+  return {
+    id: serialized.id,
+    jobId: serialized.jobId,
+    status: serialized.status,
+    denormalized: serialized.denormalized,
+    createdAt: serialized.createdAt,
+    updatedAt: serialized.updatedAt,
+  };
+}

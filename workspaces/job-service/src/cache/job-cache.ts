@@ -27,7 +27,7 @@ export async function setJson(key: string, value: unknown, ttlSeconds: number): 
     await client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
   } catch (error) {
     warnCacheFailure('set', error);
-    // Cache is optional; PostgreSQL remains the source of truth.
+    // Cache is optional; MongoDB remains the source of truth.
   }
 }
 

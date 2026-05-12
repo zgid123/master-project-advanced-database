@@ -1,61 +1,85 @@
+import { ObjectId, type Collection } from 'mongodb';
 import { getRedis } from '../cache/redis.js';
-import { pool, withTransaction } from '../db/pool.js';
+import { closeMongo, getDb } from '../db/mongo.js';
 import { logger } from '../observability/logger.js';
 
-type OutboxRow = {
-  id: string;
-  event_type: string;
+type OutboxDoc = {
+  _id: ObjectId;
+  topic: string;
   payload: Record<string, unknown>;
+  status: 'pending' | 'publishing' | 'published' | 'failed';
+  publishedAt: Date | null;
+  lastError?: string;
+  attempts: number;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type PublishOneResult = 'published' | 'empty' | 'failed';
 let shuttingDown = false;
 
+async function outboxCollection(): Promise<Collection<OutboxDoc>> {
+  return (await getDb()).collection<OutboxDoc>('job_outbox');
+}
+
 async function publishOne(redis: Awaited<ReturnType<typeof getRedis>>): Promise<PublishOneResult> {
-  return withTransaction(async (client) => {
-    const result = await client.query<OutboxRow>({
-      name: 'outbox-fetch-one-unsent',
-      text: `
-        SELECT id, event_type, payload
-        FROM event_outbox
-        WHERE sent_at IS NULL
-        ORDER BY id
-        LIMIT 1
-        FOR UPDATE SKIP LOCKED
-      `,
-    });
+  const outbox = await outboxCollection();
+  const now = new Date();
+  const row = await outbox.findOneAndUpdate(
+    { status: 'pending' },
+    {
+      $set: { status: 'publishing', updatedAt: now },
+      $inc: { attempts: 1 },
+    },
+    {
+      sort: { createdAt: 1, _id: 1 },
+      returnDocument: 'after',
+    },
+  );
 
-    const row = result.rows[0];
-    if (!row) return 'empty';
+  if (!row) return 'empty';
 
-    try {
-      await redis.xadd(
-        'jobs.events',
-        'MAXLEN',
-        '~',
-        '100000',
-        '*',
-        'type',
-        row.event_type,
-        'id',
-        row.id,
-        'payload',
-        JSON.stringify(row.payload),
-        'ts',
-        Date.now().toString(),
-      );
-      await client.query('UPDATE event_outbox SET sent_at = now(), last_error = NULL WHERE id = $1', [
-        row.id,
-      ]);
-      return 'published';
-    } catch (error) {
-      await client.query('UPDATE event_outbox SET last_error = $2 WHERE id = $1', [
-        row.id,
-        error instanceof Error ? error.message : String(error),
-      ]);
-      return 'failed';
-    }
-  });
+  try {
+    await redis.xadd(
+      'jobs.events',
+      'MAXLEN',
+      '~',
+      '100000',
+      '*',
+      'type',
+      row.topic,
+      'id',
+      row._id.toHexString(),
+      'payload',
+      JSON.stringify(row.payload),
+      'ts',
+      Date.now().toString(),
+    );
+    await outbox.updateOne(
+      { _id: row._id },
+      {
+        $set: {
+          status: 'published',
+          publishedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        $unset: { lastError: '' },
+      },
+    );
+    return 'published';
+  } catch (error) {
+    await outbox.updateOne(
+      { _id: row._id },
+      {
+        $set: {
+          status: 'failed',
+          lastError: error instanceof Error ? error.message : String(error),
+          updatedAt: new Date(),
+        },
+      },
+    );
+    return 'failed';
+  }
 }
 
 async function publishBatch(limit = 100): Promise<number> {
@@ -77,7 +101,7 @@ async function publishBatch(limit = 100): Promise<number> {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  logger.info('starting outbox publisher');
+  logger.info('starting MongoDB outbox publisher');
 
   while (!shuttingDown) {
     const count = await publishBatch().catch((error: unknown) => {
@@ -90,7 +114,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   }
 
-  await pool.end();
+  await closeMongo();
 }
 
 export { publishBatch };

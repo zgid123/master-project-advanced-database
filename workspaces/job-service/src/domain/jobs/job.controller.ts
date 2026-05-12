@@ -1,12 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '../errors.js';
+import { isObjectIdHex } from '../object-id.js';
 import { decodeCursor } from '../pagination.js';
-import { createJobSchema, jobTypes, updateJobSchema } from './job.types.js';
+import { createJobSchema, jobStatuses, jobTypes, updateJobSchema } from './job.types.js';
 import { JobService } from './job.service.js';
 
-const idParamSchema = z.object({
-  id: z.string().regex(/^\d+$/),
+const objectIdParamSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/),
 });
 
 const listJobsQuerySchema = z.object({
@@ -14,7 +15,7 @@ const listJobsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   q: z.string().min(1).optional(),
   location: z.string().min(1).optional(),
-  job_type: z.enum(jobTypes).optional(),
+  jobType: z.enum(jobTypes).optional(),
 });
 
 const bearerSecurity = [{ bearerAuth: [] }];
@@ -22,7 +23,7 @@ const bearerSecurity = [{ bearerAuth: [] }];
 const idParamJsonSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', pattern: '^\\d+$' },
+    id: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' },
   },
   required: ['id'],
 } as const;
@@ -30,28 +31,26 @@ const idParamJsonSchema = {
 const jobBodyJsonSchema = {
   type: 'object',
   properties: {
-    name: { type: 'string', minLength: 3, maxLength: 240 },
-    slug: { type: 'string', pattern: '^[a-z0-9-]{3,160}$' },
-    content: { type: 'string', minLength: 1 },
-    status: { type: 'string', enum: ['draft', 'open', 'closed', 'filled', 'expired', 'archived'] },
-    job_type: { type: 'string', enum: jobTypes },
-    location: { type: 'string', maxLength: 240 },
-    salary_min: { type: 'number', minimum: 0 },
-    salary_max: { type: 'number', minimum: 0 },
-    currency: { type: 'string', minLength: 3, maxLength: 3 },
-    tags: { type: 'array', items: { type: 'string' } },
+    title: { type: 'string', minLength: 3, maxLength: 200 },
+    content: { type: 'string', minLength: 1, maxLength: 20_000 },
+    status: { type: 'string', enum: jobStatuses },
+    jobType: { type: 'string', enum: jobTypes },
+    location: { type: 'string', maxLength: 120 },
+    tags: {
+      type: 'array',
+      maxItems: 16,
+      items: { type: 'string', minLength: 1, maxLength: 32 },
+    },
     metadata: { type: 'object', additionalProperties: true },
-    valid_to: { type: 'string', format: 'date-time' },
   },
-  required: ['name', 'content'],
+  required: ['title', 'content'],
 } as const;
 
 function getAuthenticatedUserId(request: FastifyRequest): string {
-  const sub = request.user?.sub;
-  const userId = String(sub ?? '');
+  const userId = String(request.user?.sub ?? '');
 
-  if (!/^\d+$/.test(userId)) {
-    throw new HttpError(401, 'INVALID_USER_SUBJECT', 'JWT subject must be a numeric user id');
+  if (!isObjectIdHex(userId)) {
+    throw new HttpError(401, 'INVALID_USER_SUBJECT', 'JWT subject must be an ObjectId hex string');
   }
 
   return userId;
@@ -67,9 +66,9 @@ export async function jobRoutes(app: FastifyInstance) {
         properties: {
           cursor: { type: 'string', description: 'Base64url keyset cursor for list mode only' },
           limit: { type: 'integer', minimum: 1, maximum: 50, default: 20 },
-          q: { type: 'string', description: 'Full-text search query' },
+          q: { type: 'string', description: 'MongoDB text search query' },
           location: { type: 'string' },
-          job_type: { type: 'string', enum: jobTypes },
+          jobType: { type: 'string', enum: jobTypes },
         },
       },
     },
@@ -84,13 +83,12 @@ export async function jobRoutes(app: FastifyInstance) {
       return JobService.search(
         query.q,
         query.location ?? null,
-        query.job_type ?? null,
+        query.jobType ?? null,
         query.limit,
       );
     }
 
-    const cursor = decodeCursor(query.cursor);
-    return JobService.listOpen(cursor, query.limit);
+    return JobService.listOpen(decodeCursor(query.cursor), query.limit);
   });
 
   app.get('/v1/jobs/:id', {
@@ -100,7 +98,7 @@ export async function jobRoutes(app: FastifyInstance) {
       params: idParamJsonSchema,
     },
   }, async (request, reply) => {
-    const { id } = idParamSchema.parse(request.params);
+    const { id } = objectIdParamSchema.parse(request.params);
     const job = await JobService.getById(id);
 
     if (!job) {
@@ -125,7 +123,7 @@ export async function jobRoutes(app: FastifyInstance) {
     const body = createJobSchema.parse(request.body);
     const job = await JobService.create({
       ...body,
-      posted_by_user_id: getAuthenticatedUserId(request),
+      postedByUserId: getAuthenticatedUserId(request),
     });
 
     return reply.code(201).send(job);
@@ -143,12 +141,12 @@ export async function jobRoutes(app: FastifyInstance) {
         required: [],
         properties: {
           ...jobBodyJsonSchema.properties,
-          expected_status: { type: 'string', enum: ['draft', 'open', 'closed', 'filled', 'expired', 'archived'] },
+          expectedStatus: { type: 'string', enum: jobStatuses },
         },
       },
     },
   }, async (request) => {
-    const { id } = idParamSchema.parse(request.params);
+    const { id } = objectIdParamSchema.parse(request.params);
     const body = updateJobSchema.parse(request.body);
     return JobService.update(id, body, getAuthenticatedUserId(request));
   });
@@ -162,7 +160,7 @@ export async function jobRoutes(app: FastifyInstance) {
       params: idParamJsonSchema,
     },
   }, async (request) => {
-    const { id } = idParamSchema.parse(request.params);
+    const { id } = objectIdParamSchema.parse(request.params);
     return JobService.softDelete(id, getAuthenticatedUserId(request));
   });
 }

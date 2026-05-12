@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { rateLimitApply } from '../../cache/rate-limit.js';
 import { HttpError } from '../errors.js';
+import { isObjectIdHex } from '../object-id.js';
 import { decodeCursor } from '../pagination.js';
 import {
   applicationStatuses,
@@ -10,15 +11,11 @@ import {
 } from './application.types.js';
 import { ApplicationService } from './application.service.js';
 
-const idParamSchema = z.object({
-  id: z.string().regex(/^\d+$/),
+const objectIdParamSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/),
 });
 
-const applicationIdParamSchema = z.object({
-  id: z.string().regex(/^\d+$/),
-});
-
-const idempotencyKeySchema = z.string().min(8).max(255);
+const idempotencyKeySchema = z.string().min(8).max(80);
 
 const listApplicationsQuerySchema = z.object({
   cursor: z.string().optional(),
@@ -36,7 +33,7 @@ const bearerSecurity = [{ bearerAuth: [] }];
 const idParamJsonSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', pattern: '^\\d+$' },
+    id: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' },
   },
   required: ['id'],
 } as const;
@@ -50,11 +47,10 @@ const cursorQueryJsonSchema = {
 } as const;
 
 function getAuthenticatedUserId(request: FastifyRequest): string {
-  const sub = request.user?.sub;
-  const userId = String(sub ?? '');
+  const userId = String(request.user?.sub ?? '');
 
-  if (!/^\d+$/.test(userId)) {
-    throw new HttpError(401, 'INVALID_USER_SUBJECT', 'JWT subject must be a numeric user id');
+  if (!isObjectIdHex(userId)) {
+    throw new HttpError(401, 'INVALID_USER_SUBJECT', 'JWT subject must be an ObjectId hex string');
   }
 
   return userId;
@@ -70,7 +66,7 @@ function getIdempotencyKey(request: FastifyRequest): string {
 
   const parsed = idempotencyKeySchema.safeParse(value);
   if (!parsed.success) {
-    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key must be 8-255 characters');
+    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key must be 8-80 characters');
   }
 
   return parsed.data;
@@ -90,7 +86,7 @@ export async function applicationRoutes(app: FastifyInstance) {
           'idempotency-key': {
             type: 'string',
             minLength: 8,
-            maxLength: 255,
+            maxLength: 80,
             description: 'Required idempotency key for safe retries',
           },
         },
@@ -99,15 +95,14 @@ export async function applicationRoutes(app: FastifyInstance) {
       body: {
         type: 'object',
         properties: {
-          cover_letter: { type: 'string', maxLength: 10000 },
-          resume_url: { type: 'string', format: 'uri' },
-          content: { type: 'string', maxLength: 10000 },
+          coverLetter: { type: 'string', maxLength: 5_000 },
+          resumeUrl: { type: 'string', format: 'uri', maxLength: 500 },
           metadata: { type: 'object', additionalProperties: true },
         },
       },
     },
   }, async (request, reply) => {
-    const { id: jobId } = idParamSchema.parse(request.params);
+    const { id: jobId } = objectIdParamSchema.parse(request.params);
     const applicantUserId = getAuthenticatedUserId(request);
     const body = submitApplicationSchema.parse(request.body);
 
@@ -115,9 +110,9 @@ export async function applicationRoutes(app: FastifyInstance) {
 
     const application = await ApplicationService.submit({
       ...body,
-      job_id: jobId,
-      applicant_user_id: applicantUserId,
-      idempotency_key: getIdempotencyKey(request),
+      jobId,
+      applicantUserId,
+      idempotencyKey: getIdempotencyKey(request),
     });
 
     return reply.code(201).send(application);
@@ -140,7 +135,7 @@ export async function applicationRoutes(app: FastifyInstance) {
       },
     },
   }, async (request) => {
-    const { id: jobId } = idParamSchema.parse(request.params);
+    const { id: jobId } = objectIdParamSchema.parse(request.params);
     const query = listApplicationsQuerySchema.parse(request.query);
     return ApplicationService.listForJob(
       jobId,
@@ -178,13 +173,13 @@ export async function applicationRoutes(app: FastifyInstance) {
         type: 'object',
         properties: {
           status: { type: 'string', enum: applicationStatuses },
-          expected_status: { type: 'string', enum: applicationStatuses },
+          expectedStatus: { type: 'string', enum: applicationStatuses },
         },
-        required: ['status', 'expected_status'],
+        required: ['status', 'expectedStatus'],
       },
     },
   }, async (request) => {
-    const { id } = applicationIdParamSchema.parse(request.params);
+    const { id } = objectIdParamSchema.parse(request.params);
     const body = updateApplicationStatusSchema.parse(request.body);
     return ApplicationService.updateStatus(id, body, getAuthenticatedUserId(request));
   });
