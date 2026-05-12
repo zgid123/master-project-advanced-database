@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   Query,
+  Headers,
   UsePipes,
   ValidationPipe,
   HttpCode,
@@ -46,7 +47,8 @@ export class CommentsController {
   })
   @ApiOkResponse(VoteRecordedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Comment not found' })
-  async voteComment(@Param('id') id: string, @Body() dto: VoteCommentDto) {
+  async voteComment(@Param('id') id: string, @Body() dto: VoteCommentDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     return await this.commentsService.voteComment(id, dto);
   }
 
@@ -67,7 +69,8 @@ export class CommentsController {
   })
   @ApiCreatedResponse(CommentCreatedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async createComment(@Body() dto: CreateCommentDto) {
+  async createComment(@Body() dto: CreateCommentDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     return await this.commentsService.createComment(dto);
   }
 
@@ -87,7 +90,7 @@ export class CommentsController {
   @ApiOkResponse(CommentAcceptedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found / Comment not found' })
   @ApiForbiddenResponse({ description: 'Comment does not belong to this topic / You are not the owner of this topic' })
-  async acceptComment(@Param('id') id: string, @Body('topic_id') topic_id: string, @Body('user_id') user_id: string) {
+  async acceptComment(@Param('id') id: string, @Body('topic_id') topic_id: string, @Headers('x-user-id') user_id: string) {
     return await this.commentsService.acceptComment(id, topic_id, user_id);
   }
 
@@ -109,7 +112,8 @@ export class CommentsController {
   @ApiOkResponse(CommentUpdatedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Comment not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this comment' })
-  async updateComment(@Param('id') id: string, @Body() dto: UpdateCommentDto) {
+  async updateComment(@Param('id') id: string, @Body() dto: UpdateCommentDto, @Headers('x-user-id') user_id: string) {
+    dto.user_id = user_id;
     return await this.commentsService.updateComment(id, dto);
   }
 
@@ -129,7 +133,7 @@ export class CommentsController {
   @ApiNotFoundResponse({ description: 'Comment not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this comment / Accepted answer cannot be deleted.' })
   @HttpCode(HttpStatus.OK)
-  async deleteComment(@Param('id') id: string, @Body('user_id') user_id: string) {
+  async deleteComment(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
     return await this.commentsService.deleteComment(id, user_id);
   }
 

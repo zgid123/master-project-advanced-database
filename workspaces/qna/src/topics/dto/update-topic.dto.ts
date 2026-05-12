@@ -15,6 +15,7 @@ export class UpdateTopicDto {
     body?: string;
 
     @ApiProperty({ example: '6638e1f2c2a1b2c3d4e5f6a7', description: 'User ID of the topic owner' })
+    @IsOptional()
     @IsString()
-    user_id: string;
+    user_id?: string;
 }

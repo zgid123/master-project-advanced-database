@@ -14,9 +14,9 @@ export class CreateTopicDto {
     body?: string;
 
     @ApiProperty({ example: '6638e1f2c2a1b2c3d4e5f6a7', description: 'User ID of the topic creator' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    user_id: string;
+    user_id?: string;
 
     @ApiProperty({ example: '6638e1f2c2a1b2c3d4e5f6b8', description: 'Substack ID (optional)', required: false })
     @IsString()
