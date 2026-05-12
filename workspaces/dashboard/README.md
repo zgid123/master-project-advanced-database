@@ -7,8 +7,9 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 
 - Render the Solvit dashboard shell, feed, substack, question, and auth screens.
 - Provide sign-in and sign-up forms.
-- Proxy auth requests to the API Gateway from server routes.
-- Proxy public substack list and total-count requests to the API Gateway.
+- Proxy auth requests to the API Gateway from a POST-only server route.
+- Proxy public substack list, detail, and total-count requests to the API
+  Gateway.
 - Store `solvit_authToken` and `solvit_refreshToken` as HTTP-only cookies.
 - Expose Better Auth-compatible routes for the local auth client.
 
@@ -23,13 +24,10 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/api/auth/$` | Better Auth handler |
-| `POST` | `/api/auth/$` | Better Auth handler |
-| `POST` | `/api/portal/auth/sign-in` | Proxy to Gateway `/v1/auth/sign-in` |
-| `POST` | `/api/portal/auth/sign-up` | Proxy to Gateway `/v1/auth/sign-up` |
+| `POST` | `/api/auth/$` | Better Auth-compatible bridge for sign-in, sign-up, and sign-out |
 | `GET` | `/api/portal/auth/profile` | Proxy to Gateway `/v1/auth/profile` |
-| `POST` | `/api/portal/auth/sign-out` | Expire local auth cookies |
 | `GET` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
+| `GET` | `/api/portal/substacks/$slug` | Proxy to Gateway `/v1/substacks/:slug` |
 | `GET` | `/api/portal/substacks/total` | Proxy to Gateway `/v1/substacks/total` |
 
 The complete generated API inventory is in `../../API_REPORT.md`.
@@ -48,6 +46,7 @@ Run the gateway and its upstreams before using authenticated flows:
 ```sh
 pnpm --filter auth dev
 pnpm --filter notifications dev
+pnpm --filter qna start:dev
 pnpm --filter api-gateway dev
 pnpm --filter dashboard dev
 ```
@@ -67,5 +66,5 @@ pnpm --filter dashboard dev
   actual credentials and tokens come from the Solvit Auth service.
 - The home route renders `SubstacksIsland`, which uses TanStack Query options
   backed by the dashboard substack API wrapper.
-- `/substacks` currently exists as a route shell; the list data integration is
-  already available through the feature API/query layer.
+- `/substacks` renders the substack list, and `/substacks/$slug` renders a
+  substack detail page backed by the dashboard substack API/query layer.
