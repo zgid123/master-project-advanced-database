@@ -22,8 +22,8 @@ search.
 - Notification integration: `NOTIFICATION_SERVICE_BASE_URL` plus
   `INTERNAL_SERVICE_SECRET`
 
-When running with the API Gateway locally, set `PORT` to avoid the gateway's
-default `3005` port.
+API Gateway proxies Q&A through `QNA_SERVICE_URL`, which defaults to
+`http://localhost:3005`.
 
 ## API Surface
 
@@ -57,6 +57,7 @@ PORT=3005 pnpm --filter qna start:dev
 pnpm --filter qna build
 pnpm --filter qna test
 pnpm --filter qna test:e2e
+pnpm --filter qna seed:topics
 ```
 
 PowerShell example:
@@ -75,6 +76,15 @@ $env:PORT='3005'; pnpm --filter qna start:dev
 
 Elasticsearch is provided by `workspaces/qna/docker-compose.yml`.
 
+## Gateway Integration
+
+API Gateway exposes the same topic/comment surface under `/v1`:
+
+- `/topics/*` becomes `/v1/topics/*`.
+- `/comments/*` becomes `/v1/comments/*`.
+- Gateway-proxied Q&A routes are authenticated at the gateway and receive the
+  resolved current user id in the `x-user-id` header.
+
 ## Architecture Notes
 
 - MongoDB is currently configured with a hard-coded Atlas connection string in
@@ -82,7 +92,7 @@ Elasticsearch is provided by `workspaces/qna/docker-compose.yml`.
   production use.
 - Elasticsearch is hard-coded to `http://localhost:9200` in
   `src/search/search.module.ts`.
-- The service currently trusts request `user_id` values. There is no JWT/auth
-  middleware enforcing ownership at the service boundary.
+- The service currently trusts the caller-supplied `x-user-id` header. There
+  is no JWT/auth middleware enforcing ownership at the Q&A service boundary.
 - Topic create/update/delete synchronously writes to Elasticsearch after MongoDB
   mutations; decide whether indexing failure should fail user-facing writes.

@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2026-05-11T15:34:59.688Z
+Generated: 2026-05-12T14:46:07.853Z
 
 ## Tool Run
 
@@ -18,12 +18,12 @@ Generated: 2026-05-11T15:34:59.688Z
 
 | Component | Files scanned | REST/server routes | Exported function/class APIs | Main role |
 | --- | ---: | ---: | ---: | --- |
-| API Gateway | 17 | 10 | 15 | Public proxy for Auth, Notifications, and public substack list/total routes. |
-| Auth Service | 73 | 14 | 69 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
-| Dashboard | 42 | 8 | 29 | TanStack Start UI, auth proxy routes, and substack list client/server API wrappers. |
+| API Gateway | 20 | 28 | 18 | Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes. |
+| Auth Service | 74 | 15 | 71 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
+| Dashboard | 65 | 5 | 52 | TanStack Start UI, auth proxy routes, substack list/detail pages, and client/server API wrappers. |
 | Job Service | 24 | 11 | 17 | Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 18 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
-| Q&A Service | 43 | 17 | 98 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
+| Q&A Service | 44 | 17 | 99 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
 | Recommendation Service | 29 | 19 | 63 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics. |
 | Shared Domain - Auth | 30 | 0 | 10 | Auth/substack/user schemas, entities, repository contracts, and domain errors. |
 | Shared Domain - Notification | 7 | 0 | 1 | Notification schema, entity, and repository contract. |
@@ -34,14 +34,14 @@ Generated: 2026-05-11T15:34:59.688Z
 
 | Component | Classes | Interfaces | Functions | Methods | Type aliases | Variables | Enums |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| API Gateway | 2 | 2 | 5 | 9 | 1 | 8 | 0 |
-| Auth Service | 28 | 6 | 17 | 52 | 17 | 26 | 0 |
-| Dashboard | 0 | 0 | 19 | 0 | 3 | 5 | 0 |
+| API Gateway | 3 | 2 | 5 | 12 | 1 | 10 | 0 |
+| Auth Service | 29 | 6 | 17 | 54 | 17 | 26 | 0 |
+| Dashboard | 0 | 7 | 52 | 0 | 2 | 27 | 0 |
 | Job Service | 1 | 0 | 16 | 0 | 14 | 22 | 0 |
 | Notifications Service | 5 | 3 | 11 | 7 | 2 | 16 | 0 |
-| Q&A Service | 40 | 0 | 0 | 70 | 0 | 19 | 0 |
+| Q&A Service | 40 | 0 | 0 | 71 | 0 | 19 | 0 |
 | Recommendation Service | 1 | 0 | 62 | 0 | 16 | 18 | 0 |
-| Shared Domain - Auth | 8 | 19 | 0 | 33 | 28 | 42 | 0 |
+| Shared Domain - Auth | 8 | 20 | 0 | 34 | 29 | 43 | 0 |
 | Shared Domain - Notification | 1 | 3 | 0 | 4 | 5 | 4 | 0 |
 | Shared Node - Hono | 0 | 2 | 5 | 0 | 0 | 0 | 0 |
 | Shared Node - Utils | 0 | 2 | 1 | 0 | 1 | 0 | 0 |
@@ -56,12 +56,30 @@ Generated: 2026-05-11T15:34:59.688Z
 - `GET /v1/auth/profile` (Hono)
 - `POST /v1/auth/refresh` (Hono)
 - `POST /v1/auth/sign-in` (Hono)
+- `POST /v1/auth/sign-out` (Hono)
 - `POST /v1/auth/sign-up` (Hono)
 - `DELETE /v1/auth/users/:userId/subscribe` (Hono)
 - `POST /v1/auth/users/:userId/subscribe` (Hono)
+- `POST /v1/comments` (Hono)
+- `DELETE /v1/comments/:id` (Hono)
+- `PATCH /v1/comments/:id` (Hono)
+- `PATCH /v1/comments/:id/accept` (Hono)
+- `POST /v1/comments/:id/vote` (Hono)
 - `GET /v1/notifications` (Hono)
 - `GET /v1/substacks` (Hono)
+- `GET /v1/substacks/:slug` (Hono)
 - `GET /v1/substacks/total` (Hono)
+- `POST /v1/topics` (Hono)
+- `DELETE /v1/topics/:id` (Hono)
+- `GET /v1/topics/:id` (Hono)
+- `PATCH /v1/topics/:id` (Hono)
+- `GET /v1/topics/:id/comments` (Hono)
+- `PATCH /v1/topics/:id/solve` (Hono)
+- `POST /v1/topics/:id/subscribe` (Hono)
+- `POST /v1/topics/:id/unsubscribe` (Hono)
+- `DELETE /v1/topics/:id/vote` (Hono)
+- `POST /v1/topics/:id/vote` (Hono)
+- `GET /v1/topics/search` (Hono)
 
 ### Auth Service
 - `POST /admin/substacks/:slug/approve` (Hono)
@@ -69,6 +87,7 @@ Generated: 2026-05-11T15:34:59.688Z
 - `GET /v1/auth/profile` (Hono)
 - `POST /v1/auth/refresh` (Hono)
 - `POST /v1/auth/sign-in` (Hono)
+- `POST /v1/auth/sign-out` (Hono)
 - `POST /v1/auth/sign-up` (Hono)
 - `DELETE /v1/auth/users/:userId/subscribe` (Hono)
 - `POST /v1/auth/users/:userId/subscribe` (Hono)
@@ -80,13 +99,10 @@ Generated: 2026-05-11T15:34:59.688Z
 - `GET /v1/substacks/total` (Hono)
 
 ### Dashboard
-- `GET /api/auth/$` (TanStack Start)
 - `POST /api/auth/$` (TanStack Start)
 - `GET /api/portal/auth/profile` (TanStack Start)
-- `POST /api/portal/auth/sign-in` (TanStack Start)
-- `POST /api/portal/auth/sign-out` (TanStack Start)
-- `POST /api/portal/auth/sign-up` (TanStack Start)
 - `GET /api/portal/substacks/` (TanStack Start)
+- `GET /api/portal/substacks/$slug` (TanStack Start)
 - `GET /api/portal/substacks/total` (TanStack Start)
 
 ### Job Service
@@ -152,7 +168,7 @@ Generated: 2026-05-11T15:34:59.688Z
 ## Function/Class API Families
 
 ### API Gateway
-Public proxy for Auth, Notifications, and public substack list/total routes.
+Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes.
 
 Representative callable/class APIs from the generated inventory:
 - `initHono({ beforeInitRoutes, }: IInitHonoParams): IInitHonoReturn`
@@ -164,10 +180,10 @@ Representative callable/class APIs from the generated inventory:
 - `AuthService.signUp(params: IAuthRequestParams): Promise<Response>`
 - `AuthService.signIn(params: IAuthRequestParams): Promise<Response>`
 - `AuthService.refresh(params: IAuthRequestParams): Promise<Response>`
+- `AuthService.signOut(params: IAuthRequestParams): Promise<Response>`
 - `AuthService.profile({ authToken }: IProfileParams): Promise<Response>`
 - `AuthService.subscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>`
-- `AuthService.unsubscribeUser({ userId, authToken, }: IAuthenticatedRequestParams): Promise<Response>`
-- Additional generated callable APIs: 3. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 6. See `API_INVENTORY.md` for the full list.
 
 ### Auth Service
 Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration.
@@ -185,25 +201,25 @@ Representative callable/class APIs from the generated inventory:
 - `generateSalt(characterNumber: number): Promise<string>`
 - `bcryptHash({ salt, source, }: IBcryptParams): Promise<IRBcryptHashProps>`
 - `extractJWT({ token, secretKey = '' }: IExtractJWTParams, options: VerifyOptions): T`
-- Additional generated callable APIs: 57. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 59. See `API_INVENTORY.md` for the full list.
 
 ### Dashboard
-TanStack Start UI, auth proxy routes, and substack list client/server API wrappers.
+TanStack Start UI, auth proxy routes, substack list/detail pages, and client/server API wrappers.
 
 Representative callable/class APIs from the generated inventory:
+- `AuthModal(): Element`
 - `Footer(): Element`
 - `Header(): Element`
 - `Button({ className, variant = 'default', size = 'default', asChild = false, ...props }: React.ComponentProps<'button'> & VariantProps<typeof buttonVariants> & { asChild?: boolean; }): Element`
-- `Input({ className, type, ...props }: React.ComponentProps<'input'>): Element`
-- `Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>): Element`
-- `getCurrentUser(): Promise<TUserProfile | null>`
-- `signOut(): Promise<null>`
-- `signIn(data: TSignIn): Promise<TAuthPayload>`
-- `signUp(data: TSignUp): Promise<TAuthPayload>`
-- `signOutAuthResponse(): Response`
-- `proxyAuthRequest(request: Request, path: '/v1/auth/sign-in' | '/v1/auth/sign-up'): Promise<Response>`
-- `proxyAuthPayload(payload: unknown, request: Request, path: '/v1/auth/sign-in' | '/v1/auth/sign-up'): Promise<Response>`
-- Additional generated callable APIs: 17. See `API_INVENTORY.md` for the full list.
+- `DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>): Element`
+- `DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>): Element`
+- `DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>): Element`
+- `DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>): Element`
+- `DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>): Element`
+- `DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>): Element`
+- `DialogContent({ className, children, showCloseButton = true, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; }): Element`
+- `Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>): Element`
+- Additional generated callable APIs: 40. See `API_INVENTORY.md` for the full list.
 
 ### Job Service
 Fastify app, job/application routes, PostgreSQL access, JWT validation, Redis outbox publisher.
@@ -249,15 +265,15 @@ Representative callable/class APIs from the generated inventory:
 - `AppModule`
 - `AppService.getHello(): string`
 - `CommentsController.deleteComment(id: string, user_id: string): Promise<{ message: string; }>`
-- `CommentsController.voteComment(id: string, dto: VoteCommentDto): Promise<{ message: string; }>`
-- `CommentsController.createComment(dto: CreateCommentDto): Promise<{ id: ObjectId; topic_id: string; user_id: string; content: string; is_accepted: boolean; created_at: any; updated_at: any; }>`
+- `CommentsController.voteComment(id: string, dto: VoteCommentDto, user_id: string): Promise<{ message: string; }>`
+- `CommentsController.createComment(dto: CreateCommentDto, user_id: string): Promise<{ id: ObjectId; topic_id: string; user_id: string; content: string; is_accepted: boolean; created_at: any; updated_at: any; }>`
 - `CommentsController.acceptComment(id: string, topic_id: string, user_id: string): Promise<{ id: ObjectId; topic_id: string; user_id: string; content: string; is_accepted: boolean; created_at: any; updated_at: any; }>`
-- `CommentsController.updateComment(id: string, dto: UpdateCommentDto): Promise<{ id: ObjectId; topic_id: string; user_id: string; content: string; is_accepted: boolean; created_at: any; updated_at: any; }>`
+- `CommentsController.updateComment(id: string, dto: UpdateCommentDto, user_id: string): Promise<{ id: ObjectId; topic_id: string; user_id: string; content: string; is_accepted: boolean; created_at: any; updated_at: any; }>`
 - `CommentsModule`
 - `CommentsRepo.create(data: Partial<Comment>): Promise<Document<unknown, {}, Comment, {}, DefaultSchemaOptions> & Comment & Required<{ _id: ObjectId; }> & { __v: number; } & { id: string; }>`
 - `CommentsRepo.update(id: string, data: Partial<Comment>): Promise<Document<unknown, {}, Comment, {}, DefaultSchemaOptions> & Comment & Required<{ _id: ObjectId; }> & { __v: number; } & { id: string; }>`
 - `CommentsRepo.softDelete(id: string): Promise<Document<unknown, {}, Comment, {}, DefaultSchemaOptions> & Comment & Required<{ _id: ObjectId; }> & { __v: number; } & { id: string; }>`
-- Additional generated callable APIs: 86. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 87. See `API_INVENTORY.md` for the full list.
 
 ### Recommendation Service
 Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics.
@@ -316,13 +332,13 @@ Representative callable/class APIs from the generated inventory:
 
 ## Architecture-Relevant Conclusions From API Surface
 
-1. Gateway API surface now covers Auth, Notifications, and public substack list/total routes, but Q&A, Job Service, and RecSys remain outside the gateway.
-2. Auth remains the owner of substack data. Public listing and total count are served by Auth and proxied through the gateway/dashboard.
-3. Dashboard now has a real substack feature slice with API wrappers, query options, a `SubstacksIsland`, and server proxy routes for list and total count.
-4. Q&A still has the largest Nest/service/DTO surface and direct MongoDB plus Elasticsearch dependencies. Search indexing remains part of user-facing write paths.
-5. RecSys has a complete standalone API and function surface, but it is not wired into the gateway or source event producers in the current repo.
-6. Job Service uses its own Fastify/JWT/database/outbox stack and publishes a separate `jobs.events` stream, not the RecSys `events:*` streams.
-7. Shared packages expose domain schemas/entities/repository contracts, but cross-service runtime contracts such as JWT subject, current user propagation, and event envelopes are not yet centralized.
+1. The current generated surface is 100 REST/server routes and 355 exported callable/class APIs.
+2. API Gateway now fronts Auth, Notifications, public Substacks, and Q&A topic/comment routes. Job Service and RecSys remain outside the gateway.
+3. Auth remains the owner of users, follows, substacks, and token lifecycle; recent frontend auth work moved more browser workflows through Dashboard and Gateway.
+4. Dashboard now includes auth, substack list/detail pages, and server proxy routes for auth/substack APIs.
+5. Q&A is integrated through Gateway for topics/comments, but it still owns its NestJS controllers, MongoDB models, and Elasticsearch indexing.
+6. RecSys remains a standalone recommendation service with internal event ingestion; no generated route shows a Gateway proxy to RecSys.
+7. Shared packages expose domain schemas/entities/repository contracts, but cross-service runtime contracts such as JWT subject, current user propagation, and event envelopes still need one canonical definition.
 
 ## Source Artifacts
 

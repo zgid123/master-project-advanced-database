@@ -1,19 +1,20 @@
 # API Gateway
 
-Public Hono gateway for Solvit browser-facing auth, notification, and public
-substack-list traffic. It is intentionally thin: it validates the current user
-through Auth, forwards requests to upstream services, and normalizes auth
-cookies.
+Public Hono gateway for Solvit browser-facing Auth, Notifications, Substack,
+and Q&A topic/comment traffic. It is intentionally thin: it validates the
+current user through Auth, forwards requests to upstream services, and
+normalizes auth cookies.
 
 ## Responsibilities
 
 - Expose public Auth proxy routes.
 - Expose the Notifications portal proxy route.
-- Expose public substack list and total-count proxy routes.
+- Expose public substack list, detail, and total-count proxy routes.
+- Expose Q&A topic/comment proxy routes.
 - Read bearer tokens or `solvit_authToken` cookies.
 - Resolve the current user by calling Auth `/v1/auth/profile`.
 - Set HTTP-only `solvit_authToken` and `solvit_refreshToken` cookies after
-  sign-up, sign-in, and refresh.
+  sign-up, sign-in, and refresh; clear them on sign-out.
 
 ## Runtime
 
@@ -32,11 +33,13 @@ cookies.
 | `POST` | `/v1/auth/sign-up` | Proxies Auth sign-up and sets auth cookies |
 | `POST` | `/v1/auth/sign-in` | Proxies Auth sign-in and sets auth cookies |
 | `POST` | `/v1/auth/refresh` | Proxies Auth refresh and sets auth cookies |
+| `POST` | `/v1/auth/sign-out` | Proxies Auth sign-out and expires auth cookies |
 | `GET` | `/v1/auth/profile` | Returns user resolved by gateway middleware |
 | `POST` | `/v1/auth/users/:userId/subscribe` | Proxies user follow |
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Proxies user unfollow |
 | `GET` | `/v1/notifications` | Proxies notification list with original query string |
 | `GET` | `/v1/substacks` | Public proxy to Auth substack list |
+| `GET` | `/v1/substacks/:slug` | Public proxy to Auth substack detail |
 | `GET` | `/v1/substacks/total` | Public proxy to Auth approved-substack count |
 | `GET` | `/v1/topics/search` | Proxies Q&A topic search |
 | `POST` | `/v1/topics` | Proxies Q&A topic creation |
@@ -70,6 +73,7 @@ Run with the dependent services:
 ```sh
 pnpm --filter auth dev
 pnpm --filter notifications dev
+pnpm --filter qna start:dev
 pnpm --filter api-gateway dev
 ```
 
@@ -90,5 +94,7 @@ pnpm --filter api-gateway dev
   middleware currently treats it as protected unless added to public routes.
 - Notification proxying forwards the client query string; it does not inject
   the authenticated user id yet.
-- `/v1/substacks` and `/v1/substacks/total` are public gateway routes and do
-  not require a resolved current user.
+- `/v1/substacks`, `/v1/substacks/total`, and `GET /v1/substacks/:slug` are
+  public gateway routes and do not require a resolved current user.
+- Q&A proxy routes are protected by gateway auth middleware and forward the
+  resolved current user id to Q&A as `x-user-id`.

@@ -29,6 +29,7 @@ substack membership for Solvit.
 | `POST` | `/v1/auth/sign-up` | Create user, issue tokens, enqueue welcome notification |
 | `POST` | `/v1/auth/sign-in` | Validate credentials and issue tokens |
 | `POST` | `/v1/auth/refresh` | Exchange refresh token for new auth/refresh tokens |
+| `POST` | `/v1/auth/sign-out` | Revoke a refresh token |
 | `GET` | `/v1/auth/profile` | Requires auth token; returns current user profile |
 | `POST` | `/v1/auth/users/:userId/subscribe` | Follow another user |
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Unfollow another user |
@@ -69,5 +70,5 @@ pnpm --filter auth start
 - Sign-up currently hashes the password before calling the repository, and the
   repository hashes again. New sign-ups should be verified after this is fixed.
 - Auth owns substack data in PostgreSQL. Gateway and Dashboard now read the
-  approved-substack list and total count from Auth.
+  approved-substack list, detail, and total count from Auth.
 - RecSys only receives derived graph structure when event integration is added.
