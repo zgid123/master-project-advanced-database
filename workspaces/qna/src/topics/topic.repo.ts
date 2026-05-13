@@ -60,6 +60,29 @@ export class TopicsRepo {
         return this.model.find(filter);
     }
 
+    async findByIdsAny(ids: string[]) {
+        return this.model.find({
+            _id: { $in: ids },
+            deleted_at: null,
+        });
+    }
+
+    async findNewestNoSubstack(page: number, limit: number) {
+        const skip = (page - 1) * limit;
+        return this.model
+            .find({ deleted_at: null, substack_id: { $exists: false } })
+            .sort({ created_at: -1 })
+            .skip(skip)
+            .limit(limit);
+    }
+
+    async countNewestNoSubstack() {
+        return this.model.countDocuments({
+            deleted_at: null,
+            substack_id: { $exists: false },
+        });
+    }
+
     async getTopicDetails(id: string) {
         const topic = await this.model.findOne({ _id: id, deleted_at: null });
         if (!topic) return null;
