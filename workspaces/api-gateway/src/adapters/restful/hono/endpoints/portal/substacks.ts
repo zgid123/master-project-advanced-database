@@ -16,6 +16,15 @@ export const substackEndpoints = new Hono<IApiGatewayContextVariables>()
 
     return forwardUpstreamResponse(c, response);
   })
+  .get('/owned', async (c) => {
+    const response = await c.var.authService.listOwnedSubstacks({
+      authToken: c.get('authToken'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
   .get('/:slug', async (c) => {
     const response = await c.var.authService.getSubstackBySlug({
       slug: c.req.param('slug'),
@@ -28,6 +37,28 @@ export const substackEndpoints = new Hono<IApiGatewayContextVariables>()
       authToken: c.get('authToken'),
       body: await c.req.text(),
       contentType: c.req.header('content-type') ?? 'application/json',
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
+  .put('/:slug', async (c) => {
+    const response = await c.var.authService.updateSubstack({
+      authToken: c.get('authToken'),
+      body: await c.req.text(),
+      contentType: c.req.header('content-type') ?? 'application/json',
+      slug: c.req.param('slug'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
+  .delete('/:slug', async (c) => {
+    const response = await c.var.authService.deleteSubstack({
+      authToken: c.get('authToken'),
+      slug: c.req.param('slug'),
     });
 
     return forwardUpstreamResponse(c, response, {

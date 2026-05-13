@@ -1,37 +1,79 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCommand, useQueryClient } from '@alphacifer/react/query';
+import type { TNewSubstack, TSubstackEntity } from '@domain/auth';
 
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
 import { Label } from '#/components/ui/label';
-import { createSubstack } from '#/features/substack/api';
-import { SUBSTACK_QUERY_KEYS } from '#/features/substack/queries/queryKeys';
 
+import { createSubstack, updateSubstack } from '../../api/substackApi';
+import { SUBSTACK_QUERY_KEYS } from '../../queries/queryKeys';
 import { substackFormOptions, useAppForm } from './hooks';
 
-interface ISubstackFormProps {
-  onCreated?: () => void;
-}
-
-export function SubstackForm({ onCreated }: ISubstackFormProps) {
+export function SubstackForm({
+  substack,
+  onSuccess,
+}: {
+  onSuccess?: () => void;
+  substack?: TSubstackEntity;
+}) {
   const queryClient = useQueryClient();
-  const createSubstackMutation = useMutation({
-    mutationFn: createSubstack,
+
+  const createSubstackCommand = useCommand(createSubstack, {
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [SUBSTACK_QUERY_KEYS.list],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [SUBSTACK_QUERY_KEYS.total],
-      });
-      onCreated?.();
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.owned] });
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.total] });
+      onSuccess?.();
     },
   });
+
+  const updateSubstackCommand = useCommand(
+    (data: TNewSubstack) => updateSubstack(substack?.slug || '', data),
+    {
+      onSuccess: (updatedSubstack) => {
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.list],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.owned],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.detail, substack?.slug || ''],
+        });
+
+        if (updatedSubstack.slug !== substack?.slug) {
+          queryClient.invalidateQueries({
+            queryKey: [SUBSTACK_QUERY_KEYS.detail, updatedSubstack.slug],
+          });
+        }
+
+        onSuccess?.();
+      },
+    },
+  );
+
   const form = useAppForm({
     ...substackFormOptions,
+    defaultValues: substack
+      ? { name: substack.name, description: substack.description }
+      : substackFormOptions.defaultValues,
     onSubmit: async ({ value }) => {
-      await createSubstackMutation.mutateAsync(value);
+      try {
+        if (substack) {
+          await updateSubstackCommand.mutateAsync(value);
+        } else {
+          await createSubstackCommand.mutateAsync(value);
+        }
+      } catch {
+        // Mutation error is rendered below.
+      }
     },
   });
+
+  const isPending =
+    form.state.isSubmitting ||
+    createSubstackCommand.isPending ||
+    updateSubstackCommand.isPending;
 
   return (
     <form
@@ -78,14 +120,22 @@ export function SubstackForm({ onCreated }: ISubstackFormProps) {
           </div>
         )}
       </form.Field>
-      <Button disabled={form.state.isSubmitting} type='submit'>
-        Create Substack
+      <div className='m-0 min-h-5 text-sm font-medium text-destructive'>
+        {form.state.errors.length > 0
+          ? String(form.state.errors[0])
+          : substack
+            ? updateSubstackCommand.error?.message || ''
+            : createSubstackCommand.error?.message || ''}
+      </div>
+      <Button disabled={isPending} type='submit'>
+        {isPending
+          ? substack
+            ? 'Updating...'
+            : 'Creating...'
+          : substack
+            ? 'Update Substack'
+            : 'Create Substack'}
       </Button>
-      {createSubstackMutation.isError && (
-        <p className='m-0 text-sm font-semibold text-[#f7c46b]'>
-          Substack creation failed.
-        </p>
-      )}
     </form>
   );
 }

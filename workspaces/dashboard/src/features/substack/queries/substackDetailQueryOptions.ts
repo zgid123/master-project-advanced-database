@@ -6,7 +6,12 @@ import { SUBSTACK_QUERY_KEYS } from './queryKeys';
 
 export function substackDetailQueryOptions({ slug }: { slug: string }) {
   return queryOptions({
-    queryKey: [SUBSTACK_QUERY_KEYS.detail, { slug }],
+    queryKey: [
+      ...SUBSTACK_QUERY_KEYS.detail,
+      {
+        slug,
+      },
+    ],
     queryFn: ({ signal }) => {
       return getSubstackBySlug({
         slug,

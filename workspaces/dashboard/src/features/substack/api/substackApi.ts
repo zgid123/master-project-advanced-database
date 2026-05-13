@@ -12,10 +12,6 @@ export type TTotalSubstacks = {
   totalSubstacks: number;
 };
 
-export type TCreateSubstackInput = TNewSubstack & {
-  slug?: string;
-};
-
 type TApiResponse<TData> = {
   data?: TData;
   detail?: string;
@@ -85,7 +81,7 @@ async function requestApi<TData>(
     signal,
   }: {
     body?: unknown;
-    method: 'DELETE' | 'POST';
+    method: 'DELETE' | 'POST' | 'PUT';
     signal?: AbortSignal;
   },
 ): Promise<TData> {
@@ -138,6 +134,17 @@ export async function listSubstacks({
   );
 }
 
+export async function getOwnedSubstacks({
+  signal,
+}: {
+  signal?: AbortSignal;
+} = {}): Promise<TSubstackEntity[]> {
+  return getApi<TSubstackEntity[]>(
+    createApiUrl('/api/portal/substacks/owned', '/v1/substacks/owned'),
+    signal,
+  );
+}
+
 export async function getTotalSubstacks({
   signal,
 }: {
@@ -169,16 +176,38 @@ export async function getSubstackBySlug({
   );
 }
 
-export async function createSubstack(
-  data: TCreateSubstackInput,
+export function createSubstack(
+  data: TNewSubstack,
   signal?: AbortSignal,
 ): Promise<TSubstackEntity> {
   return requestApi<TSubstackEntity>('/api/portal/substacks/', {
-    body: {
-      ...data,
-      slug: data.slug?.trim() || createSlug(data.name),
-    },
+    body: data,
     method: 'POST',
+    signal,
+  });
+}
+
+export function updateSubstack(
+  slug: string,
+  data: TNewSubstack,
+  signal?: AbortSignal,
+): Promise<TSubstackEntity> {
+  return requestApi<TSubstackEntity>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}`,
+    {
+      body: data,
+      method: 'PUT',
+      signal,
+    },
+  );
+}
+
+export async function deleteSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(`/api/portal/substacks/${encodeURIComponent(slug)}`, {
+    method: 'DELETE',
     signal,
   });
 }
@@ -194,14 +223,6 @@ export async function subscribeSubstack(
       signal,
     },
   );
-}
-
-function createSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 export async function unsubscribeSubstack(

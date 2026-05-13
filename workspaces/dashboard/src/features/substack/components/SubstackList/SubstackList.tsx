@@ -1,23 +1,34 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@alphacifer/react/query';
 import { Plus, Search } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { useSession } from '#/features/auth/queries/authQueries';
 import { substackListQueryOptions } from '#/features/substack/queries';
 
-import { SubstackCard } from '../SubstackCard';
 import { SubstackFormModal } from '../SubstackForm';
+import { MySubstackList } from './MySubstackList';
+import { SubstackGrid } from './SubstackGrid';
+import { SubstackListSkeleton } from './SubstackListSkeleton';
 
 export function SubstackList() {
-  const { data: substacks } = useSuspenseQuery(substackListQueryOptions());
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { data: allSubstacks } = useSuspenseQuery(substackListQueryOptions());
   const { data: session, isPending } = useSession();
   const currentUser = session?.user;
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  if (isPending) {
+  if (isPending || !mounted) {
     return null;
   }
+
+  const filters = currentUser ? ['All', 'My Substacks'] : ['All'];
 
   return (
     <>
@@ -35,7 +46,7 @@ export function SubstackList() {
         {currentUser && (
           <Button
             className='h-12 rounded-xl border border-lagoon/30 bg-lagoon/14 px-5 text-sm font-bold text-lagoon-deep hover:bg-lagoon/22'
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => setIsOpen(true)}
             type='button'
           >
             <Plus className='size-5' />
@@ -53,10 +64,15 @@ export function SubstackList() {
           />
         </label>
         <div className='flex gap-2'>
-          {['All'].map((filter) => (
+          {filters.map((filter) => (
             <Button
-              className='h-12 rounded-xl bg-sea-ink/10 px-5 font-semibold text-sea-ink hover:bg-sea-ink/15'
+              className={`h-12 rounded-xl border px-5 font-semibold ${
+                selectedFilter === filter
+                  ? 'border-lagoon/30 bg-lagoon/14 text-lagoon-deep'
+                  : 'border-transparent bg-sea-ink/10 text-sea-ink hover:bg-sea-ink/15'
+              }`}
               key={filter}
+              onClick={() => setSelectedFilter(filter)}
               type='button'
               variant='secondary'
             >
@@ -66,24 +82,14 @@ export function SubstackList() {
         </div>
       </div>
 
-      <div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-3'>
-        {substacks.map((substack, index) => (
-          <SubstackCard
-            data={{
-              ...substack,
-              members: `${(substack.name.length * 1.2).toFixed(1)}k`,
-              topics: substack.name.length * 5,
-            }}
-            index={index}
-            key={substack.id}
-          />
-        ))}
-      </div>
-      <SubstackFormModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onCreated={() => setIsCreateOpen(false)}
-      />
+      {selectedFilter === 'All' && <SubstackGrid substacks={allSubstacks} />}
+      {selectedFilter === 'My Substacks' && (
+        <Suspense fallback={<SubstackListSkeleton />}>
+          <MySubstackList />
+        </Suspense>
+      )}
+
+      <SubstackFormModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );
 }

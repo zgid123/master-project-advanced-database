@@ -9,7 +9,12 @@ import { SUBSTACK_QUERY_KEYS } from './queryKeys';
 
 export function substackListQueryOptions({ limit }: TListSubstacksParams = {}) {
   return queryOptions({
-    queryKey: [SUBSTACK_QUERY_KEYS.list, { limit }],
+    queryKey: [
+      ...SUBSTACK_QUERY_KEYS.list,
+      {
+        limit,
+      },
+    ],
     queryFn: ({ signal }) => {
       return listSubstacks({
         limit,

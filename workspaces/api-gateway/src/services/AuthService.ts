@@ -112,6 +112,16 @@ export class AuthService {
     });
   }
 
+  public async listOwnedSubstacks({
+    authToken,
+  }: Pick<ISubstackRequestParams, 'authToken'>): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'GET',
+      path: '/v1/substacks/owned',
+    });
+  }
+
   public async createSubstack({
     authToken,
     body,
@@ -123,6 +133,32 @@ export class AuthService {
       contentType,
       method: 'POST',
       path: '/v1/substacks',
+    });
+  }
+
+  public async updateSubstack({
+    authToken,
+    body,
+    contentType,
+    slug,
+  }: ISubstackRequestParams & { slug: string }): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      body,
+      contentType,
+      method: 'PUT',
+      path: `/v1/substacks/${encodeURIComponent(slug)}`,
+    });
+  }
+
+  public async deleteSubstack({
+    authToken,
+    slug,
+  }: IAuthenticatedSubstackParams): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'DELETE',
+      path: `/v1/substacks/${encodeURIComponent(slug)}`,
     });
   }
 
@@ -172,7 +208,7 @@ export class AuthService {
     authToken: string;
     body?: string;
     contentType?: string;
-    method: 'DELETE' | 'GET' | 'PATCH' | 'POST';
+    method: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
   }): Promise<Response> {
     const headers: Record<string, string> = {
       authorization: `Bearer ${authToken}`,

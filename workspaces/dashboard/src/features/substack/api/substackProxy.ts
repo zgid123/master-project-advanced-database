@@ -2,6 +2,7 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
 type TSubstackProxyPath =
   | '/v1/substacks'
+  | '/v1/substacks/owned'
   | '/v1/substacks/total'
   | `/v1/substacks/${string}`
   | `/v1/substacks/${string}/subscribe`;
@@ -9,17 +10,18 @@ type TSubstackProxyPath =
 export async function proxySubstackRequest(
   request: Request,
   path: TSubstackProxyPath,
-  method: 'DELETE' | 'GET' | 'POST' = 'GET',
+  method = request.method,
 ): Promise<Response> {
   const upstreamUrl = new URL(path, API_GATEWAY_URL);
   upstreamUrl.search = new URL(request.url).search;
-  const requestBody = method === 'GET' ? undefined : await request.text();
+  const isPayloadMethod = method !== 'GET' && method !== 'HEAD';
+  const requestBody = isPayloadMethod ? await request.text() : undefined;
   const requestHeaders: Record<string, string> = {
     cookie: request.headers.get('cookie') ?? '',
     authorization: request.headers.get('authorization') ?? '',
   };
 
-  if (requestBody !== undefined) {
+  if (isPayloadMethod) {
     requestHeaders['content-type'] =
       request.headers.get('content-type') ?? 'application/json';
   }

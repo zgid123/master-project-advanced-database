@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@alphacifer/react/query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 

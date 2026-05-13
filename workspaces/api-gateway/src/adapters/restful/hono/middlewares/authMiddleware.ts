@@ -15,8 +15,6 @@ const PUBLIC_ROUTES = new Set([
   '/v1/auth/sign-in',
   '/v1/auth/sign-up',
   '/v1/auth/refresh',
-  '/v1/substacks',
-  '/v1/substacks/total',
 ]);
 
 const SUBSTACK_DETAIL_PATTERN = /^\/v1\/substacks\/[^/]+$/;
@@ -39,46 +37,51 @@ function isPublicRoute(c: Context): boolean {
     return true;
   }
 
-  return c.req.method === 'GET' && SUBSTACK_DETAIL_PATTERN.test(pathname);
+  if (pathname === '/v1/substacks/owned') {
+    return false;
+  }
+
+  if (c.req.method !== 'GET') {
+    return false;
+  }
+
+  if (pathname === '/v1/substacks' || pathname === '/v1/substacks/total') {
+    return true;
+  }
+
+  return SUBSTACK_DETAIL_PATTERN.test(pathname);
 }
 
 export const authMiddleware: MiddlewareHandler<
   IApiGatewayContextVariables
 > = async (c, next) => {
-  if (isPublicRoute(c)) {
-    await next();
-
-    return;
-  }
-
+  const isPublic = isPublicRoute(c);
   const authToken = getAuthToken(c);
 
-  if (!authToken) {
-    return c.json(
-      {
-        message: 'Unauthorized',
-      },
-      401,
-    );
-  }
-
-  const response = await c.var.authService.profile({
-    authToken,
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-
-    return c.newResponse(body, {
-      headers: response.headers,
-      statusText: response.statusText,
-      status: response.status as StatusCode,
+  if (authToken) {
+    const response = await c.var.authService.profile({
+      authToken,
     });
+
+    if (response.ok) {
+      const profile = (await response.json()) as IProfileResponse;
+
+      if (profile.data) {
+        c.set('authToken', authToken);
+        c.set('currentUser', profile.data);
+      }
+    } else if (!isPublic) {
+      const body = await response.text();
+
+      return c.newResponse(body, {
+        headers: response.headers,
+        statusText: response.statusText,
+        status: response.status as StatusCode,
+      });
+    }
   }
 
-  const profile = (await response.json()) as IProfileResponse;
-
-  if (!profile.data) {
+  if (!isPublic && !c.get('currentUser')) {
     return c.json(
       {
         message: 'Unauthorized',
@@ -86,9 +89,6 @@ export const authMiddleware: MiddlewareHandler<
       401,
     );
   }
-
-  c.set('authToken', authToken);
-  c.set('currentUser', profile.data);
 
   await next();
 };

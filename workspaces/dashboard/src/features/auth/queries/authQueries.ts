@@ -4,8 +4,15 @@ import {
   useCommand,
 } from '@alphacifer/react/query';
 import type { TSignIn, TSignUp } from '@domain/auth';
+import { useEffect } from 'react';
 
-import { signIn, signOut, signUp } from '#/features/auth/api';
+import {
+  getProfile,
+  refresh,
+  signIn,
+  signOut,
+  signUp,
+} from '#/features/auth/api';
 import { useAuthStore } from '#/features/auth/store/authStore';
 
 export const AUTH_MUTATION_KEYS = {
@@ -19,15 +26,38 @@ type TAuthMutationOptions<TVariables> = Omit<
   'mutationFn'
 >;
 
+let triedAutoSignIn = false;
+
 export function useSession() {
   const user = useAuthStore.use.user();
+  const setAuth = useAuthStore.use.setAuth();
+
+  useEffect(() => {
+    if (!user && !triedAutoSignIn) {
+      triedAutoSignIn = true;
+      getProfile()
+        .then((profile) => {
+          setAuth({
+            user: profile,
+            authToken: '',
+            refreshToken: '',
+          });
+        })
+        .catch(async (error) => {
+          if (error.code === 401) {
+            try {
+              await refresh();
+            } catch {
+              // Refresh also failed, user needs to login
+            }
+          }
+        });
+    }
+  }, [user, setAuth]);
+
   return {
-    isPending: false,
-    data: user
-      ? {
-          user,
-        }
-      : null,
+    isPending: !triedAutoSignIn && !user,
+    data: user ? { user } : null,
   };
 }
 

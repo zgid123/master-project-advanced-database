@@ -1,5 +1,5 @@
 import { arkValidator } from '@alphacifer/hono/core';
-import { CreateSubstack } from '@domain/auth';
+import { NewSubstack } from '@domain/auth';
 import { parsePagy } from '@node/utils';
 import { Hono, type ValidationTargets } from 'hono';
 
@@ -11,7 +11,6 @@ import { getUserDisplayName } from '#/utils/userUtils';
 
 import type { ISubstackContextVariables } from '../../../context';
 
-const CreateSubstackRequest = CreateSubstack.omit('ownerId');
 const MAX_SUBSTACK_LIMIT = 50;
 
 export const substackEndpoints = new Hono<ISubstackContextVariables>()
@@ -36,6 +35,18 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
       data: {
         totalSubstacks,
       },
+    });
+  })
+  .get('/owned', requiredUserMiddleware, async (c) => {
+    const currentUser = c.get('currentUser');
+    const substacks = await c.var.substack.portal.getSubstacksByOwnerQuery.exec(
+      {
+        ownerId: currentUser.id,
+      },
+    );
+
+    return c.json({
+      data: substacks,
     });
   })
   .get('/:slug', async (c) => {
@@ -86,14 +97,51 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
 
     return c.body(null, 204);
   })
-  .post(
-    '/',
+  .delete('/:slug', async (c) => {
+    const { var: v } = c;
+    const currentUser = c.get('currentUser');
+    const slug = c.req.param('slug');
+
+    await v.substack.portal.deleteSubstackCommand.exec({
+      slug,
+      ownerId: currentUser.id,
+    });
+
+    return c.body(null, 204);
+  })
+  .put(
+    '/:slug',
     arkValidator<
-      typeof CreateSubstackRequest,
+      typeof NewSubstack,
       keyof ValidationTargets,
       ISubstackContextVariables,
       string
-    >('json', CreateSubstackRequest),
+    >('json', NewSubstack),
+    async (c) => {
+      const { req, var: v } = c;
+      const currentUser = c.get('currentUser');
+      const data = req.valid('json');
+      const slug = c.req.param('slug');
+
+      const substack = await v.substack.portal.updateSubstackCommand.exec({
+        slug,
+        data,
+        ownerId: currentUser.id,
+      });
+
+      return c.json({
+        data: substack,
+      });
+    },
+  )
+  .post(
+    '/',
+    arkValidator<
+      typeof NewSubstack,
+      keyof ValidationTargets,
+      ISubstackContextVariables,
+      string
+    >('json', NewSubstack),
     async (c) => {
       const { req, var: v } = c;
       const currentUser = c.get('currentUser');

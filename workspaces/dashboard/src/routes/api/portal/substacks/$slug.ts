@@ -12,6 +12,18 @@ export const Route = createFileRoute('/api/portal/substacks/$slug')({
           `/v1/substacks/${encodeURIComponent(params.slug)}`,
         );
       },
+      PUT: ({ request, params }) => {
+        return proxySubstackRequest(
+          request,
+          `/v1/substacks/${encodeURIComponent(params.slug)}`,
+        );
+      },
+      DELETE: ({ request, params }) => {
+        return proxySubstackRequest(
+          request,
+          `/v1/substacks/${encodeURIComponent(params.slug)}`,
+        );
+      },
     },
   },
 });
