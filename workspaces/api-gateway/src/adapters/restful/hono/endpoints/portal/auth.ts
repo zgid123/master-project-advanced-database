@@ -1,4 +1,5 @@
 import { type Context, Hono } from 'hono';
+import { getCookie } from 'hono/cookie';
 import type { StatusCode } from 'hono/utils/http-status';
 
 import {
@@ -88,10 +89,19 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
   })
   .post('/refresh', async (c) => {
     const { req, var: v } = c;
+    const reqBody = await req.text();
+    let parsed: { token?: string } = {};
+    try {
+      parsed = JSON.parse(reqBody);
+    } catch {}
+
+    const token = parsed.token || getCookie(c, REFRESH_TOKEN_COOKIE_NAME);
 
     const response = await v.authService.refresh({
-      body: await req.text(),
-      contentType: req.header('content-type'),
+      body: JSON.stringify({
+        token,
+      }),
+      contentType: 'application/json',
     });
     const body = await response.text();
 

@@ -1,14 +1,69 @@
+import { useCommand, useQueryClient } from '@alphacifer/react/query';
+import type { TNewSubstack, TSubstackEntity } from '@domain/auth';
+
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
 import { Label } from '#/components/ui/label';
 
+import { createSubstack, updateSubstack } from '../../api/substackApi';
+import { SUBSTACK_QUERY_KEYS } from '../../queries/queryKeys';
 import { substackFormOptions, useAppForm } from './hooks';
 
-export function SubstackForm() {
+export function SubstackForm({
+  substack,
+  onSuccess,
+}: {
+  onSuccess?: () => void;
+  substack?: TSubstackEntity;
+}) {
+  const queryClient = useQueryClient();
+
+  const createSubstackCommand = useCommand(createSubstack, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.owned] });
+      onSuccess?.();
+    },
+  });
+
+  const updateSubstackCommand = useCommand(
+    (data: TNewSubstack) => updateSubstack(substack?.slug || '', data),
+    {
+      onSuccess: (updatedSubstack) => {
+        queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.owned],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.detail, substack?.slug || ''],
+        });
+
+        if (updatedSubstack.slug !== substack?.slug) {
+          queryClient.invalidateQueries({
+            queryKey: [SUBSTACK_QUERY_KEYS.detail, updatedSubstack.slug],
+          });
+        }
+
+        onSuccess?.();
+      },
+    },
+  );
+
   const form = useAppForm({
     ...substackFormOptions,
+    defaultValues: substack
+      ? { name: substack.name, description: substack.description }
+      : substackFormOptions.defaultValues,
     onSubmit: async ({ value }) => {
-      console.log('Submitted', value);
+      try {
+        if (substack) {
+          await updateSubstackCommand.mutateAsync(value);
+        } else {
+          await createSubstackCommand.mutateAsync(value);
+        }
+      } catch {
+        // Error is handled by commands or shown in UI
+      }
     },
   });
 
@@ -57,8 +112,30 @@ export function SubstackForm() {
           </div>
         )}
       </form.Field>
-      <Button disabled={form.state.isSubmitting} type='submit'>
-        Create Substack
+      <div className='m-0 text-sm font-medium text-destructive min-h-5'>
+        {form.state.errors.length > 0
+          ? String(form.state.errors[0])
+          : substack
+            ? updateSubstackCommand.error?.message || ''
+            : createSubstackCommand.error?.message || ''}
+      </div>
+      <Button
+        disabled={
+          form.state.isSubmitting ||
+          createSubstackCommand.isPending ||
+          updateSubstackCommand.isPending
+        }
+        type='submit'
+      >
+        {form.state.isSubmitting ||
+        createSubstackCommand.isPending ||
+        updateSubstackCommand.isPending
+          ? substack
+            ? 'Updating...'
+            : 'Creating...'
+          : substack
+            ? 'Update Substack'
+            : 'Create Substack'}
       </Button>
     </form>
   );

@@ -16,10 +16,12 @@ export const Route = createFileRoute('/api/auth/$')({
           | '/v1/auth/sign-in'
           | '/v1/auth/sign-up'
           | '/v1/auth/sign-out'
+          | '/v1/auth/refresh'
           | undefined;
         if (path === '/sign-in') gatewayPath = '/v1/auth/sign-in';
         if (path === '/sign-up') gatewayPath = '/v1/auth/sign-up';
         if (path === '/sign-out') gatewayPath = '/v1/auth/sign-out';
+        if (path === '/refresh') gatewayPath = '/v1/auth/refresh';
 
         if (!gatewayPath) {
           return new Response('Not Found', { status: 404 });

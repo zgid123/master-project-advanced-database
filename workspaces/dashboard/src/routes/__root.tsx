@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/security/noDangerouslySetInnerHtml: ignore */
-import type { QueryClient } from '@alphacifer/react/query';
+import { type QueryClient, QueryClientProvider } from '@alphacifer/react/query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import {
   createRootRouteWithContext,
@@ -51,6 +51,7 @@ export const Route = createRootRouteWithContext<IMyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { queryClient } = Route.useRouteContext();
   return (
     <html className='dark' data-theme='dark' lang='en' suppressHydrationWarning>
       <head>
@@ -58,22 +59,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className='font-sans antialiased wrap-anywhere selection:bg-lagoon/24'>
-        <Header />
-        <main className='page-wrap px-4 pb-10 pt-8'>{children}</main>
-        <Footer />
-        <AuthModal />
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
+        <QueryClientProvider client={queryClient}>
+          <Header />
+          <main className='page-wrap px-4 pb-10 pt-8'>{children}</main>
+          <Footer />
+          <AuthModal />
+          <TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>

@@ -12,12 +12,17 @@ export async function proxySubstackRequest(
   const upstreamUrl = new URL(path, API_GATEWAY_URL);
   upstreamUrl.search = new URL(request.url).search;
 
+  const method = request.method;
+  const isPayloadMethod = method !== 'GET' && method !== 'HEAD';
+
   const upstreamResponse = await fetch(upstreamUrl, {
-    method: 'GET',
+    method,
     headers: {
       cookie: request.headers.get('cookie') ?? '',
       authorization: request.headers.get('authorization') ?? '',
+      'content-type': request.headers.get('content-type') ?? 'application/json',
     },
+    body: isPayloadMethod ? await request.text() : undefined,
   });
 
   const body = await upstreamResponse.text();

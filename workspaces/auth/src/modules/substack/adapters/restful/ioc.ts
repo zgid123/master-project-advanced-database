@@ -3,11 +3,14 @@ import type { TDrizzle } from '#/infrastructure/drizzle/config';
 import { ApproveSubstackCommand } from '../../application/admin/v1/commands';
 import {
   CreateSubstackCommand,
+  DeleteSubstackCommand,
   SubscribeSubstackCommand,
   UnsubscribeSubstackCommand,
+  UpdateSubstackCommand,
 } from '../../application/portal/v1/commands';
 import {
   GetSubstackQuery,
+  GetSubstacksByOwnerQuery,
   GetSubstacksQuery,
   GetTotalSubstacksQuery,
 } from '../../application/portal/v1/queries';
@@ -26,8 +29,11 @@ export interface ISubstackIoC {
     getSubstackQuery: GetSubstackQuery;
     getSubstacksQuery: GetSubstacksQuery;
     createSubstackCommand: CreateSubstackCommand;
+    updateSubstackCommand: UpdateSubstackCommand;
+    deleteSubstackCommand: DeleteSubstackCommand;
     getTotalSubstacksQuery: GetTotalSubstacksQuery;
     subscribeSubstackCommand: SubscribeSubstackCommand;
+    getSubstacksByOwnerQuery: GetSubstacksByOwnerQuery;
     unsubscribeSubstackCommand: UnsubscribeSubstackCommand;
   };
 }
@@ -53,9 +59,14 @@ export function registerSubstackIoC({
     substackRoleRepository,
     substackRoleAssignmentRepository,
   );
+  const updateSubstackCommand = new UpdateSubstackCommand(substackRepository);
+  const deleteSubstackCommand = new DeleteSubstackCommand(substackRepository);
   const getSubstackQuery = new GetSubstackQuery(substackRepository);
   const getSubstacksQuery = new GetSubstacksQuery(substackRepository);
   const getTotalSubstacksQuery = new GetTotalSubstacksQuery(substackRepository);
+  const getSubstacksByOwnerQuery = new GetSubstacksByOwnerQuery(
+    substackRepository,
+  );
   const approveSubstackCommand = new ApproveSubstackCommand(substackRepository);
   const subscribeSubstackCommand = new SubscribeSubstackCommand(
     substackRepository,
@@ -74,8 +85,11 @@ export function registerSubstackIoC({
       getSubstackQuery,
       getSubstacksQuery,
       createSubstackCommand,
+      updateSubstackCommand,
+      deleteSubstackCommand,
       getTotalSubstacksQuery,
       subscribeSubstackCommand,
+      getSubstacksByOwnerQuery,
       unsubscribeSubstackCommand,
     },
   };
