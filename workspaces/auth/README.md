@@ -71,8 +71,8 @@ pnpm --filter auth start
 - JWT `sub` is currently the user's email. Other services must not assume it is
   a MongoDB ObjectId or any other service-specific user id unless the token
   contract is changed.
-- Sign-up currently hashes the password before calling the repository, and the
-  repository hashes again. New sign-ups should be verified after this is fixed.
+- Password hashing happens once, in `UserRepository.create`. `SignUpCommand`
+  passes the plaintext password through unchanged.
 - Auth owns substack data in PostgreSQL. Gateway and Dashboard now read the
   approved-substack list, detail, and total count from Auth.
 - RecSys only receives derived graph structure when event integration is added.
