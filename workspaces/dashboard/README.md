@@ -1,15 +1,18 @@
 # Dashboard
 
-TanStack Start frontend for Solvit. It provides the browser UI and a small
-server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
+TanStack Start frontend for Solvit. It provides the browser UI and server-side
+proxy routes that keep gateway tokens in HTTP-only cookies.
 
 ## Responsibilities
 
 - Render the Solvit dashboard shell, feed, substack, question, and auth screens.
 - Provide sign-in and sign-up forms.
 - Proxy auth requests to the API Gateway from a POST-only server route.
-- Proxy public substack list, detail, and total-count requests to the API
-  Gateway.
+- Proxy substack list, detail, total-count, create, and subscription requests
+  to the API Gateway.
+- Proxy Q&A topic/comment and notification workflows to the API Gateway.
+- Proxy Job Service and Recommendation Service browser-facing APIs through
+  dashboard server routes.
 - Store `solvit_authToken` and `solvit_refreshToken` as HTTP-only cookies.
 - Expose Better Auth-compatible routes for the local auth client.
 
@@ -29,6 +32,15 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 | `GET` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
 | `GET` | `/api/portal/substacks/$slug` | Proxy to Gateway `/v1/substacks/:slug` |
 | `GET` | `/api/portal/substacks/total` | Proxy to Gateway `/v1/substacks/total` |
+| `GET` | `/api/portal/substacks/owned` | Proxy to Gateway `/v1/substacks/owned` |
+| `POST` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
+| `PUT`, `DELETE` | `/api/portal/substacks/$slug` | Proxy to Gateway substack CUD routes |
+| `POST`, `DELETE` | `/api/portal/substacks/$slug/subscribe` | Proxy to Gateway substack membership |
+| `GET`, `POST`, `PATCH`, `DELETE` | `/api/portal/topics/*` | Proxy to Gateway Q&A topic routes |
+| `POST`, `PATCH`, `DELETE` | `/api/portal/comments/*` | Proxy to Gateway Q&A comment routes |
+| `GET`, `PATCH` | `/api/portal/notifications/*` | Proxy to Gateway notification list/read routes |
+| `GET`, `POST`, `PATCH`, `DELETE` | `/api/services/jobs/*` | Proxy to Job Service public and protected job/application routes |
+| `GET` | `/api/services/recommendations/*` | Proxy to RecSys feed/discovery routes |
 
 The complete generated API inventory is in `../../API_REPORT.md`.
 
@@ -56,6 +68,8 @@ pnpm --filter dashboard dev
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `API_GATEWAY_URL` | `http://localhost:3000` | Gateway base URL for server proxy calls |
+| `JOB_SERVICE_URL` | `http://localhost:3010` | Job Service base URL for dashboard server proxy calls |
+| `RECSYS_SERVICE_URL` | `http://localhost:3020` | RecSys base URL for dashboard server proxy calls |
 | `BETTER_AUTH_URL` | `http://localhost:4000` | Better Auth local base URL |
 | `BETTER_AUTH_SECRET` | development fallback | Better Auth signing secret |
 
@@ -68,3 +82,8 @@ pnpm --filter dashboard dev
   backed by the dashboard substack API wrapper.
 - `/substacks` renders the substack list, and `/substacks/$slug` renders a
   substack detail page backed by the dashboard substack API/query layer.
+- `/topics`, `/notifications`, `/jobs`, `/recommendations`, `/signal`, and
+  `/signals` expose service consoles for Q&A, Notifications, Job Service, and
+  RecSys.
+- Job Service protected mutations are wired, but the architecture still needs a
+  canonical JWT subject contract before they can work reliably with Auth tokens.

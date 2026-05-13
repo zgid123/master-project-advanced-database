@@ -9,7 +9,11 @@ normalizes auth cookies.
 
 - Expose public Auth proxy routes.
 - Expose the Notifications portal proxy route.
-- Expose public substack list, detail, and total-count proxy routes.
+- Expose notification list/read proxy routes with authenticated user id
+  injection.
+- Expose public substack list, detail, and total-count proxy routes plus
+  authenticated owned-list, create, update, delete, subscribe, and unsubscribe
+  routes.
 - Expose Q&A topic/comment proxy routes.
 - Read bearer tokens or `solvit_authToken` cookies.
 - Resolve the current user by calling Auth `/v1/auth/profile`.
@@ -37,10 +41,17 @@ normalizes auth cookies.
 | `GET` | `/v1/auth/profile` | Returns user resolved by gateway middleware |
 | `POST` | `/v1/auth/users/:userId/subscribe` | Proxies user follow |
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Proxies user unfollow |
-| `GET` | `/v1/notifications` | Proxies notification list with original query string |
+| `GET` | `/v1/notifications` | Proxies notification list for the authenticated user |
+| `PATCH` | `/v1/notifications/:id/read` | Marks an authenticated user's notification as read |
 | `GET` | `/v1/substacks` | Public proxy to Auth substack list |
 | `GET` | `/v1/substacks/:slug` | Public proxy to Auth substack detail |
 | `GET` | `/v1/substacks/total` | Public proxy to Auth approved-substack count |
+| `GET` | `/v1/substacks/owned` | Authenticated proxy to the current user's substacks |
+| `POST` | `/v1/substacks` | Authenticated proxy to create a substack |
+| `PUT` | `/v1/substacks/:slug` | Authenticated proxy to update a substack |
+| `DELETE` | `/v1/substacks/:slug` | Authenticated proxy to delete a substack |
+| `POST` | `/v1/substacks/:slug/subscribe` | Authenticated proxy to subscribe to a substack |
+| `DELETE` | `/v1/substacks/:slug/subscribe` | Authenticated proxy to unsubscribe from a substack |
 | `GET` | `/v1/topics/search` | Proxies Q&A topic search |
 | `POST` | `/v1/topics` | Proxies Q&A topic creation |
 | `GET` | `/v1/topics/:id` | Proxies Q&A topic details |
@@ -90,10 +101,10 @@ pnpm --filter api-gateway dev
 
 - The gateway currently fronts Auth, Notifications, Substack, and Q&A traffic.
   Job Service and RecSys are still directly reachable services.
-- `/v1/auth/refresh` is declared as an Auth route, but the gateway auth
-  middleware currently treats it as protected unless added to public routes.
-- Notification proxying forwards the client query string; it does not inject
-  the authenticated user id yet.
+- `/v1/auth/refresh` is public at the gateway so clients can refresh expired
+  access tokens with a valid refresh token.
+- Notification proxying injects the authenticated user id instead of trusting
+  a browser-supplied `userId` query value.
 - `/v1/substacks`, `/v1/substacks/total`, and `GET /v1/substacks/:slug` are
   public gateway routes and do not require a resolved current user.
 - Q&A proxy routes are protected by gateway auth middleware and forward the

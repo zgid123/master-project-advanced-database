@@ -21,8 +21,21 @@ type TGatewayAuthResponse = {
   };
 };
 
+async function requestAuthAction(
+  path: string,
+  method: 'DELETE' | 'POST',
+): Promise<void> {
+  const response = await fetch(path, {
+    method,
+  });
+
+  if (!response.ok && response.status !== 204) {
+    throwAuthError('Auth action failed.', response.status);
+  }
+}
+
 export async function signIn(data: TSignIn): Promise<void> {
-  const response = await fetch(`/api/auth/sign-in`, {
+  const response = await fetch('/api/auth/sign-in', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -47,7 +60,7 @@ export async function signIn(data: TSignIn): Promise<void> {
 }
 
 export async function signUp(data: TSignUp): Promise<void> {
-  const response = await fetch(`/api/auth/sign-up`, {
+  const response = await fetch('/api/auth/sign-up', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -75,7 +88,7 @@ export async function signOut(): Promise<void> {
   const refreshToken = state.refreshToken;
 
   if (refreshToken) {
-    await fetch(`/api/auth/sign-out`, {
+    await fetch('/api/auth/sign-out', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ token: refreshToken }),
@@ -88,7 +101,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getProfile(): Promise<TUserEntity> {
-  const response = await fetch(`/api/portal/auth/profile`);
+  const response = await fetch('/api/portal/auth/profile');
   const parsed = (await response.json()) as { data?: TUserEntity };
 
   if (!response.ok || !parsed.data) {
@@ -99,23 +112,37 @@ export async function getProfile(): Promise<TUserEntity> {
 }
 
 export async function refresh(): Promise<void> {
-  const response = await fetch(`/api/auth/refresh`, {
+  const state = useAuthStore.getState();
+  const response = await fetch('/api/auth/refresh', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ token: state.refreshToken ?? undefined }),
   });
-
-  const parsed = (await response.json()) as {
-    data?: { user?: TUserEntity; authToken?: string; refreshToken?: string };
-  };
+  const parsed = (await response.json()) as TGatewayAuthResponse;
 
   if (!response.ok || !parsed.data?.user) {
     throwAuthError('Refresh failed.', response.status);
   }
 
-  useAuthStore.getState().setAuth({
+  state.setAuth({
     user: parsed.data.user,
     authToken: parsed.data.authToken ?? '',
     refreshToken: parsed.data.refreshToken ?? '',
   });
+}
+
+export const refreshAuth = refresh;
+
+export function subscribeUser(userId: string): Promise<void> {
+  return requestAuthAction(
+    `/api/portal/auth/users/${encodeURIComponent(userId)}/subscribe`,
+    'POST',
+  );
+}
+
+export function unsubscribeUser(userId: string): Promise<void> {
+  return requestAuthAction(
+    `/api/portal/auth/users/${encodeURIComponent(userId)}/subscribe`,
+    'DELETE',
+  );
 }

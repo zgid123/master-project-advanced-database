@@ -8,6 +8,11 @@ interface IAuthenticatedRequestParams {
   authToken: string;
 }
 
+interface IAuthenticatedSubstackParams {
+  authToken: string;
+  slug: string;
+}
+
 interface IProfileParams {
   authToken: string;
 }
@@ -18,6 +23,12 @@ interface IListSubstacksParams {
 
 interface IGetSubstackBySlugParams {
   slug: string;
+}
+
+interface ISubstackRequestParams {
+  authToken: string;
+  body: string;
+  contentType?: string;
 }
 
 export class AuthService {
@@ -101,73 +112,75 @@ export class AuthService {
     });
   }
 
-  public async createSubstack({
-    body,
+  public async listOwnedSubstacks({
     authToken,
-  }: {
-    body: string;
-    authToken: string;
-  }): Promise<Response> {
-    return fetch(new URL('/v1/substacks', this.#baseUrl), {
+  }: Pick<ISubstackRequestParams, 'authToken'>): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'GET',
+      path: '/v1/substacks/owned',
+    });
+  }
+
+  public async createSubstack({
+    authToken,
+    body,
+    contentType,
+  }: ISubstackRequestParams): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
       body,
+      contentType,
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${authToken}`,
-      },
+      path: '/v1/substacks',
     });
   }
 
   public async updateSubstack({
-    slug,
-    body,
     authToken,
-  }: {
-    slug: string;
-    body: string;
-    authToken: string;
-  }): Promise<Response> {
-    return fetch(
-      new URL(`/v1/substacks/${encodeURIComponent(slug)}`, this.#baseUrl),
-      {
-        body,
-        method: 'PUT',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${authToken}`,
-        },
-      },
-    );
+    body,
+    contentType,
+    slug,
+  }: ISubstackRequestParams & { slug: string }): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      body,
+      contentType,
+      method: 'PUT',
+      path: `/v1/substacks/${encodeURIComponent(slug)}`,
+    });
   }
 
   public async deleteSubstack({
-    slug,
     authToken,
-  }: {
-    slug: string;
-    authToken: string;
-  }): Promise<Response> {
-    return fetch(
-      new URL(`/v1/substacks/${encodeURIComponent(slug)}`, this.#baseUrl),
-      {
-        method: 'DELETE',
-        headers: {
-          authorization: `Bearer ${authToken}`,
-        },
-      },
-    );
+    slug,
+  }: IAuthenticatedSubstackParams): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'DELETE',
+      path: `/v1/substacks/${encodeURIComponent(slug)}`,
+    });
   }
 
-  public async listOwnedSubstacks({
+  public async subscribeSubstack({
     authToken,
-  }: {
-    authToken: string;
-  }): Promise<Response> {
-    return fetch(new URL('/v1/substacks/owned', this.#baseUrl), {
-      method: 'GET',
-      headers: {
-        authorization: `Bearer ${authToken}`,
-      },
+    slug,
+  }: IAuthenticatedSubstackParams): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'POST',
+      path: `/v1/substacks/${encodeURIComponent(slug)}/subscribe`,
+    });
+  }
+
+  public async unsubscribeSubstack({
+    authToken,
+    slug,
+  }: IAuthenticatedSubstackParams): Promise<Response> {
+    return this.#authenticatedRequest({
+      authToken,
+      method: 'DELETE',
+      path: `/v1/substacks/${encodeURIComponent(slug)}/subscribe`,
     });
   }
 
@@ -188,16 +201,27 @@ export class AuthService {
     path,
     method,
     authToken,
+    body,
+    contentType = 'application/json',
   }: {
     path: string;
     authToken: string;
-    method: 'DELETE' | 'GET' | 'POST';
+    body?: string;
+    contentType?: string;
+    method: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
   }): Promise<Response> {
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${authToken}`,
+    };
+
+    if (body !== undefined) {
+      headers['content-type'] = contentType;
+    }
+
     return fetch(new URL(path, this.#baseUrl), {
+      body,
       method,
-      headers: {
-        authorization: `Bearer ${authToken}`,
-      },
+      headers,
     });
   }
 

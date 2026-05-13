@@ -13,7 +13,7 @@ organized as service workspaces plus shared domain/node packages.
 | `workspaces/qna` | NestJS | Topics, comments, votes, subscriptions, search |
 | `workspaces/job-service` | Fastify | Jobs, applications, MongoDB outbox, Redis publishing |
 | `workspaces/recsys` | Fastify | Recommendation APIs, Neo4j graph, Redis stream ingestion |
-| `workspaces/dashboard` | TanStack Start | Frontend shell, auth proxy, substack list/detail UI |
+| `workspaces/dashboard` | TanStack Start | Frontend shell plus auth, substack, Q&A, notification, job, and recommendation proxies |
 
 Shared packages live under `packages/`:
 
@@ -30,6 +30,12 @@ Shared packages live under `packages/`:
 - `API_REPORT.md`: generated API surface summary.
 - `API_INVENTORY.md`: full generated route/function inventory.
 - `workspaces/*/README.md`: component-specific technical notes.
+
+Regenerate the API docs after route or exported API changes:
+
+```sh
+pnpm docs:api
+```
 
 ## Local Setup
 

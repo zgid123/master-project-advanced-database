@@ -54,5 +54,5 @@ pnpm --filter notifications start
   injection of the authenticated user id before exposing this service directly.
 - Runtime code reads `MONGODB_URI`, while the environment type declaration still
   names `MONGO_URI`; keep deployments aligned with runtime behavior.
-- `read` query parsing currently uses boolean coercion, so string values such as
-  `read=false` need careful handling before relying on filtering semantics.
+- `read` query parsing treats an omitted value as no read filter and parses
+  `read=true` / `read=false` explicitly.

@@ -1,5 +1,8 @@
 /** biome-ignore-all lint/security/noDangerouslySetInnerHtml: ignore */
-import { type QueryClient, QueryClientProvider } from '@alphacifer/react/query';
+import {
+  type QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import {
   createRootRouteWithContext,
@@ -52,6 +55,7 @@ export const Route = createRootRouteWithContext<IMyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext();
+
   return (
     <html className='dark' data-theme='dark' lang='en' suppressHydrationWarning>
       <head>

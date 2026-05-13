@@ -22,6 +22,7 @@ export function SubstackForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
       queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.owned] });
+      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.total] });
       onSuccess?.();
     },
   });
@@ -30,7 +31,9 @@ export function SubstackForm({
     (data: TNewSubstack) => updateSubstack(substack?.slug || '', data),
     {
       onSuccess: (updatedSubstack) => {
-        queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.list],
+        });
         queryClient.invalidateQueries({
           queryKey: [SUBSTACK_QUERY_KEYS.owned],
         });
@@ -62,10 +65,15 @@ export function SubstackForm({
           await createSubstackCommand.mutateAsync(value);
         }
       } catch {
-        // Error is handled by commands or shown in UI
+        // Mutation error is rendered below.
       }
     },
   });
+
+  const isPending =
+    form.state.isSubmitting ||
+    createSubstackCommand.isPending ||
+    updateSubstackCommand.isPending;
 
   return (
     <form
@@ -112,24 +120,15 @@ export function SubstackForm({
           </div>
         )}
       </form.Field>
-      <div className='m-0 text-sm font-medium text-destructive min-h-5'>
+      <div className='m-0 min-h-5 text-sm font-medium text-destructive'>
         {form.state.errors.length > 0
           ? String(form.state.errors[0])
           : substack
             ? updateSubstackCommand.error?.message || ''
             : createSubstackCommand.error?.message || ''}
       </div>
-      <Button
-        disabled={
-          form.state.isSubmitting ||
-          createSubstackCommand.isPending ||
-          updateSubstackCommand.isPending
-        }
-        type='submit'
-      >
-        {form.state.isSubmitting ||
-        createSubstackCommand.isPending ||
-        updateSubstackCommand.isPending
+      <Button disabled={isPending} type='submit'>
+        {isPending
           ? substack
             ? 'Updating...'
             : 'Creating...'

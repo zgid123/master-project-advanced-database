@@ -66,10 +66,10 @@ export function SubstackList() {
         <div className='flex gap-2'>
           {filters.map((filter) => (
             <Button
-              className={`h-12 rounded-xl px-5 font-semibold border ${
+              className={`h-12 rounded-xl border px-5 font-semibold ${
                 selectedFilter === filter
-                  ? 'bg-lagoon/14 text-lagoon-deep border-lagoon/30'
-                  : 'bg-sea-ink/10 text-sea-ink border-transparent hover:bg-sea-ink/15'
+                  ? 'border-lagoon/30 bg-lagoon/14 text-lagoon-deep'
+                  : 'border-transparent bg-sea-ink/10 text-sea-ink hover:bg-sea-ink/15'
               }`}
               key={filter}
               onClick={() => setSelectedFilter(filter)}

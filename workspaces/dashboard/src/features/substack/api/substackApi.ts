@@ -73,6 +73,46 @@ async function getApi<TData>(
   return payload.data as TData;
 }
 
+async function requestApi<TData>(
+  path: string,
+  {
+    body,
+    method,
+    signal,
+  }: {
+    body?: unknown;
+    method: 'DELETE' | 'POST' | 'PUT';
+    signal?: AbortSignal;
+  },
+): Promise<TData> {
+  const headers = new Headers();
+  let requestBody: BodyInit | undefined;
+
+  if (body !== undefined) {
+    headers.set('content-type', 'application/json');
+    requestBody = JSON.stringify(body);
+  }
+
+  const response = await fetch(path, {
+    body: requestBody,
+    headers,
+    method,
+    signal,
+  });
+
+  if (response.status === 204) {
+    return undefined as TData;
+  }
+
+  const payload = await parseApiResponse<TData>(response);
+
+  if (!response.ok || !('data' in payload)) {
+    throwSubstackError(response, payload);
+  }
+
+  return payload.data as TData;
+}
+
 export async function listSubstacks({
   limit,
   signal,
@@ -136,69 +176,64 @@ export async function getSubstackBySlug({
   );
 }
 
-export async function createSubstack(
+export function createSubstack(
   data: TNewSubstack,
+  signal?: AbortSignal,
 ): Promise<TSubstackEntity> {
-  const response = await fetch(
-    createApiUrl('/api/portal/substacks/', '/v1/substacks'),
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    },
-  );
-
-  const payload = await parseApiResponse<TSubstackEntity>(response);
-
-  if (!response.ok || !('data' in payload)) {
-    throwSubstackError(response, payload);
-  }
-
-  return payload.data as TSubstackEntity;
+  return requestApi<TSubstackEntity>('/api/portal/substacks/', {
+    body: data,
+    method: 'POST',
+    signal,
+  });
 }
 
-export async function updateSubstack(
+export function updateSubstack(
   slug: string,
   data: TNewSubstack,
+  signal?: AbortSignal,
 ): Promise<TSubstackEntity> {
-  const response = await fetch(
-    createApiUrl(
-      `/api/portal/substacks/${encodeURIComponent(slug)}`,
-      `/v1/substacks/${encodeURIComponent(slug)}`,
-    ),
+  return requestApi<TSubstackEntity>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}`,
     {
+      body: data,
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+      signal,
     },
   );
-
-  const payload = await parseApiResponse<TSubstackEntity>(response);
-
-  if (!response.ok || !('data' in payload)) {
-    throwSubstackError(response, payload);
-  }
-
-  return payload.data as TSubstackEntity;
 }
 
-export async function deleteSubstack(slug: string): Promise<void> {
-  const response = await fetch(
-    createApiUrl(
-      `/api/portal/substacks/${encodeURIComponent(slug)}`,
-      `/v1/substacks/${encodeURIComponent(slug)}`,
-    ),
+export async function deleteSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(`/api/portal/substacks/${encodeURIComponent(slug)}`, {
+    method: 'DELETE',
+    signal,
+  });
+}
+
+export async function subscribeSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}/subscribe`,
     {
-      method: 'DELETE',
+      method: 'POST',
+      signal,
     },
   );
+}
 
-  if (!response.ok) {
-    const payload = await parseApiResponse<unknown>(response);
-    throwSubstackError(response, payload);
-  }
+export async function unsubscribeSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}/subscribe`,
+    {
+      method: 'DELETE',
+      signal,
+    },
+  );
 }

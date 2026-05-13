@@ -9,19 +9,54 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TopicsRouteImport } from './routes/topics'
+import { Route as SignalsRouteImport } from './routes/signals'
+import { Route as SignalRouteImport } from './routes/signal'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as RecommendationsRouteImport } from './routes/recommendations'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubstacksIndexRouteImport } from './routes/substacks/index'
 import { Route as SubstacksSlugRouteRouteImport } from './routes/substacks/$slug/route'
 import { Route as SubstacksSlugIndexRouteImport } from './routes/substacks/$slug/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiServicesRecommendationsIndexRouteImport } from './routes/api/services/recommendations/index'
+import { Route as ApiServicesJobsIndexRouteImport } from './routes/api/services/jobs/index'
+import { Route as ApiPortalTopicsIndexRouteImport } from './routes/api/portal/topics/index'
 import { Route as ApiPortalSubstacksIndexRouteImport } from './routes/api/portal/substacks/index'
+import { Route as ApiPortalNotificationsIndexRouteImport } from './routes/api/portal/notifications/index'
+import { Route as ApiPortalCommentsIndexRouteImport } from './routes/api/portal/comments/index'
+import { Route as ApiServicesRecommendationsSplatRouteImport } from './routes/api/services/recommendations/$'
+import { Route as ApiServicesMeApplicationsRouteImport } from './routes/api/services/me/applications'
+import { Route as ApiServicesJobsSplatRouteImport } from './routes/api/services/jobs/$'
+import { Route as ApiServicesApplicationsSplatRouteImport } from './routes/api/services/applications/$'
+import { Route as ApiPortalTopicsSplatRouteImport } from './routes/api/portal/topics/$'
 import { Route as ApiPortalSubstacksTotalRouteImport } from './routes/api/portal/substacks/total'
+import { Route as ApiPortalSubstacksOwnedRouteImport } from './routes/api/portal/substacks/owned'
 import { Route as ApiPortalSubstacksSlugRouteImport } from './routes/api/portal/substacks/$slug'
+import { Route as ApiPortalNotificationsSplatRouteImport } from './routes/api/portal/notifications/$'
+import { Route as ApiPortalCommentsSplatRouteImport } from './routes/api/portal/comments/$'
 import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
+import { Route as ApiPortalSubstacksSlugSubscribeRouteImport } from './routes/api/portal/substacks/$slug/subscribe'
 
+const TopicsRoute = TopicsRouteImport.update({
+  id: '/topics',
+  path: '/topics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalsRoute = SignalsRouteImport.update({
+  id: '/signals',
+  path: '/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalRoute = SignalRouteImport.update({
+  id: '/signal',
+  path: '/signal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -30,6 +65,21 @@ const SignUpRoute = SignUpRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecommendationsRoute = RecommendationsRouteImport.update({
+  id: '/recommendations',
+  path: '/recommendations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsRoute = JobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -62,9 +112,64 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiServicesRecommendationsIndexRoute =
+  ApiServicesRecommendationsIndexRouteImport.update({
+    id: '/api/services/recommendations/',
+    path: '/api/services/recommendations/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiServicesJobsIndexRoute = ApiServicesJobsIndexRouteImport.update({
+  id: '/api/services/jobs/',
+  path: '/api/services/jobs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalTopicsIndexRoute = ApiPortalTopicsIndexRouteImport.update({
+  id: '/api/portal/topics/',
+  path: '/api/portal/topics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPortalSubstacksIndexRoute = ApiPortalSubstacksIndexRouteImport.update({
   id: '/api/portal/substacks/',
   path: '/api/portal/substacks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalNotificationsIndexRoute =
+  ApiPortalNotificationsIndexRouteImport.update({
+    id: '/api/portal/notifications/',
+    path: '/api/portal/notifications/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPortalCommentsIndexRoute = ApiPortalCommentsIndexRouteImport.update({
+  id: '/api/portal/comments/',
+  path: '/api/portal/comments/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiServicesRecommendationsSplatRoute =
+  ApiServicesRecommendationsSplatRouteImport.update({
+    id: '/api/services/recommendations/$',
+    path: '/api/services/recommendations/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiServicesMeApplicationsRoute =
+  ApiServicesMeApplicationsRouteImport.update({
+    id: '/api/services/me/applications',
+    path: '/api/services/me/applications',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiServicesJobsSplatRoute = ApiServicesJobsSplatRouteImport.update({
+  id: '/api/services/jobs/$',
+  path: '/api/services/jobs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiServicesApplicationsSplatRoute =
+  ApiServicesApplicationsSplatRouteImport.update({
+    id: '/api/services/applications/$',
+    path: '/api/services/applications/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPortalTopicsSplatRoute = ApiPortalTopicsSplatRouteImport.update({
+  id: '/api/portal/topics/$',
+  path: '/api/portal/topics/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPortalSubstacksTotalRoute = ApiPortalSubstacksTotalRouteImport.update({
@@ -72,9 +177,25 @@ const ApiPortalSubstacksTotalRoute = ApiPortalSubstacksTotalRouteImport.update({
   path: '/api/portal/substacks/total',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPortalSubstacksOwnedRoute = ApiPortalSubstacksOwnedRouteImport.update({
+  id: '/api/portal/substacks/owned',
+  path: '/api/portal/substacks/owned',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPortalSubstacksSlugRoute = ApiPortalSubstacksSlugRouteImport.update({
   id: '/api/portal/substacks/$slug',
   path: '/api/portal/substacks/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPortalNotificationsSplatRoute =
+  ApiPortalNotificationsSplatRouteImport.update({
+    id: '/api/portal/notifications/$',
+    path: '/api/portal/notifications/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPortalCommentsSplatRoute = ApiPortalCommentsSplatRouteImport.update({
+  id: '/api/portal/comments/$',
+  path: '/api/portal/comments/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPortalAuthProfileRoute = ApiPortalAuthProfileRouteImport.update({
@@ -82,109 +203,275 @@ const ApiPortalAuthProfileRoute = ApiPortalAuthProfileRouteImport.update({
   path: '/api/portal/auth/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPortalSubstacksSlugSubscribeRoute =
+  ApiPortalSubstacksSlugSubscribeRouteImport.update({
+    id: '/subscribe',
+    path: '/subscribe',
+    getParentRoute: () => ApiPortalSubstacksSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jobs': typeof JobsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recommendations': typeof RecommendationsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/signal': typeof SignalRoute
+  '/signals': typeof SignalsRoute
+  '/topics': typeof TopicsRoute
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
   '/substacks/': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
-  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
+  '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
+  '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
+  '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/topics/$': typeof ApiPortalTopicsSplatRoute
+  '/api/services/applications/$': typeof ApiServicesApplicationsSplatRoute
+  '/api/services/jobs/$': typeof ApiServicesJobsSplatRoute
+  '/api/services/me/applications': typeof ApiServicesMeApplicationsRoute
+  '/api/services/recommendations/$': typeof ApiServicesRecommendationsSplatRoute
+  '/api/portal/comments/': typeof ApiPortalCommentsIndexRoute
+  '/api/portal/notifications/': typeof ApiPortalNotificationsIndexRoute
   '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
+  '/api/portal/topics/': typeof ApiPortalTopicsIndexRoute
+  '/api/services/jobs/': typeof ApiServicesJobsIndexRoute
+  '/api/services/recommendations/': typeof ApiServicesRecommendationsIndexRoute
+  '/api/portal/substacks/$slug/subscribe': typeof ApiPortalSubstacksSlugSubscribeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jobs': typeof JobsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recommendations': typeof RecommendationsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/signal': typeof SignalRoute
+  '/signals': typeof SignalsRoute
+  '/topics': typeof TopicsRoute
   '/substacks': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
-  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
+  '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
+  '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
+  '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/topics/$': typeof ApiPortalTopicsSplatRoute
+  '/api/services/applications/$': typeof ApiServicesApplicationsSplatRoute
+  '/api/services/jobs/$': typeof ApiServicesJobsSplatRoute
+  '/api/services/me/applications': typeof ApiServicesMeApplicationsRoute
+  '/api/services/recommendations/$': typeof ApiServicesRecommendationsSplatRoute
+  '/api/portal/comments': typeof ApiPortalCommentsIndexRoute
+  '/api/portal/notifications': typeof ApiPortalNotificationsIndexRoute
   '/api/portal/substacks': typeof ApiPortalSubstacksIndexRoute
+  '/api/portal/topics': typeof ApiPortalTopicsIndexRoute
+  '/api/services/jobs': typeof ApiServicesJobsIndexRoute
+  '/api/services/recommendations': typeof ApiServicesRecommendationsIndexRoute
+  '/api/portal/substacks/$slug/subscribe': typeof ApiPortalSubstacksSlugSubscribeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jobs': typeof JobsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recommendations': typeof RecommendationsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/signal': typeof SignalRoute
+  '/signals': typeof SignalsRoute
+  '/topics': typeof TopicsRoute
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
   '/substacks/': typeof SubstacksIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
-  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRoute
+  '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
+  '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
+  '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
+  '/api/portal/topics/$': typeof ApiPortalTopicsSplatRoute
+  '/api/services/applications/$': typeof ApiServicesApplicationsSplatRoute
+  '/api/services/jobs/$': typeof ApiServicesJobsSplatRoute
+  '/api/services/me/applications': typeof ApiServicesMeApplicationsRoute
+  '/api/services/recommendations/$': typeof ApiServicesRecommendationsSplatRoute
+  '/api/portal/comments/': typeof ApiPortalCommentsIndexRoute
+  '/api/portal/notifications/': typeof ApiPortalNotificationsIndexRoute
   '/api/portal/substacks/': typeof ApiPortalSubstacksIndexRoute
+  '/api/portal/topics/': typeof ApiPortalTopicsIndexRoute
+  '/api/services/jobs/': typeof ApiServicesJobsIndexRoute
+  '/api/services/recommendations/': typeof ApiServicesRecommendationsIndexRoute
+  '/api/portal/substacks/$slug/subscribe': typeof ApiPortalSubstacksSlugSubscribeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/jobs'
+    | '/notifications'
+    | '/recommendations'
     | '/sign-in'
     | '/sign-up'
+    | '/signal'
+    | '/signals'
+    | '/topics'
     | '/substacks/$slug'
     | '/substacks/'
     | '/api/auth/$'
     | '/substacks/$slug/'
     | '/api/portal/auth/profile'
+    | '/api/portal/comments/$'
+    | '/api/portal/notifications/$'
     | '/api/portal/substacks/$slug'
+    | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
+    | '/api/portal/topics/$'
+    | '/api/services/applications/$'
+    | '/api/services/jobs/$'
+    | '/api/services/me/applications'
+    | '/api/services/recommendations/$'
+    | '/api/portal/comments/'
+    | '/api/portal/notifications/'
     | '/api/portal/substacks/'
+    | '/api/portal/topics/'
+    | '/api/services/jobs/'
+    | '/api/services/recommendations/'
+    | '/api/portal/substacks/$slug/subscribe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/jobs'
+    | '/notifications'
+    | '/recommendations'
     | '/sign-in'
     | '/sign-up'
+    | '/signal'
+    | '/signals'
+    | '/topics'
     | '/substacks'
     | '/api/auth/$'
     | '/substacks/$slug'
     | '/api/portal/auth/profile'
+    | '/api/portal/comments/$'
+    | '/api/portal/notifications/$'
     | '/api/portal/substacks/$slug'
+    | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
+    | '/api/portal/topics/$'
+    | '/api/services/applications/$'
+    | '/api/services/jobs/$'
+    | '/api/services/me/applications'
+    | '/api/services/recommendations/$'
+    | '/api/portal/comments'
+    | '/api/portal/notifications'
     | '/api/portal/substacks'
+    | '/api/portal/topics'
+    | '/api/services/jobs'
+    | '/api/services/recommendations'
+    | '/api/portal/substacks/$slug/subscribe'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/jobs'
+    | '/notifications'
+    | '/recommendations'
     | '/sign-in'
     | '/sign-up'
+    | '/signal'
+    | '/signals'
+    | '/topics'
     | '/substacks/$slug'
     | '/substacks/'
     | '/api/auth/$'
     | '/substacks/$slug/'
     | '/api/portal/auth/profile'
+    | '/api/portal/comments/$'
+    | '/api/portal/notifications/$'
     | '/api/portal/substacks/$slug'
+    | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
+    | '/api/portal/topics/$'
+    | '/api/services/applications/$'
+    | '/api/services/jobs/$'
+    | '/api/services/me/applications'
+    | '/api/services/recommendations/$'
+    | '/api/portal/comments/'
+    | '/api/portal/notifications/'
     | '/api/portal/substacks/'
+    | '/api/portal/topics/'
+    | '/api/services/jobs/'
+    | '/api/services/recommendations/'
+    | '/api/portal/substacks/$slug/subscribe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  JobsRoute: typeof JobsRoute
+  NotificationsRoute: typeof NotificationsRoute
+  RecommendationsRoute: typeof RecommendationsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SignalRoute: typeof SignalRoute
+  SignalsRoute: typeof SignalsRoute
+  TopicsRoute: typeof TopicsRoute
   SubstacksSlugRouteRoute: typeof SubstacksSlugRouteRouteWithChildren
   SubstacksIndexRoute: typeof SubstacksIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPortalAuthProfileRoute: typeof ApiPortalAuthProfileRoute
-  ApiPortalSubstacksSlugRoute: typeof ApiPortalSubstacksSlugRoute
+  ApiPortalCommentsSplatRoute: typeof ApiPortalCommentsSplatRoute
+  ApiPortalNotificationsSplatRoute: typeof ApiPortalNotificationsSplatRoute
+  ApiPortalSubstacksSlugRoute: typeof ApiPortalSubstacksSlugRouteWithChildren
+  ApiPortalSubstacksOwnedRoute: typeof ApiPortalSubstacksOwnedRoute
   ApiPortalSubstacksTotalRoute: typeof ApiPortalSubstacksTotalRoute
+  ApiPortalTopicsSplatRoute: typeof ApiPortalTopicsSplatRoute
+  ApiServicesApplicationsSplatRoute: typeof ApiServicesApplicationsSplatRoute
+  ApiServicesJobsSplatRoute: typeof ApiServicesJobsSplatRoute
+  ApiServicesMeApplicationsRoute: typeof ApiServicesMeApplicationsRoute
+  ApiServicesRecommendationsSplatRoute: typeof ApiServicesRecommendationsSplatRoute
+  ApiPortalCommentsIndexRoute: typeof ApiPortalCommentsIndexRoute
+  ApiPortalNotificationsIndexRoute: typeof ApiPortalNotificationsIndexRoute
   ApiPortalSubstacksIndexRoute: typeof ApiPortalSubstacksIndexRoute
+  ApiPortalTopicsIndexRoute: typeof ApiPortalTopicsIndexRoute
+  ApiServicesJobsIndexRoute: typeof ApiServicesJobsIndexRoute
+  ApiServicesRecommendationsIndexRoute: typeof ApiServicesRecommendationsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/topics': {
+      id: '/topics'
+      path: '/topics'
+      fullPath: '/topics'
+      preLoaderRoute: typeof TopicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signals': {
+      id: '/signals'
+      path: '/signals'
+      fullPath: '/signals'
+      preLoaderRoute: typeof SignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signal': {
+      id: '/signal'
+      path: '/signal'
+      fullPath: '/signal'
+      preLoaderRoute: typeof SignalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -197,6 +484,27 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recommendations': {
+      id: '/recommendations'
+      path: '/recommendations'
+      fullPath: '/recommendations'
+      preLoaderRoute: typeof RecommendationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs': {
+      id: '/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof JobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -241,11 +549,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/services/recommendations/': {
+      id: '/api/services/recommendations/'
+      path: '/api/services/recommendations'
+      fullPath: '/api/services/recommendations/'
+      preLoaderRoute: typeof ApiServicesRecommendationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/jobs/': {
+      id: '/api/services/jobs/'
+      path: '/api/services/jobs'
+      fullPath: '/api/services/jobs/'
+      preLoaderRoute: typeof ApiServicesJobsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/topics/': {
+      id: '/api/portal/topics/'
+      path: '/api/portal/topics'
+      fullPath: '/api/portal/topics/'
+      preLoaderRoute: typeof ApiPortalTopicsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/portal/substacks/': {
       id: '/api/portal/substacks/'
       path: '/api/portal/substacks'
       fullPath: '/api/portal/substacks/'
       preLoaderRoute: typeof ApiPortalSubstacksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/notifications/': {
+      id: '/api/portal/notifications/'
+      path: '/api/portal/notifications'
+      fullPath: '/api/portal/notifications/'
+      preLoaderRoute: typeof ApiPortalNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/comments/': {
+      id: '/api/portal/comments/'
+      path: '/api/portal/comments'
+      fullPath: '/api/portal/comments/'
+      preLoaderRoute: typeof ApiPortalCommentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/recommendations/$': {
+      id: '/api/services/recommendations/$'
+      path: '/api/services/recommendations/$'
+      fullPath: '/api/services/recommendations/$'
+      preLoaderRoute: typeof ApiServicesRecommendationsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/me/applications': {
+      id: '/api/services/me/applications'
+      path: '/api/services/me/applications'
+      fullPath: '/api/services/me/applications'
+      preLoaderRoute: typeof ApiServicesMeApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/jobs/$': {
+      id: '/api/services/jobs/$'
+      path: '/api/services/jobs/$'
+      fullPath: '/api/services/jobs/$'
+      preLoaderRoute: typeof ApiServicesJobsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/applications/$': {
+      id: '/api/services/applications/$'
+      path: '/api/services/applications/$'
+      fullPath: '/api/services/applications/$'
+      preLoaderRoute: typeof ApiServicesApplicationsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/topics/$': {
+      id: '/api/portal/topics/$'
+      path: '/api/portal/topics/$'
+      fullPath: '/api/portal/topics/$'
+      preLoaderRoute: typeof ApiPortalTopicsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/portal/substacks/total': {
@@ -255,11 +633,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPortalSubstacksTotalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/portal/substacks/owned': {
+      id: '/api/portal/substacks/owned'
+      path: '/api/portal/substacks/owned'
+      fullPath: '/api/portal/substacks/owned'
+      preLoaderRoute: typeof ApiPortalSubstacksOwnedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/portal/substacks/$slug': {
       id: '/api/portal/substacks/$slug'
       path: '/api/portal/substacks/$slug'
       fullPath: '/api/portal/substacks/$slug'
       preLoaderRoute: typeof ApiPortalSubstacksSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/notifications/$': {
+      id: '/api/portal/notifications/$'
+      path: '/api/portal/notifications/$'
+      fullPath: '/api/portal/notifications/$'
+      preLoaderRoute: typeof ApiPortalNotificationsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/comments/$': {
+      id: '/api/portal/comments/$'
+      path: '/api/portal/comments/$'
+      fullPath: '/api/portal/comments/$'
+      preLoaderRoute: typeof ApiPortalCommentsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/portal/auth/profile': {
@@ -268,6 +667,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/portal/auth/profile'
       preLoaderRoute: typeof ApiPortalAuthProfileRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/portal/substacks/$slug/subscribe': {
+      id: '/api/portal/substacks/$slug/subscribe'
+      path: '/subscribe'
+      fullPath: '/api/portal/substacks/$slug/subscribe'
+      preLoaderRoute: typeof ApiPortalSubstacksSlugSubscribeRouteImport
+      parentRoute: typeof ApiPortalSubstacksSlugRoute
     }
   }
 }
@@ -283,18 +689,51 @@ const SubstacksSlugRouteRouteChildren: SubstacksSlugRouteRouteChildren = {
 const SubstacksSlugRouteRouteWithChildren =
   SubstacksSlugRouteRoute._addFileChildren(SubstacksSlugRouteRouteChildren)
 
+interface ApiPortalSubstacksSlugRouteChildren {
+  ApiPortalSubstacksSlugSubscribeRoute: typeof ApiPortalSubstacksSlugSubscribeRoute
+}
+
+const ApiPortalSubstacksSlugRouteChildren: ApiPortalSubstacksSlugRouteChildren =
+  {
+    ApiPortalSubstacksSlugSubscribeRoute: ApiPortalSubstacksSlugSubscribeRoute,
+  }
+
+const ApiPortalSubstacksSlugRouteWithChildren =
+  ApiPortalSubstacksSlugRoute._addFileChildren(
+    ApiPortalSubstacksSlugRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  JobsRoute: JobsRoute,
+  NotificationsRoute: NotificationsRoute,
+  RecommendationsRoute: RecommendationsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SignalRoute: SignalRoute,
+  SignalsRoute: SignalsRoute,
+  TopicsRoute: TopicsRoute,
   SubstacksSlugRouteRoute: SubstacksSlugRouteRouteWithChildren,
   SubstacksIndexRoute: SubstacksIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPortalAuthProfileRoute: ApiPortalAuthProfileRoute,
-  ApiPortalSubstacksSlugRoute: ApiPortalSubstacksSlugRoute,
+  ApiPortalCommentsSplatRoute: ApiPortalCommentsSplatRoute,
+  ApiPortalNotificationsSplatRoute: ApiPortalNotificationsSplatRoute,
+  ApiPortalSubstacksSlugRoute: ApiPortalSubstacksSlugRouteWithChildren,
+  ApiPortalSubstacksOwnedRoute: ApiPortalSubstacksOwnedRoute,
   ApiPortalSubstacksTotalRoute: ApiPortalSubstacksTotalRoute,
+  ApiPortalTopicsSplatRoute: ApiPortalTopicsSplatRoute,
+  ApiServicesApplicationsSplatRoute: ApiServicesApplicationsSplatRoute,
+  ApiServicesJobsSplatRoute: ApiServicesJobsSplatRoute,
+  ApiServicesMeApplicationsRoute: ApiServicesMeApplicationsRoute,
+  ApiServicesRecommendationsSplatRoute: ApiServicesRecommendationsSplatRoute,
+  ApiPortalCommentsIndexRoute: ApiPortalCommentsIndexRoute,
+  ApiPortalNotificationsIndexRoute: ApiPortalNotificationsIndexRoute,
   ApiPortalSubstacksIndexRoute: ApiPortalSubstacksIndexRoute,
+  ApiPortalTopicsIndexRoute: ApiPortalTopicsIndexRoute,
+  ApiServicesJobsIndexRoute: ApiServicesJobsIndexRoute,
+  ApiServicesRecommendationsIndexRoute: ApiServicesRecommendationsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

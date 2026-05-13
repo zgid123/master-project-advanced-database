@@ -6,6 +6,7 @@ import { defineConfig } from 'vite';
 
 const config = defineConfig({
   resolve: {
+    dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
     tsconfigPaths: true,
   },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],

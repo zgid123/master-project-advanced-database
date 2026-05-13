@@ -1,7 +1,11 @@
+import { useMutation } from '@tanstack/react-query';
 import type { TSubstackEntity } from '@domain/auth';
 import { Share2, ShieldCheck, Star, UsersRound } from 'lucide-react';
 
+import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries';
+import { subscribeSubstack } from '#/features/substack/api';
 
 interface ISubstackBannerProps {
   substack: TSubstackEntity;
@@ -9,6 +13,10 @@ interface ISubstackBannerProps {
 
 export function SubstackBanner({ substack }: ISubstackBannerProps) {
   const { name, slug, description } = substack;
+  const { data: session } = useSession();
+  const subscribeMutation = useMutation({
+    mutationFn: () => subscribeSubstack(slug),
+  });
 
   return (
     <section className='island-shell rise-in overflow-hidden rounded-2xl'>
@@ -29,7 +37,20 @@ export function SubstackBanner({ substack }: ISubstackBannerProps) {
             >
               <Share2 className='size-4' />
             </Button>
-            <Button className='h-10 rounded-xl bg-lagoon-deep px-6 font-bold text-white hover:bg-lagoon-deep/90'>
+            <Button
+              className='h-10 rounded-xl bg-lagoon-deep px-6 font-bold text-white hover:bg-lagoon-deep/90'
+              disabled={subscribeMutation.isPending}
+              onClick={() => {
+                if (!session?.user) {
+                  authEvents.emit('open', {
+                    message: 'Sign in to join this substack.',
+                  });
+                  return;
+                }
+                subscribeMutation.mutate();
+              }}
+              type='button'
+            >
               Join Community
             </Button>
           </div>

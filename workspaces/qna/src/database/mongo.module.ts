@@ -3,7 +3,10 @@ import { Module } from '@nestjs/common';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://admin:hungtruong123@cluster0.htw9pph.mongodb.net/?appName=Cluster0'),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ??
+        'mongodb://localhost:27017/qna?replicaSet=rs0&directConnection=true',
+    ),
   ],
 })
 export class MongoModule {}

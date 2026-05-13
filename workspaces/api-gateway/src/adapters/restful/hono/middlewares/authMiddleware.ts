@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = new Set([
   '/health',
   '/v1/auth/sign-in',
   '/v1/auth/sign-up',
+  '/v1/auth/refresh',
 ]);
 
 const SUBSTACK_DETAIL_PATTERN = /^\/v1\/substacks\/[^/]+$/;

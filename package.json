@@ -9,6 +9,7 @@
     "dev": "turbo run dev --parallel --no-cache",
     "serve": "turbo run serve --parallel --no-cache",
     "build": "turbo run build",
+    "docs:api": "node scripts/generate-api-docs.mjs",
     "update-packages": "pnpm update -i -r --latest",
     "test": "vitest run --coverage",
     "server:dev": "turbo run dev --filter=\"api-gateway\" --filter=\"auth\" --filter=\"notifications\" --filter=\"job-service\" --filter=\"qna\" --filter=\"recsys\" --parallel --no-cache"
@@ -35,5 +36,11 @@
     "detect-port": "2.1.0",
     "dotenv": "17.4.2",
     "tslib": "2.8.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "fast-jwt": "6.2.4",
+      "ioredis": "5.10.1"
+    }
   }
 }
