@@ -1,6 +1,7 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@alphacifer/react/query';
 import { Link } from '@tanstack/react-router';
 import { Plus, UsersRound } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { useSession } from '#/features/auth/queries/authQueries';
@@ -9,6 +10,8 @@ import {
   totalSubstacksQueryOptions,
 } from '#/features/substack/queries';
 import { cn } from '#/shared/utils';
+
+import { SubstackFormModal } from '../SubstackForm';
 
 const tones = [
   'bg-lagoon/18 text-lagoon-deep border-lagoon/28',
@@ -22,6 +25,7 @@ const tones = [
 ];
 
 export function SubstacksIsland() {
+  const [isOpen, setIsOpen] = useState(false);
   const { data: substacks } = useSuspenseQuery(
     substackListQueryOptions({
       limit: 8,
@@ -48,6 +52,7 @@ export function SubstacksIsland() {
           <Button
             aria-label='Create substack'
             className='size-9 border border-lagoon/30 bg-lagoon/14 text-lagoon-deep hover:bg-lagoon/22'
+            onClick={() => setIsOpen(true)}
             size='icon'
             variant='secondary'
           >
@@ -95,6 +100,7 @@ export function SubstacksIsland() {
       <Button asChild className='mt-4 h-10 w-full' variant='outline'>
         <Link to='/substacks'>View all {totalSubstacks} substacks</Link>
       </Button>
+      <SubstackFormModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </aside>
   );
 }

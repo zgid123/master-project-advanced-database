@@ -6,7 +6,7 @@ import { SUBSTACK_QUERY_KEYS } from './queryKeys';
 
 export function totalSubstacksQueryOptions() {
   return queryOptions({
-    queryKey: [SUBSTACK_QUERY_KEYS.total],
+    queryKey: SUBSTACK_QUERY_KEYS.total,
     queryFn: ({ signal }) => {
       return getTotalSubstacks({
         signal,

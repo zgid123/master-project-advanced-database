@@ -101,6 +101,76 @@ export class AuthService {
     });
   }
 
+  public async createSubstack({
+    body,
+    authToken,
+  }: {
+    body: string;
+    authToken: string;
+  }): Promise<Response> {
+    return fetch(new URL('/v1/substacks', this.#baseUrl), {
+      body,
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${authToken}`,
+      },
+    });
+  }
+
+  public async updateSubstack({
+    slug,
+    body,
+    authToken,
+  }: {
+    slug: string;
+    body: string;
+    authToken: string;
+  }): Promise<Response> {
+    return fetch(
+      new URL(`/v1/substacks/${encodeURIComponent(slug)}`, this.#baseUrl),
+      {
+        body,
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${authToken}`,
+        },
+      },
+    );
+  }
+
+  public async deleteSubstack({
+    slug,
+    authToken,
+  }: {
+    slug: string;
+    authToken: string;
+  }): Promise<Response> {
+    return fetch(
+      new URL(`/v1/substacks/${encodeURIComponent(slug)}`, this.#baseUrl),
+      {
+        method: 'DELETE',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+      },
+    );
+  }
+
+  public async listOwnedSubstacks({
+    authToken,
+  }: {
+    authToken: string;
+  }): Promise<Response> {
+    return fetch(new URL('/v1/substacks/owned', this.#baseUrl), {
+      method: 'GET',
+      headers: {
+        authorization: `Bearer ${authToken}`,
+      },
+    });
+  }
+
   async #post(
     path: string,
     { body, contentType = 'application/json' }: IAuthRequestParams,

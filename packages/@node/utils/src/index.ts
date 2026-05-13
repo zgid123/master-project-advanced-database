@@ -1,3 +1,5 @@
+export * from './string';
+
 export type TPagyParam = number | string | null | undefined;
 
 export interface IParsePagyParams {

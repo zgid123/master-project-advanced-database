@@ -1,0 +1,15 @@
+meta {
+  name: Delete Substack
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/substacks/:slug
+  body: none
+  auth: inherit
+}
+
+params:path {
+  slug: 
+}

@@ -11,6 +11,7 @@ import {
   Sparkles,
   UsersRound,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
@@ -96,9 +97,15 @@ const discussions = [
 
 function App() {
   const { data: session, isPending } = useSession();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const currentUser = session?.user;
 
-  if (isPending) {
+  if (isPending || !mounted) {
     return null;
   }
 

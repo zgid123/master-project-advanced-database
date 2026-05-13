@@ -6,13 +6,14 @@ import type {
   TCreateSubstack,
 } from '@domain/auth';
 import type { ICommand } from '@domain/core';
+import { slugify } from '@node/utils';
 
 import { SubstackError } from '../../../../domain/errors';
 
 const DEFAULT_SUBSTACK_ROLE_NAMES = ['admin', 'moderator'] as const;
 
 export class CreateSubstackCommand
-  implements ICommand<TCreateSubstack, SubstackEntity>
+  implements ICommand<Omit<TCreateSubstack, 'slug'>, SubstackEntity>
 {
   readonly #substackRepository: ISubstackRepository;
   readonly #substackRoleRepository: ISubstackRoleRepository;
@@ -30,16 +31,17 @@ export class CreateSubstackCommand
 
   public async exec({
     name,
-    slug,
     ownerId,
     description,
-  }: TCreateSubstack): Promise<SubstackEntity> {
+  }: Omit<TCreateSubstack, 'slug'>): Promise<SubstackEntity> {
+    const slug = slugify(name);
+
     const existingSubstack = await this.#substackRepository.findPartialOne({
       slug,
     });
 
     if (existingSubstack) {
-      throw SubstackError.alreadyExists('slug');
+      throw SubstackError.alreadyExists('name');
     }
 
     try {

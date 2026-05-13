@@ -86,3 +86,36 @@ export async function signOut(): Promise<void> {
 
   state.clearAuth();
 }
+
+export async function getProfile(): Promise<TUserEntity> {
+  const response = await fetch(`/api/portal/auth/profile`);
+  const parsed = (await response.json()) as { data?: TUserEntity };
+
+  if (!response.ok || !parsed.data) {
+    throwAuthError('Failed to get profile.', response.status);
+  }
+
+  return parsed.data;
+}
+
+export async function refresh(): Promise<void> {
+  const response = await fetch(`/api/auth/refresh`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+
+  const parsed = (await response.json()) as {
+    data?: { user?: TUserEntity; authToken?: string; refreshToken?: string };
+  };
+
+  if (!response.ok || !parsed.data?.user) {
+    throwAuthError('Refresh failed.', response.status);
+  }
+
+  useAuthStore.getState().setAuth({
+    user: parsed.data.user,
+    authToken: parsed.data.authToken ?? '',
+    refreshToken: parsed.data.refreshToken ?? '',
+  });
+}

@@ -1,5 +1,5 @@
 import type { IErrorProps } from '@alphacifer/react/query';
-import type { TSubstackEntity } from '@domain/auth';
+import type { TNewSubstack, TSubstackEntity } from '@domain/auth';
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
@@ -94,6 +94,17 @@ export async function listSubstacks({
   );
 }
 
+export async function getOwnedSubstacks({
+  signal,
+}: {
+  signal?: AbortSignal;
+} = {}): Promise<TSubstackEntity[]> {
+  return getApi<TSubstackEntity[]>(
+    createApiUrl('/api/portal/substacks/owned', '/v1/substacks/owned'),
+    signal,
+  );
+}
+
 export async function getTotalSubstacks({
   signal,
 }: {
@@ -123,4 +134,71 @@ export async function getSubstackBySlug({
     ),
     signal,
   );
+}
+
+export async function createSubstack(
+  data: TNewSubstack,
+): Promise<TSubstackEntity> {
+  const response = await fetch(
+    createApiUrl('/api/portal/substacks/', '/v1/substacks'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    },
+  );
+
+  const payload = await parseApiResponse<TSubstackEntity>(response);
+
+  if (!response.ok || !('data' in payload)) {
+    throwSubstackError(response, payload);
+  }
+
+  return payload.data as TSubstackEntity;
+}
+
+export async function updateSubstack(
+  slug: string,
+  data: TNewSubstack,
+): Promise<TSubstackEntity> {
+  const response = await fetch(
+    createApiUrl(
+      `/api/portal/substacks/${encodeURIComponent(slug)}`,
+      `/v1/substacks/${encodeURIComponent(slug)}`,
+    ),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    },
+  );
+
+  const payload = await parseApiResponse<TSubstackEntity>(response);
+
+  if (!response.ok || !('data' in payload)) {
+    throwSubstackError(response, payload);
+  }
+
+  return payload.data as TSubstackEntity;
+}
+
+export async function deleteSubstack(slug: string): Promise<void> {
+  const response = await fetch(
+    createApiUrl(
+      `/api/portal/substacks/${encodeURIComponent(slug)}`,
+      `/v1/substacks/${encodeURIComponent(slug)}`,
+    ),
+    {
+      method: 'DELETE',
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await parseApiResponse<unknown>(response);
+    throwSubstackError(response, payload);
+  }
 }
