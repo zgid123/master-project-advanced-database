@@ -9,7 +9,16 @@ const jobsValidator: Document = {
   $jsonSchema: {
     bsonType: 'object',
     title: 'Job validation',
-    required: ['_id', 'postedByUserId', 'title', 'content', 'status', 'createdAt', 'updatedAt'],
+    required: [
+      '_id',
+      'postedByUserId',
+      'title',
+      'content',
+      'status',
+      'applicationCount',
+      'createdAt',
+      'updatedAt',
+    ],
     properties: {
       _id: { bsonType: 'objectId' },
       postedByUserId: { bsonType: 'objectId' },
@@ -97,6 +106,17 @@ async function ensureCollection(db: Db, name: string, validator: Document): Prom
   });
 }
 
+async function dropIndexIfExists(db: Db, collectionName: string, indexName: string): Promise<void> {
+  try {
+    await db.collection(collectionName).dropIndex(indexName);
+  } catch (error) {
+    const maybeMongoError = error as { codeName?: string; code?: number };
+    if (maybeMongoError.codeName !== 'IndexNotFound' && maybeMongoError.code !== 27) {
+      throw error;
+    }
+  }
+}
+
 export async function up(db: Db): Promise<void> {
   await ensureCollection(db, 'jobs', jobsValidator);
   await ensureCollection(db, 'job_applications', applicationsValidator);
@@ -108,6 +128,11 @@ export async function up(db: Db): Promise<void> {
   if (!idempotencyExists) {
     await db.createCollection('idempotency_keys');
   }
+
+  await dropIndexIfExists(db, 'job_applications', 'idx_apps_jobId');
+  await dropIndexIfExists(db, 'job_applications', 'idx_apps_applicant');
+  await dropIndexIfExists(db, 'jobs', 'idx_jobs_metadata_wildcard');
+  await dropIndexIfExists(db, 'job_outbox', 'idx_outbox_pending');
 
   await db.collection('jobs').createIndexes([
     { key: { postedByUserId: 1 }, name: 'idx_jobs_postedBy' },
@@ -123,12 +148,21 @@ export async function up(db: Db): Promise<void> {
       default_language: 'english',
     },
     { key: { tags: 1, createdAt: -1 }, name: 'idx_jobs_tags_recency' },
-    { key: { 'metadata.$**': 1 }, name: 'idx_jobs_metadata_wildcard' },
+    {
+      key: { '$**': 1 },
+      name: 'idx_jobs_metadata_wildcard',
+      wildcardProjection: {
+        'metadata.remote': 1,
+        'metadata.seniority': 1,
+        'metadata.visaSponsorship': 1,
+        'metadata.salaryRangeUSD.min': 1,
+        'metadata.salaryRangeUSD.max': 1,
+        'metadata.companyInfo.industry': 1,
+      },
+    },
   ]);
 
   await db.collection('job_applications').createIndexes([
-    { key: { jobId: 1 }, name: 'idx_apps_jobId' },
-    { key: { applicantUserId: 1 }, name: 'idx_apps_applicant' },
     { key: { jobId: 1, status: 1, createdAt: -1, _id: -1 }, name: 'idx_apps_job_status_recency' },
     { key: { applicantUserId: 1, createdAt: -1, _id: -1 }, name: 'idx_apps_user_recency' },
     {
@@ -153,8 +187,18 @@ export async function up(db: Db): Promise<void> {
   await db.collection('job_outbox').createIndexes([
     {
       key: { status: 1, createdAt: 1, _id: 1 },
-      name: 'idx_outbox_pending',
+      name: 'idx_outbox_claim_pending',
       partialFilterExpression: { status: 'pending' },
+    },
+    {
+      key: { status: 1, updatedAt: 1, createdAt: 1, _id: 1 },
+      name: 'idx_outbox_claim_publishing',
+      partialFilterExpression: { status: 'publishing' },
+    },
+    {
+      key: { status: 1, updatedAt: 1, createdAt: 1, _id: 1 },
+      name: 'idx_outbox_claim_failed',
+      partialFilterExpression: { status: 'failed' },
     },
   ]);
 

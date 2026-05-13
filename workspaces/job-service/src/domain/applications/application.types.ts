@@ -72,6 +72,12 @@ export type UserApplicationResponse = Pick<
   'id' | 'jobId' | 'status' | 'denormalized' | 'createdAt' | 'updatedAt'
 >;
 
+export type UserJobApplicationResponse = {
+  jobId: string;
+  applied: boolean;
+  status: ApplicationStatus | null;
+};
+
 function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
 }

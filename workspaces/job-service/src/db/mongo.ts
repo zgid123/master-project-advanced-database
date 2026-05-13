@@ -14,6 +14,9 @@ export async function getMongoClient(): Promise<MongoClient> {
     maxPoolSize: config.mongodbMaxPoolSize,
     minPoolSize: config.mongodbMinPoolSize,
     maxIdleTimeMS: config.mongodbMaxIdleTimeMs,
+    maxConnecting: config.mongodbMaxConnecting,
+    waitQueueTimeoutMS: config.mongodbWaitQueueTimeoutMs,
+    writeConcern: { w: 'majority', j: true },
     retryWrites: true,
   })
     .then((connected) => {
@@ -39,12 +42,12 @@ export async function withMongoTransaction<T>(
   fn: (session: ClientSession) => Promise<T>,
 ): Promise<T> {
   const mongo = await getMongoClient();
-  const session = mongo.startSession();
+  const session = mongo.startSession({ causalConsistency: true });
 
   try {
     return await session.withTransaction(fn, {
       readConcern: { level: 'snapshot' },
-      writeConcern: { w: 'majority' },
+      writeConcern: { w: 'majority', j: true },
       readPreference: 'primary',
     });
   } finally {

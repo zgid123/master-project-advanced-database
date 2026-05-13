@@ -65,8 +65,9 @@ pnpm --filter auth start
 
 ## Architecture Notes
 
-- JWT `sub` is currently the user's email. Other services must not assume a
-  numeric user id unless the token contract is changed.
+- JWT `sub` is currently the user's email. Other services must not assume it is
+  a MongoDB ObjectId or any other service-specific user id unless the token
+  contract is changed.
 - Sign-up currently hashes the password before calling the repository, and the
   repository hashes again. New sign-ups should be verified after this is fixed.
 - Auth owns substack data in PostgreSQL. Gateway and Dashboard now read the

@@ -1,6 +1,6 @@
 # API Inventory
 
-Generated: 2026-05-12T14:44:21.248Z
+Generated: 2026-05-13T01:38:11.328Z
 
 Tooling: temporary `ts-morph` AST extractor installed outside the repo dependency graph. Scope is TypeScript source under `workspaces/` and `packages/`, excluding tests, generated route trees, build output, and declaration files.
 
@@ -13,7 +13,7 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 | API Gateway | 20 | 28 | 18 |
 | Auth Service | 74 | 15 | 71 |
 | Dashboard | 65 | 5 | 52 |
-| Job Service | 24 | 11 | 17 |
+| Job Service | 25 | 12 | 24 |
 | Notifications Service | 27 | 5 | 18 |
 | Q&A Service | 44 | 17 | 99 |
 | Recommendation Service | 29 | 19 | 63 |
@@ -81,15 +81,16 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 ### Job Service
 - `GET /` (Fastify) - [workspaces/job-service/src/app.ts:121](D:/Projects/backend/workspaces/job-service/src/app.ts:121)
 - `GET /health` (Fastify) - [workspaces/job-service/src/app.ts:125](D:/Projects/backend/workspaces/job-service/src/app.ts:125)
-- `PATCH /v1/applications/:id/status` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:170](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:170)
-- `GET /v1/jobs` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:61](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:61)
-- `POST /v1/jobs` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:116](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:116)
-- `DELETE /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:156](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:156)
-- `GET /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:96](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:96)
-- `PATCH /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:134](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:134)
-- `GET /v1/jobs/:id/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:126](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:126)
-- `POST /v1/jobs/:id/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:80](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:80)
-- `GET /v1/me/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:153](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:153)
+- `PATCH /v1/applications/:id/status` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:178](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:178)
+- `GET /v1/jobs` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:60](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:60)
+- `POST /v1/jobs` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:114](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:114)
+- `DELETE /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:154](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:154)
+- `GET /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:94](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:94)
+- `PATCH /v1/jobs/:id` (Fastify) - [workspaces/job-service/src/domain/jobs/job.controller.ts:132](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:132)
+- `GET /v1/jobs/:id/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:121](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:121)
+- `POST /v1/jobs/:id/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:76](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:76)
+- `GET /v1/jobs/:id/me/application` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:148](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:148)
+- `GET /v1/me/applications` (Fastify) - [workspaces/job-service/src/domain/applications/application.controller.ts:161](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:161)
 
 ### Notifications Service
 - `GET /health` (Hono) - [workspaces/notifications/src/adapters/restful/hono/endpoints/base.ts:3](D:/Projects/backend/workspaces/notifications/src/adapters/restful/hono/endpoints/base.ts:3)
@@ -291,25 +292,27 @@ Limitations: this is static analysis. It lists declared REST handlers and export
 - `buildApp(): Promise<FastifyInstance<Server<typeof IncomingMessage, typeof ServerResponse>, IncomingMessage, ServerResponse<IncomingMessage>, FastifyBaseLogger, FastifyTypeProviderDefault>>` - [workspaces/job-service/src/app.ts:12](D:/Projects/backend/workspaces/job-service/src/app.ts:12)
 - `jwtAlgorithms(): ['RS256'] | ['HS256']` - [workspaces/job-service/src/auth/jwt-secret.ts:91](D:/Projects/backend/workspaces/job-service/src/auth/jwt-secret.ts:91)
 - `resolveJwtSecret(_request: FastifyRequest, tokenOrHeader: TokenOrHeaderLike): Promise<string | Buffer>` - [workspaces/job-service/src/auth/jwt-secret.ts:95](D:/Projects/backend/workspaces/job-service/src/auth/jwt-secret.ts:95)
-- `getJson(key: string): Promise<T | null>` - [workspaces/job-service/src/cache/job-cache.ts:13](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:13)
-- `setJson(key: string, value: unknown, ttlSeconds: number): Promise<void>` - [workspaces/job-service/src/cache/job-cache.ts:24](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:24)
-- `delKeys(keys: string[]): Promise<void>` - [workspaces/job-service/src/cache/job-cache.ts:34](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:34)
-- `singleFlight(lockKey: string, cacheKey: string, load: () => Promise<T>): Promise<T>` - [workspaces/job-service/src/cache/job-cache.ts:46](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:46)
-- `rateLimitApply(userId: string, limit: number, windowSeconds: number): Promise<void>` - [workspaces/job-service/src/cache/rate-limit.ts:7](D:/Projects/backend/workspaces/job-service/src/cache/rate-limit.ts:7)
+- `getJson(key: string): Promise<T | null>` - [workspaces/job-service/src/cache/job-cache.ts:14](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:14)
+- `getJsonWithTtl(key: string): Promise<{ value: T | null; ttlMs: number | null }>` - [workspaces/job-service/src/cache/job-cache.ts:25](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:25)
+- `setJson(key: string, value: unknown, ttlSeconds: number): Promise<void>` - [workspaces/job-service/src/cache/job-cache.ts:45](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:45)
+- `delKeys(...keys: string[]): Promise<void>` - [workspaces/job-service/src/cache/job-cache.ts:55](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:55)
+- `singleFlight(lockKey: string, cacheKey: string, load: () => Promise<T>, options: { forceRefresh?: boolean }): Promise<T>` - [workspaces/job-service/src/cache/job-cache.ts:67](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:67)
+- `shouldRefreshEarly(ttlMs: number | null, ttlSeconds: number): boolean` - [workspaces/job-service/src/cache/job-cache.ts:96](D:/Projects/backend/workspaces/job-service/src/cache/job-cache.ts:96)
+- `rateLimitApply(userId: string, limit: number, windowSeconds: number): Promise<void>` - [workspaces/job-service/src/cache/rate-limit.ts:33](D:/Projects/backend/workspaces/job-service/src/cache/rate-limit.ts:33)
 - `getRedis(): Promise<Redis>` - [workspaces/job-service/src/cache/redis.ts:17](D:/Projects/backend/workspaces/job-service/src/cache/redis.ts:17)
 - `getMongoClient(): Promise<MongoClient>` - [workspaces/job-service/src/db/mongo.ts:8](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:8)
-- `getDb(): Promise<Db>` - [workspaces/job-service/src/db/mongo.ts:31](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:31)
-- `withMongoTransaction(fn: (session: ClientSession) => Promise<T>): Promise<T>` - [workspaces/job-service/src/db/mongo.ts:36](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:36)
-- `closeMongo(): Promise<void>` - [workspaces/job-service/src/db/mongo.ts:51](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:51)
-- `applicationRoutes(app: FastifyInstance): Promise<void>` - [workspaces/job-service/src/domain/applications/application.controller.ts:70](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:70)
+- `getDb(): Promise<Db>` - [workspaces/job-service/src/db/mongo.ts:36](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:36)
+- `withMongoTransaction(fn: (session: ClientSession) => Promise<T>): Promise<T>` - [workspaces/job-service/src/db/mongo.ts:41](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:41)
+- `closeMongo(): Promise<void>` - [workspaces/job-service/src/db/mongo.ts:58](D:/Projects/backend/workspaces/job-service/src/db/mongo.ts:58)
+- `applicationRoutes(app: FastifyInstance): Promise<void>` - [workspaces/job-service/src/domain/applications/application.controller.ts:75](D:/Projects/backend/workspaces/job-service/src/domain/applications/application.controller.ts:75)
 - `HttpError` - [workspaces/job-service/src/domain/errors.ts:1](D:/Projects/backend/workspaces/job-service/src/domain/errors.ts:1)
 - `isObjectIdHex(value: string): boolean` - [workspaces/job-service/src/domain/object-id.ts:6](D:/Projects/backend/workspaces/job-service/src/domain/object-id.ts:6)
 - `objectIdOrNull(value: string): ObjectId | null` - [workspaces/job-service/src/domain/object-id.ts:10](D:/Projects/backend/workspaces/job-service/src/domain/object-id.ts:10)
 - `parseObjectId(value: string, code = 'INVALID_OBJECT_ID'): ObjectId` - [workspaces/job-service/src/domain/object-id.ts:15](D:/Projects/backend/workspaces/job-service/src/domain/object-id.ts:15)
-- `jobRoutes(app: FastifyInstance): Promise<void>` - [workspaces/job-service/src/domain/jobs/job.controller.ts:56](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:56)
+- `jobRoutes(app: FastifyInstance): Promise<void>` - [workspaces/job-service/src/domain/jobs/job.controller.ts:59](D:/Projects/backend/workspaces/job-service/src/domain/jobs/job.controller.ts:59)
 - `encodeCursor(doc: { createdAt: Date | string; _id: { toHexString(): string } }): string` - [workspaces/job-service/src/domain/pagination.ts:16](D:/Projects/backend/workspaces/job-service/src/domain/pagination.ts:16)
 - `decodeCursor(cursor: string | undefined): KeysetCursor | null` - [workspaces/job-service/src/domain/pagination.ts:21](D:/Projects/backend/workspaces/job-service/src/domain/pagination.ts:21)
-- `publishBatch(limit: number): Promise<number>` - [workspaces/job-service/src/events/publisher.ts:80](D:/Projects/backend/workspaces/job-service/src/events/publisher.ts:80)
+- `publishBatch(limit: number): Promise<number>` - [workspaces/job-service/src/events/publisher.ts:100](D:/Projects/backend/workspaces/job-service/src/events/publisher.ts:100)
 
 ### Notifications Service
 - `initHono({ beforeInitRoutes, }: IInitHonoParams): Promise<IInitHonoReturn>` - [workspaces/notifications/src/adapters/restful/hono/index.ts:36](D:/Projects/backend/workspaces/notifications/src/adapters/restful/hono/index.ts:36)

@@ -131,7 +131,21 @@ export const ApplicationRepo = {
 
     const collection = await applicationsCollection();
     return collection
-      .find(filter)
+      .find(filter, {
+        projection: {
+          _id: 1,
+          jobId: 1,
+          applicantUserId: 1,
+          status: 1,
+          coverLetter: 1,
+          resumeUrl: 1,
+          idempotencyKey: 1,
+          denormalized: 1,
+          metadata: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      })
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray();
@@ -147,14 +161,49 @@ export const ApplicationRepo = {
 
     const collection = await applicationsCollection();
     return collection
-      .find({
-        applicantUserId: applicantObjectId,
-        deletedAt: null,
-        ...keysetFilter(cursor),
-      })
+      .find(
+        {
+          applicantUserId: applicantObjectId,
+          deletedAt: null,
+          ...keysetFilter(cursor),
+        },
+        {
+          projection: {
+            _id: 1,
+            jobId: 1,
+            status: 1,
+            denormalized: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      )
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray();
+  },
+
+  async findUserJobStatus(applicantUserId: string, jobId: string): Promise<ApplicationStatus | null> {
+    const applicantObjectId = objectIdOrNull(applicantUserId);
+    const jobObjectId = objectIdOrNull(jobId);
+    if (!applicantObjectId || !jobObjectId) return null;
+
+    const collection = await applicationsCollection();
+    const row = await collection.findOne<Pick<ApplicationDoc, 'status'>>(
+      {
+        applicantUserId: applicantObjectId,
+        jobId: jobObjectId,
+        deletedAt: null,
+      },
+      {
+        projection: {
+          _id: 0,
+          status: 1,
+        },
+      },
+    );
+
+    return row?.status ?? null;
   },
 
   async updateStatusCAS(

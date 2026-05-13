@@ -11,6 +11,7 @@ written to `job_outbox` before a Redis Streams publisher sends them.
 
 - List, search, create, update, and soft-delete jobs.
 - Submit and list job applications.
+- Check whether the current user already applied to a job.
 - Update application status.
 - Validate JWTs for protected job/application mutations.
 - Store job/application events in MongoDB `job_outbox`.
@@ -39,6 +40,7 @@ written to `job_outbox` before a Redis Streams publisher sends them.
 | `DELETE` | `/v1/jobs/:id` | Delete job |
 | `POST` | `/v1/jobs/:id/applications` | Apply to job |
 | `GET` | `/v1/jobs/:id/applications` | List applications for a job |
+| `GET` | `/v1/jobs/:id/me/application` | Get current user's application status for a job |
 | `GET` | `/v1/me/applications` | List current user's applications |
 | `PATCH` | `/v1/applications/:id/status` | Update application status |
 
@@ -79,6 +81,8 @@ pnpm --filter job-service publish-outbox
 | `MONGODB_MAX_POOL_SIZE` | `50` | MongoDB max pool size |
 | `MONGODB_MIN_POOL_SIZE` | `5` | MongoDB min pool size |
 | `MONGODB_MAX_IDLE_TIME_MS` | `60000` | MongoDB idle connection timeout |
+| `MONGODB_MAX_CONNECTING` | `4` | MongoDB concurrent connection establishment limit |
+| `MONGODB_WAIT_QUEUE_TIMEOUT_MS` | `5000` | MongoDB wait queue timeout |
 | `REDIS_URL` | `redis://localhost:6379` | Redis cache and stream URL |
 | `JWT_SECRET` | `dev-secret` | Local HS256 verification |
 | `JWT_PUBLIC_KEY` | unset | RS256 public key verification |

@@ -16,6 +16,8 @@ type OutboxDoc = {
 };
 
 type PublishOneResult = 'published' | 'empty' | 'failed';
+const stalePublishingMs = 60_000;
+const failedRetryMs = 30_000;
 let shuttingDown = false;
 
 async function outboxCollection(): Promise<Collection<OutboxDoc>> {
@@ -25,10 +27,23 @@ async function outboxCollection(): Promise<Collection<OutboxDoc>> {
 async function publishOne(redis: Awaited<ReturnType<typeof getRedis>>): Promise<PublishOneResult> {
   const outbox = await outboxCollection();
   const now = new Date();
+  const stalePublishingBefore = new Date(now.getTime() - stalePublishingMs);
+  const retryFailedBefore = new Date(now.getTime() - failedRetryMs);
   const row = await outbox.findOneAndUpdate(
-    { status: 'pending' },
     {
-      $set: { status: 'publishing', updatedAt: now },
+      $or: [
+        { status: 'pending' },
+        { status: 'publishing', updatedAt: { $lt: stalePublishingBefore } },
+        { status: 'failed', updatedAt: { $lt: retryFailedBefore } },
+      ],
+    },
+    {
+      $set: {
+        status: 'publishing',
+        publishedAt: null,
+        updatedAt: now,
+      },
+      $unset: { lastError: '' },
       $inc: { attempts: 1 },
     },
     {

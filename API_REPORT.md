@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2026-05-12T14:46:07.853Z
+Generated: 2026-05-13T01:38:11.328Z
 
 ## Tool Run
 
@@ -21,7 +21,7 @@ Generated: 2026-05-12T14:46:07.853Z
 | API Gateway | 20 | 28 | 18 | Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes. |
 | Auth Service | 74 | 15 | 71 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
 | Dashboard | 65 | 5 | 52 | TanStack Start UI, auth proxy routes, substack list/detail pages, and client/server API wrappers. |
-| Job Service | 25 | 11 | 18 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
+| Job Service | 25 | 12 | 24 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 18 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
 | Q&A Service | 44 | 17 | 99 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
 | Recommendation Service | 29 | 19 | 63 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics. |
@@ -37,7 +37,7 @@ Generated: 2026-05-12T14:46:07.853Z
 | API Gateway | 3 | 2 | 5 | 12 | 1 | 10 | 0 |
 | Auth Service | 29 | 6 | 17 | 54 | 17 | 26 | 0 |
 | Dashboard | 0 | 7 | 52 | 0 | 2 | 27 | 0 |
-| Job Service | 1 | 0 | 16 | 0 | 14 | 22 | 0 |
+| Job Service | 1 | 0 | 18 | 0 | 15 | 22 | 0 |
 | Notifications Service | 5 | 3 | 11 | 7 | 2 | 16 | 0 |
 | Q&A Service | 40 | 0 | 0 | 71 | 0 | 19 | 0 |
 | Recommendation Service | 1 | 0 | 62 | 0 | 16 | 18 | 0 |
@@ -116,6 +116,7 @@ Generated: 2026-05-12T14:46:07.853Z
 - `PATCH /v1/jobs/:id` (Fastify)
 - `GET /v1/jobs/:id/applications` (Fastify)
 - `POST /v1/jobs/:id/applications` (Fastify)
+- `GET /v1/jobs/:id/me/application` (Fastify)
 - `GET /v1/me/applications` (Fastify)
 
 ### Notifications Service
@@ -229,9 +230,11 @@ Representative callable/class APIs from the generated inventory:
 - `jwtAlgorithms(): ['RS256'] | ['HS256']`
 - `resolveJwtSecret(_request: FastifyRequest, tokenOrHeader: TokenOrHeaderLike): Promise<string | Buffer>`
 - `getJson(key: string): Promise<T | null>`
+- `getJsonWithTtl(key: string): Promise<{ value: T | null; ttlMs: number | null }>`
 - `setJson(key: string, value: unknown, ttlSeconds: number): Promise<void>`
-- `delKeys(keys: string[]): Promise<void>`
-- `singleFlight(lockKey: string, cacheKey: string, load: () => Promise<T>): Promise<T>`
+- `delKeys(...keys: string[]): Promise<void>`
+- `singleFlight(lockKey: string, cacheKey: string, load: () => Promise<T>, options: { forceRefresh?: boolean }): Promise<T>`
+- `shouldRefreshEarly(ttlMs: number | null, ttlSeconds: number): boolean`
 - `rateLimitApply(userId: string, limit: number, windowSeconds: number): Promise<void>`
 - `getRedis(): Promise<Redis>`
 - `getMongoClient(): Promise<MongoClient>`
@@ -240,7 +243,7 @@ Representative callable/class APIs from the generated inventory:
 - `closeMongo(): Promise<void>`
 - `applicationRoutes(app: FastifyInstance): Promise<void>`
 - `HttpError`
-- Additional generated callable APIs: 6. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 7. See `API_INVENTORY.md` for the full list.
 
 ### Notifications Service
 Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping.
@@ -335,7 +338,7 @@ Representative callable/class APIs from the generated inventory:
 
 ## Architecture-Relevant Conclusions From API Surface
 
-1. The current generated surface is 100 REST/server routes and 355 exported callable/class APIs.
+1. The current generated surface is 101 REST/server routes and 361 exported callable/class APIs.
 2. API Gateway now fronts Auth, Notifications, public Substacks, and Q&A topic/comment routes. Job Service and RecSys remain outside the gateway.
 3. Auth remains the owner of users, follows, substacks, and token lifecycle; recent frontend auth work moved more browser workflows through Dashboard and Gateway.
 4. Dashboard now includes auth, substack list/detail pages, and server proxy routes for auth/substack APIs.
