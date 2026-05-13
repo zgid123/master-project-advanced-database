@@ -88,7 +88,7 @@ export const JobRepo = {
     };
 
     if (location) {
-      filter.location = { $regex: location, $options: 'i' };
+      filter.location = location;
     }
 
     if (type) {

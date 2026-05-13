@@ -16,6 +16,8 @@ const envSchema = z.object({
   MONGODB_MAX_POOL_SIZE: z.coerce.number().int().positive().default(50),
   MONGODB_MIN_POOL_SIZE: z.coerce.number().int().nonnegative().default(5),
   MONGODB_MAX_IDLE_TIME_MS: z.coerce.number().int().positive().default(60_000),
+  MONGODB_MAX_CONNECTING: z.coerce.number().int().positive().default(4),
+  MONGODB_WAIT_QUEUE_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
 });
 
 const env = envSchema.parse(process.env);
@@ -36,4 +38,6 @@ export const config = {
   mongodbMaxPoolSize: env.MONGODB_MAX_POOL_SIZE,
   mongodbMinPoolSize: env.MONGODB_MIN_POOL_SIZE,
   mongodbMaxIdleTimeMs: env.MONGODB_MAX_IDLE_TIME_MS,
+  mongodbMaxConnecting: env.MONGODB_MAX_CONNECTING,
+  mongodbWaitQueueTimeoutMs: env.MONGODB_WAIT_QUEUE_TIMEOUT_MS,
 } as const;

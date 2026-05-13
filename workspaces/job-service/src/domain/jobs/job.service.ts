@@ -1,4 +1,4 @@
-import { delKeys, getJson, setJson, singleFlight } from '../../cache/job-cache.js';
+import { delKeys, getJsonWithTtl, setJson, shouldRefreshEarly, singleFlight } from '../../cache/job-cache.js';
 import { withMongoTransaction } from '../../db/mongo.js';
 import { logger } from '../../observability/logger.js';
 import { HttpError } from '../errors.js';
@@ -17,6 +17,8 @@ import {
   type JobStatus,
   type UpdateJobInput,
 } from './job.types.js';
+
+const jobCacheTtlSeconds = 300;
 
 const allowedJobTransitions: Record<JobStatus, JobStatus[]> = {
   draft: ['open', 'archived'],
@@ -52,18 +54,19 @@ function pageResponse<T extends { createdAt: Date; _id: { toHexString(): string 
 export const JobService = {
   async getById(id: string): Promise<JobResponse | null> {
     const cacheKey = `job:${id}`;
-    const cached = await getJson<JobResponse>(cacheKey);
-    if (cached) return cached;
+    const cached = await getJsonWithTtl<JobResponse>(cacheKey);
+    if (cached.value && !shouldRefreshEarly(cached.ttlMs, jobCacheTtlSeconds)) return cached.value;
 
     try {
       return await singleFlight(`lock:${cacheKey}`, cacheKey, async () => {
         const doc = await JobRepo.findById(id);
         const response = doc ? serializeJob(doc) : null;
-        if (response) await setJson(cacheKey, response, 60);
+        if (response) await setJson(cacheKey, response, jobCacheTtlSeconds);
         return response;
-      });
+      }, { forceRefresh: Boolean(cached.value) });
     } catch (error) {
       logger.warn({ error, id }, 'job cache single-flight failed; falling back to database');
+      if (cached.value) return cached.value;
       const doc = await JobRepo.findById(id);
       return doc ? serializeJob(doc) : null;
     }

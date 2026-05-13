@@ -131,7 +131,21 @@ export const ApplicationRepo = {
 
     const collection = await applicationsCollection();
     return collection
-      .find(filter)
+      .find(filter, {
+        projection: {
+          _id: 1,
+          jobId: 1,
+          applicantUserId: 1,
+          status: 1,
+          coverLetter: 1,
+          resumeUrl: 1,
+          idempotencyKey: 1,
+          denormalized: 1,
+          metadata: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      })
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray();
@@ -147,11 +161,23 @@ export const ApplicationRepo = {
 
     const collection = await applicationsCollection();
     return collection
-      .find({
-        applicantUserId: applicantObjectId,
-        deletedAt: null,
-        ...keysetFilter(cursor),
-      })
+      .find(
+        {
+          applicantUserId: applicantObjectId,
+          deletedAt: null,
+          ...keysetFilter(cursor),
+        },
+        {
+          projection: {
+            _id: 1,
+            jobId: 1,
+            status: 1,
+            denormalized: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      )
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray();

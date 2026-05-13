@@ -3,6 +3,7 @@ import { getRedis } from './redis.js';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const warnedOperations = new Set<string>();
+const earlyRefreshWindowRatio = 0.1;
 
 function warnCacheFailure(operation: string, error: unknown): void {
   if (warnedOperations.has(operation)) return;
@@ -18,6 +19,26 @@ export async function getJson<T>(key: string): Promise<T | null> {
   } catch (error) {
     warnCacheFailure('get', error);
     return null;
+  }
+}
+
+export async function getJsonWithTtl<T>(key: string): Promise<{ value: T | null; ttlMs: number | null }> {
+  try {
+    const client = await getRedis();
+    const pipeline = client.pipeline();
+    pipeline.get(key);
+    pipeline.pttl(key);
+    const results = await pipeline.exec();
+    const cached = results?.[0]?.[1];
+    const ttl = results?.[1]?.[1];
+
+    return {
+      value: typeof cached === 'string' ? (JSON.parse(cached) as T) : null,
+      ttlMs: typeof ttl === 'number' && ttl >= 0 ? ttl : null,
+    };
+  } catch (error) {
+    warnCacheFailure('getWithTtl', error);
+    return { value: null, ttlMs: null };
   }
 }
 
@@ -47,6 +68,7 @@ export async function singleFlight<T>(
   lockKey: string,
   cacheKey: string,
   load: () => Promise<T>,
+  options: { forceRefresh?: boolean } = {},
 ): Promise<T> {
   const client = await getRedis();
   const gotLock = await client.set(lockKey, '1', 'PX', 5_000, 'NX');
@@ -61,10 +83,20 @@ export async function singleFlight<T>(
   }
 
   try {
-    const cached = await client.get(cacheKey);
-    if (cached) return JSON.parse(cached) as T;
+    if (!options.forceRefresh) {
+      const cached = await client.get(cacheKey);
+      if (cached) return JSON.parse(cached) as T;
+    }
     return await load();
   } finally {
     await client.del(lockKey);
   }
+}
+
+export function shouldRefreshEarly(ttlMs: number | null, ttlSeconds: number): boolean {
+  if (ttlMs === null) return false;
+
+  const earlyWindowMs = ttlSeconds * 1000 * earlyRefreshWindowRatio;
+  const thresholdMs = -Math.log(Math.random()) * earlyWindowMs;
+  return ttlMs <= thresholdMs;
 }
