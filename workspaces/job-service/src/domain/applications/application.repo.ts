@@ -183,6 +183,29 @@ export const ApplicationRepo = {
       .toArray();
   },
 
+  async findUserJobStatus(applicantUserId: string, jobId: string): Promise<ApplicationStatus | null> {
+    const applicantObjectId = objectIdOrNull(applicantUserId);
+    const jobObjectId = objectIdOrNull(jobId);
+    if (!applicantObjectId || !jobObjectId) return null;
+
+    const collection = await applicationsCollection();
+    const row = await collection.findOne<Pick<ApplicationDoc, 'status'>>(
+      {
+        applicantUserId: applicantObjectId,
+        jobId: jobObjectId,
+        deletedAt: null,
+      },
+      {
+        projection: {
+          _id: 0,
+          status: 1,
+        },
+      },
+    );
+
+    return row?.status ?? null;
+  },
+
   async updateStatusCAS(
     session: ClientSession,
     id: string,

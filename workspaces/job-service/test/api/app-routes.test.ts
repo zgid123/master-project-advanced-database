@@ -8,6 +8,7 @@ vi.mock('../../src/cache/rate-limit.js', () => ({
 
 vi.mock('../../src/domain/applications/application.service.js', () => ({
   ApplicationService: {
+    getForJobAndUser: vi.fn(),
     listForJob: vi.fn(),
     listForUser: vi.fn(),
     submit: vi.fn(),
@@ -132,6 +133,7 @@ describe('job-service HTTP API', () => {
       paths: expect.objectContaining({
         '/v1/jobs': expect.any(Object),
         '/v1/jobs/{id}/applications': expect.any(Object),
+        '/v1/jobs/{id}/me/application': expect.any(Object),
       }),
     });
   });
@@ -309,6 +311,30 @@ describe('job-service HTTP API', () => {
       id: applicationId,
       jobId,
       applicantUserId: applicantId,
+      status: 'submitted',
+    });
+  });
+
+  it('returns authenticated user application status for GET /v1/jobs/:id/me/application', async () => {
+    vi.mocked(ApplicationService.getForJobAndUser).mockResolvedValue({
+      jobId,
+      applied: true,
+      status: 'submitted',
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/jobs/${jobId}/me/application`,
+      headers: {
+        authorization: bearerToken(applicantId),
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(ApplicationService.getForJobAndUser).toHaveBeenCalledWith(jobId, applicantId);
+    expect(response.json()).toMatchObject({
+      jobId,
+      applied: true,
       status: 'submitted',
     });
   });

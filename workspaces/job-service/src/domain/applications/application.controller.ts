@@ -145,6 +145,19 @@ export async function applicationRoutes(app: FastifyInstance) {
     );
   });
 
+  app.get('/v1/jobs/:id/me/application', {
+    preHandler: [app.authenticate],
+    schema: {
+      tags: ['Applications'],
+      summary: 'Get the authenticated user application status for a job',
+      security: bearerSecurity,
+      params: idParamJsonSchema,
+    },
+  }, async (request) => {
+    const { id: jobId } = objectIdParamSchema.parse(request.params);
+    return ApplicationService.getForJobAndUser(jobId, getAuthenticatedUserId(request));
+  });
+
   app.get('/v1/me/applications', {
     preHandler: [app.authenticate],
     schema: {

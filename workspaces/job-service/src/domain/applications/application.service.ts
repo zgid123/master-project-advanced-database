@@ -14,6 +14,7 @@ import {
   type SubmitApplicationInput,
   type UpdateApplicationStatusInput,
   type UserApplicationResponse,
+  type UserJobApplicationResponse,
 } from './application.types.js';
 
 const allowedApplicationTransitions: Record<ApplicationStatus, ApplicationStatus[]> = {
@@ -131,6 +132,21 @@ export const ApplicationService = {
   async listForUser(applicantUserId: string, cursor: KeysetCursor | null, limit: number) {
     const rows = await ApplicationRepo.listForUser(applicantUserId, cursor, limit + 1);
     return pageResponse<ApplicationDoc, UserApplicationResponse>(rows, limit, serializeUserApplication);
+  },
+
+  async getForJobAndUser(jobId: string, applicantUserId: string): Promise<UserJobApplicationResponse> {
+    const cacheKey = `user:${applicantUserId}:applied:${jobId}`;
+    const cached = await getJson<UserJobApplicationResponse>(cacheKey);
+    if (cached) return cached;
+
+    const status = await ApplicationRepo.findUserJobStatus(applicantUserId, jobId);
+    const response = {
+      jobId,
+      applied: status !== null,
+      status,
+    };
+    await setJson(cacheKey, response, 300);
+    return response;
   },
 
   async updateStatus(
