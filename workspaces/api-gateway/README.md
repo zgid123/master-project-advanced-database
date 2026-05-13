@@ -12,7 +12,8 @@ normalizes auth cookies.
 - Expose notification list/read proxy routes with authenticated user id
   injection.
 - Expose public substack list, detail, and total-count proxy routes plus
-  authenticated create/subscribe/unsubscribe routes.
+  authenticated owned-list, create, update, delete, subscribe, and unsubscribe
+  routes.
 - Expose Q&A topic/comment proxy routes.
 - Read bearer tokens or `solvit_authToken` cookies.
 - Resolve the current user by calling Auth `/v1/auth/profile`.
@@ -45,7 +46,10 @@ normalizes auth cookies.
 | `GET` | `/v1/substacks` | Public proxy to Auth substack list |
 | `GET` | `/v1/substacks/:slug` | Public proxy to Auth substack detail |
 | `GET` | `/v1/substacks/total` | Public proxy to Auth approved-substack count |
+| `GET` | `/v1/substacks/owned` | Authenticated proxy to the current user's substacks |
 | `POST` | `/v1/substacks` | Authenticated proxy to create a substack |
+| `PUT` | `/v1/substacks/:slug` | Authenticated proxy to update a substack |
+| `DELETE` | `/v1/substacks/:slug` | Authenticated proxy to delete a substack |
 | `POST` | `/v1/substacks/:slug/subscribe` | Authenticated proxy to subscribe to a substack |
 | `DELETE` | `/v1/substacks/:slug/subscribe` | Authenticated proxy to unsubscribe from a substack |
 | `GET` | `/v1/topics/search` | Proxies Q&A topic search |

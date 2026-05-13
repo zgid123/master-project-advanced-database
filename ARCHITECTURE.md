@@ -18,10 +18,10 @@ backend is a service-oriented system with multiple API frameworks:
 flowchart LR
   Browser["Browser"] --> Dashboard["dashboard\nTanStack Start :4000"]
   Browser --> Gateway["api-gateway\nHono :3000"]
-  Browser --> Jobs["job-service\nFastify :3010"]
-  Browser --> RecSys["recsys\nFastify :3020"]
 
   Dashboard --> Gateway
+  Dashboard --> Jobs["job-service\nFastify :3010"]
+  Dashboard --> RecSys["recsys\nFastify :3020"]
   Gateway --> Auth["auth\nHono :3001"]
   Gateway --> Notifications["notifications\nHono :3002"]
   Gateway --> Qna["qna\nNestJS :3005"]
@@ -54,7 +54,7 @@ flowchart LR
 | Q&A | `workspaces/qna` | NestJS | MongoDB, Elasticsearch, Notifications | Topics, comments, votes, topic subscriptions, search |
 | Job Service | `workspaces/job-service` | Fastify | MongoDB, Redis | Jobs, applications, job/application outbox events |
 | RecSys | `workspaces/recsys` | Fastify | Neo4j, Redis, BullMQ | Personalized feed, similar topics/users, graph ingestion |
-| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Better Auth wrapper | Frontend shell, auth proxy, and substack list/detail UI |
+| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Job Service, RecSys, Better Auth wrapper | Frontend shell plus auth, substack, Q&A, notification, job, and recommendation proxy routes |
 
 Shared packages:
 
@@ -70,43 +70,42 @@ Shared packages:
 
 The API report is generated before this architecture summary:
 
-- `API_TYPEDOC.json`: raw TypeDoc declaration model for exported TypeScript APIs.
 - `API_INVENTORY.md`: full static inventory of REST/server routes and exported
   function/class APIs.
-- `API_REPORT.md`: readable report summarizing the TypeDoc output, route
-  inventory, callable API families, and architecture conclusions.
+- `API_REPORT.md`: readable report summarizing the route inventory, callable
+  API families, and architecture conclusions.
 
-Temporary tooling was installed outside the repository dependency graph in
-`%TEMP%/codex-api-tools`; app `package.json` and lockfiles were not changed.
+The committed generator is `scripts/generate-api-docs.mjs` and can be run with
+`pnpm docs:api`.
 
 Generated API surface counts:
 
 | Component | REST/server routes | Exported function/class APIs |
 | --- | ---: | ---: |
-| API Gateway | 28 | 18 |
-| Auth Service | 15 | 71 |
-| Dashboard | 5 | 52 |
-| Job Service | 12 | 24 |
-| Notifications Service | 5 | 18 |
-| Q&A Service | 17 | 99 |
-| Recommendation Service | 19 | 63 |
-| Shared domain/node packages | 0 | 17 |
+| API Gateway | 35 | 37 |
+| Auth Service | 18 | 136 |
+| Dashboard | 33 | 100 |
+| Job Service | 12 | 44 |
+| Notifications Service | 5 | 39 |
+| Q&A Service | 17 | 130 |
+| Recommendation Service | 19 | 81 |
+| Shared domain/node packages | 0 | 79 |
 
 Architecture conclusions from the generated report:
 
-1. The current generated surface is 101 REST/server routes and 361 exported
+1. The current generated surface is 139 REST/server routes and 646 exported
    callable/class APIs.
 2. API Gateway now fronts Auth, Notifications, public Substacks, and Q&A
-   topic/comment routes. Job Service and RecSys remain outside the gateway.
+   topic/comment routes.
 3. Auth remains the owner of users, follows, substacks, and token lifecycle;
    recent frontend auth work moved more browser workflows through Dashboard and
    Gateway.
-4. Dashboard now includes auth, substack list/detail pages, and server proxy
-   routes for auth/substack APIs.
+4. Dashboard now includes auth, substack, topic/comment, notification, job, and
+   recommendation server proxy routes.
 5. Q&A is integrated through Gateway for topics/comments, but it still owns its
    NestJS controllers, MongoDB models, and Elasticsearch indexing.
 6. RecSys remains a standalone recommendation service with internal event
-   ingestion; no generated route shows a Gateway proxy to RecSys.
+   ingestion; Dashboard proxies browser-facing recommendation routes directly.
 7. Shared packages expose domain schemas/entities/repository contracts, but
    cross-service runtime contracts such as JWT subject, current user
    propagation, and event envelopes still need one canonical definition.
@@ -173,10 +172,12 @@ Important files:
 Current behavior:
 
 - Public routes are `/health`, `/v1/auth/sign-in`, `/v1/auth/sign-up`,
-  `/v1/substacks`, `/v1/substacks/total`, and `GET /v1/substacks/:slug`.
+  `/v1/auth/refresh`, `/v1/substacks`, `/v1/substacks/total`, and
+  `GET /v1/substacks/:slug`.
 - Protected routes validate a bearer token or `solvit_authToken` cookie by calling Auth `/v1/auth/profile`.
 - Auth sign-in/sign-up/refresh responses are parsed so the gateway can set HTTP-only `solvit_authToken` and `solvit_refreshToken` cookies.
-- Notifications are proxied to the Notifications service with the original query string.
+- Notifications are proxied to the Notifications service with the resolved
+  authenticated user id injected into the upstream query string.
 - Substack list and total-count routes are proxied to Auth without requiring a
   gateway-authenticated user.
 - Q&A topic/comment routes are proxied to Q&A with the resolved current user id
@@ -477,15 +478,21 @@ Batch jobs:
 Path: `workspaces/dashboard`
 
 The dashboard is a TanStack Start app on port `4000`. It includes auth UI,
-server routes, a Better Auth wrapper, and substack list/detail slices that
-proxy through the API Gateway.
+server routes, a Better Auth wrapper, service console pages, and frontend
+feature slices that proxy through Dashboard server routes.
 
 Main UI routes:
 
 - `/`
 - `/about`
+- `/jobs`
+- `/notifications`
+- `/recommendations`
+- `/signal`
+- `/signals`
 - `/substacks`
 - `/substacks/$slug`
+- `/topics`
 - `/sign-in`
 - `/sign-up`
 
@@ -497,7 +504,19 @@ Server/API routes:
 - `/api/portal/substacks/`: direct server proxy to gateway `/v1/substacks`.
 - `/api/portal/substacks/$slug`: direct server proxy to gateway
   `/v1/substacks/:slug`.
+- `/api/portal/substacks/$slug/subscribe`: direct server proxy to gateway
+  `/v1/substacks/:slug/subscribe`.
 - `/api/portal/substacks/total`: direct server proxy to gateway `/v1/substacks/total`.
+- `/api/portal/topics/*`: direct server proxy to gateway `/v1/topics/*`.
+- `/api/portal/comments/*`: direct server proxy to gateway `/v1/comments/*`.
+- `/api/portal/notifications/*`: direct server proxy to gateway
+  `/v1/notifications/*`.
+- `/api/services/jobs/*`: direct server proxy to Job Service `/v1/jobs/*`.
+- `/api/services/applications/*`: direct server proxy to Job Service
+  `/v1/applications/*`.
+- `/api/services/me/applications`: direct server proxy to Job Service
+  `/v1/me/applications`.
+- `/api/services/recommendations/*`: direct server proxy to RecSys `/v1/*`.
 
 Important files:
 
@@ -506,13 +525,25 @@ Important files:
 - `src/routes/index.tsx`
 - `src/routes/sign-in.tsx`
 - `src/routes/sign-up.tsx`
+- `src/routes/topics.tsx`
+- `src/routes/jobs.tsx`
+- `src/routes/notifications.tsx`
+- `src/routes/recommendations.tsx`
+- `src/routes/signal.tsx`
+- `src/routes/signals.tsx`
 - `src/routes/api/auth/$.ts`
 - `src/routes/api/portal/auth/*`
 - `src/routes/api/portal/substacks/*`
+- `src/routes/api/portal/topics/*`
+- `src/routes/api/portal/comments/*`
+- `src/routes/api/portal/notifications/*`
+- `src/routes/api/services/*`
 - `src/routes/substacks/$slug/index.tsx`
 - `src/features/auth/api/*`
 - `src/features/auth/components/AuthForm.tsx`
 - `src/features/auth/queries/authQueries.ts`
+- `src/features/services/api/*`
+- `src/features/services/components/*`
 - `src/features/substack/api/*`
 - `src/features/substack/components/SubstacksIsland.tsx`
 - `src/features/substack/queries/*`
@@ -539,12 +570,17 @@ Current auth boundaries:
 - Auth signs JWTs with `sub` set to the user's email.
 - Auth refresh tokens are opaque random strings stored in Redis.
 - Dashboard stores auth tokens in HTTP-only cookies through server-side proxy routes.
+- Dashboard forwards authenticated browser requests to API Gateway and maps the
+  auth cookie to bearer tokens for direct Job Service proxy calls.
+- Dashboard injects the resolved current user id into RecSys `/v1/feed`
+  requests.
 - Job Service validates JWTs itself and expects `sub` to be a MongoDB ObjectId
   hex string.
 - Q&A does not currently validate JWTs itself; gateway-proxied routes inject
   the resolved current user id as `x-user-id`, while direct service calls still
   depend on caller-supplied user context.
-- Notifications portal routes accept `userId` query parameters.
+- Notifications portal routes accept `userId` query parameters; API Gateway
+  injects that query value for browser-facing traffic.
 - RecSys `/v1/feed` accepts `x-user-id` and expects a trusted caller to inject it.
 - Internal Notifications and RecSys event routes use shared-secret headers.
 
@@ -632,31 +668,29 @@ These are the main architecture-affecting findings from the current source.
    New sign-ups may not be able to sign in.
 2. Auth and Job Service still need one canonical JWT subject contract. Job
    Service currently requires `sub` to be a MongoDB ObjectId hex string.
-3. API Gateway still protects `/v1/auth/refresh`; clients with expired or
-   missing access tokens may be blocked before refresh reaches Auth.
-4. API Gateway notification proxy does not inject the authenticated user's id.
-   Notifications requires `userId` in the query string, so clients must supply
-   it manually.
-5. Notifications portal routes trust `userId` query parameters. If the service
+3. Notifications portal routes trust `userId` query parameters. If the service
    is reachable directly, a caller can request or mutate another user's
    notifications.
-6. Q&A has no service-local authentication middleware. Gateway-proxied calls
+4. Q&A has no service-local authentication middleware. Gateway-proxied calls
    inject the resolved user id, but direct Q&A access still trusts
    caller-supplied `x-user-id` for ownership, voting, subscriptions, and
    deletes.
-7. Q&A still contains a hard-coded MongoDB Atlas URI with credentials in source.
-8. Q&A Elasticsearch config is hard-coded to `http://localhost:9200` and its
+5. Q&A still contains a hard-coded MongoDB Atlas URI with credentials in source.
+6. Q&A Elasticsearch config is hard-coded to `http://localhost:9200` and its
    compose file is separate from the root compose stack.
-9. Notifications environment typing declares `MONGO_URI`, but runtime code reads
+7. Q&A topic search depends on the Elasticsearch `topics` index. If the index
+   has not been created or seeded, `/topics/search` can return an upstream
+   `index_not_found_exception`.
+8. Notifications environment typing declares `MONGO_URI`, but runtime code reads
    `MONGODB_URI`.
-10. RecSys is implemented but not integrated with source services in this repo.
-    Auth/Q&A do not push RecSys events, and API Gateway does not proxy RecSys
-    routes or inject `x-user-id`.
-11. RecSys `/v1/feed` trusts direct `x-user-id` input. It should only be exposed
+9. RecSys is implemented but not integrated with source services in this repo.
+   Auth/Q&A do not push RecSys events, and API Gateway does not proxy RecSys
+   routes.
+10. RecSys `/v1/feed` trusts direct `x-user-id` input. It should only be exposed
     behind a trusted gateway or should validate tokens directly.
-12. Job Service publishes `jobs.events`, while RecSys consumes `events:*`
+11. Job Service publishes `jobs.events`, while RecSys consumes `events:*`
     streams. There is no bridge or consumer connecting those event models.
-13. Q&A search writes to Elasticsearch synchronously after MongoDB writes. A
+12. Q&A search writes to Elasticsearch synchronously after MongoDB writes. A
     search indexing failure can fail the user-facing topic create/update/delete
     path unless handled intentionally.
 

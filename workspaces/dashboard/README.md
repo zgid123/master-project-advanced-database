@@ -1,7 +1,7 @@
 # Dashboard
 
-TanStack Start frontend for Solvit. It provides the browser UI and a small
-server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
+TanStack Start frontend for Solvit. It provides the browser UI and server-side
+proxy routes that keep gateway tokens in HTTP-only cookies.
 
 ## Responsibilities
 
@@ -32,7 +32,9 @@ server-side auth proxy that keeps gateway tokens in HTTP-only cookies.
 | `GET` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
 | `GET` | `/api/portal/substacks/$slug` | Proxy to Gateway `/v1/substacks/:slug` |
 | `GET` | `/api/portal/substacks/total` | Proxy to Gateway `/v1/substacks/total` |
+| `GET` | `/api/portal/substacks/owned` | Proxy to Gateway `/v1/substacks/owned` |
 | `POST` | `/api/portal/substacks/` | Proxy to Gateway `/v1/substacks` |
+| `PUT`, `DELETE` | `/api/portal/substacks/$slug` | Proxy to Gateway substack CUD routes |
 | `POST`, `DELETE` | `/api/portal/substacks/$slug/subscribe` | Proxy to Gateway substack membership |
 | `GET`, `POST`, `PATCH`, `DELETE` | `/api/portal/topics/*` | Proxy to Gateway Q&A topic routes |
 | `POST`, `PATCH`, `DELETE` | `/api/portal/comments/*` | Proxy to Gateway Q&A comment routes |
@@ -66,6 +68,8 @@ pnpm --filter dashboard dev
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `API_GATEWAY_URL` | `http://localhost:3000` | Gateway base URL for server proxy calls |
+| `JOB_SERVICE_URL` | `http://localhost:3010` | Job Service base URL for dashboard server proxy calls |
+| `RECSYS_SERVICE_URL` | `http://localhost:3020` | RecSys base URL for dashboard server proxy calls |
 | `BETTER_AUTH_URL` | `http://localhost:4000` | Better Auth local base URL |
 | `BETTER_AUTH_SECRET` | development fallback | Better Auth signing secret |
 
@@ -78,7 +82,8 @@ pnpm --filter dashboard dev
   backed by the dashboard substack API wrapper.
 - `/substacks` renders the substack list, and `/substacks/$slug` renders a
   substack detail page backed by the dashboard substack API/query layer.
-- `/topics`, `/notifications`, `/jobs`, and `/recommendations` expose service
-  consoles for Q&A, Notifications, Job Service, and RecSys.
+- `/topics`, `/notifications`, `/jobs`, `/recommendations`, `/signal`, and
+  `/signals` expose service consoles for Q&A, Notifications, Job Service, and
+  RecSys.
 - Job Service protected mutations are wired, but the architecture still needs a
   canonical JWT subject contract before they can work reliably with Auth tokens.

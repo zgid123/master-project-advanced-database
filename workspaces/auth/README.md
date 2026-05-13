@@ -35,8 +35,11 @@ substack membership for Solvit.
 | `DELETE` | `/v1/auth/users/:userId/subscribe` | Unfollow another user |
 | `GET` | `/v1/substacks` | List approved substacks; optional `limit` |
 | `GET` | `/v1/substacks/total` | Count approved substacks |
+| `GET` | `/v1/substacks/owned` | List substacks owned by the current user |
 | `POST` | `/v1/substacks` | Create a substack owned by the current user |
 | `GET` | `/v1/substacks/:slug` | Get substack by slug |
+| `PUT` | `/v1/substacks/:slug` | Update an owned substack |
+| `DELETE` | `/v1/substacks/:slug` | Delete an owned substack |
 | `POST` | `/v1/substacks/:slug/subscribe` | Subscribe to a substack |
 | `DELETE` | `/v1/substacks/:slug/subscribe` | Unsubscribe from a substack |
 | `POST` | `/admin/substacks/:slug/approve` | Admin-only substack approval |
