@@ -86,7 +86,7 @@ Generated API surface counts:
 | API Gateway | 28 | 18 |
 | Auth Service | 15 | 71 |
 | Dashboard | 5 | 52 |
-| Job Service | 11 | 17 |
+| Job Service | 12 | 24 |
 | Notifications Service | 5 | 18 |
 | Q&A Service | 17 | 99 |
 | Recommendation Service | 19 | 63 |
@@ -94,7 +94,7 @@ Generated API surface counts:
 
 Architecture conclusions from the generated report:
 
-1. The current generated surface is 100 REST/server routes and 355 exported
+1. The current generated surface is 101 REST/server routes and 361 exported
    callable/class APIs.
 2. API Gateway now fronts Auth, Notifications, public Substacks, and Q&A
    topic/comment routes. Job Service and RecSys remain outside the gateway.
@@ -347,6 +347,7 @@ Main routes:
 - `DELETE /v1/jobs/:id`
 - `POST /v1/jobs/:id/applications`
 - `GET /v1/jobs/:id/applications`
+- `GET /v1/jobs/:id/me/application`
 - `GET /v1/me/applications`
 - `PATCH /v1/applications/:id/status`
 
@@ -538,7 +539,8 @@ Current auth boundaries:
 - Auth signs JWTs with `sub` set to the user's email.
 - Auth refresh tokens are opaque random strings stored in Redis.
 - Dashboard stores auth tokens in HTTP-only cookies through server-side proxy routes.
-- Job Service validates JWTs itself and expects `sub` to be a numeric user id.
+- Job Service validates JWTs itself and expects `sub` to be a MongoDB ObjectId
+  hex string.
 - Q&A does not currently validate JWTs itself; gateway-proxied routes inject
   the resolved current user id as `x-user-id`, while direct service calls still
   depend on caller-supplied user context.
@@ -628,8 +630,8 @@ These are the main architecture-affecting findings from the current source.
 1. Auth sign-up still appears to double-hash passwords. `SignUpCommand` hashes
    the password, then `UserRepository.create` hashes the already-hashed value.
    New sign-ups may not be able to sign in.
-2. Auth and Job Service use incompatible JWT subjects. Auth issues tokens with
-   `sub = email`, while Job Service requires `sub` to be a numeric user id.
+2. Auth and Job Service still need one canonical JWT subject contract. Job
+   Service currently requires `sub` to be a MongoDB ObjectId hex string.
 3. API Gateway still protects `/v1/auth/refresh`; clients with expired or
    missing access tokens may be blocked before refresh reaches Auth.
 4. API Gateway notification proxy does not inject the authenticated user's id.
