@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { NotificationService } from '../notifications/notification.service';
 import { UpdateTopicDto } from './dto/update-topic.dto';
@@ -11,6 +11,7 @@ import { Types } from 'mongoose';
 import { SearchTopicDto } from './dto/search-topic.dto';
 import { SearchService } from 'src/search/search.service';
 import { randomUUID } from 'crypto';
+import { RecommendationService } from 'src/recommendations/recommendation.service';
 
 function slugify(text: string): string {
   return text
@@ -39,12 +40,29 @@ export class TopicsService {
       throw new ForbiddenException('Invalid vote point');
     }
 
+    if (!dto.user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     await this.votesRepo.vote({
       target_id: new Types.ObjectId(topicId),
       user_id: dto.user_id,
       target_type: 'topic',
       point: dto.point,
     });
+
+    try {
+      await RecommendationService.sendVoteEvent({
+        type: 'vote.created',
+        userId: dto.user_id,
+        targetType: 'topic',
+        targetId: topicId,
+        voteType: dto.point === 1 ? 'up' : 'down',
+        substackId: topic.substack_id?.toString?.() ?? undefined,
+      });
+    } catch (err) {
+      console.error('RecSys vote event error:', err?.message || err);
+    }
 
     try {
       const subscribers = await this.topicSubscriptionsRepo.getSubscribers(topicId);
@@ -75,6 +93,17 @@ export class TopicsService {
 
     await this.votesRepo.removeVote(topicId, user_id);
 
+    try {
+      await RecommendationService.sendVoteEvent({
+        type: 'vote.deleted',
+        userId: user_id,
+        targetType: 'topic',
+        targetId: topicId,
+      });
+    } catch (err) {
+      console.error('RecSys vote event error:', err?.message || err);
+    }
+
     return { message: 'Vote removed' };
   }
 
@@ -83,6 +112,17 @@ export class TopicsService {
     if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
 
     await this.votesRepo.removeVote(topicId, user_id);
+
+    try {
+      await RecommendationService.sendVoteEvent({
+        type: 'vote.deleted',
+        userId: user_id,
+        targetType: 'topic',
+        targetId: topicId,
+      });
+    } catch (err) {
+      console.error('RecSys vote event error:', err?.message || err);
+    }
 
     return { message: 'Vote removed' };
   }
@@ -96,6 +136,17 @@ export class TopicsService {
 
     await this.topicSubscriptionsRepo.subscribe(topicId, user_id);
 
+    try {
+      await RecommendationService.sendSubscriptionEvent({
+        type: 'subscription.created',
+        userId: user_id,
+        targetType: 'topic',
+        targetId: topicId,
+      });
+    } catch (err) {
+      console.error('RecSys subscription event error:', err?.message || err);
+    }
+
     return { message: 'Subscribed' };
   }
 
@@ -107,6 +158,17 @@ export class TopicsService {
     if (!existing) return { message: 'Not subscribed' };
 
     await this.topicSubscriptionsRepo.unsubscribe(topicId, user_id);
+
+    try {
+      await RecommendationService.sendSubscriptionEvent({
+        type: 'subscription.deleted',
+        userId: user_id,
+        targetType: 'topic',
+        targetId: topicId,
+      });
+    } catch (err) {
+      console.error('RecSys subscription event error:', err?.message || err);
+    }
 
     return { message: 'Unsubscribed' };
   }
@@ -148,13 +210,73 @@ export class TopicsService {
 
   async searchTopics(dto: SearchTopicDto, user_id?: string) {
     const { query, page, limit, substack_id } = dto;
+    const normalizedQuery = (query ?? '').toString().trim();
+    const pageNumber = Number(page ?? 1) || 1;
+    const limitNumber = Number(limit ?? 10) || 10;
 
-    // const { topics, total } = await this.topicsRepo.getTopicsWithAggregates(query, page, limit);
+    if (!normalizedQuery) {
+      let recommendedIds: string[] = [];
+      if (user_id && pageNumber === 1) {
+        try {
+          recommendedIds = await RecommendationService.getPersonalizedTopicIds(
+            user_id,
+            limitNumber,
+          );
+        } catch (err) {
+          console.error('RecSys feed error:', err?.message || err);
+          recommendedIds = [];
+        }
+      }
+
+      const [recommendedTopics, newestTopics, newestTotal] = await Promise.all([
+        recommendedIds.length
+          ? this.topicsRepo.findByIdsAny(recommendedIds)
+          : Promise.resolve([]),
+        this.topicsRepo.findNewestNoSubstack(pageNumber, limitNumber),
+        this.topicsRepo.countNewestNoSubstack(),
+      ]);
+
+      const recommendedMap = new Map(
+        recommendedTopics.map((topic: any) => [topic._id.toString(), topic]),
+      );
+      const orderedRecommended = recommendedIds
+        .map((id) => recommendedMap.get(id))
+        .filter(Boolean);
+
+      const combined: any[] = [];
+      const seen = new Set<string>();
+      for (const topic of orderedRecommended) {
+        const id = topic._id.toString();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        combined.push(topic);
+      }
+      for (const topic of newestTopics) {
+        const id = topic._id.toString();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        combined.push(topic);
+        if (combined.length >= limitNumber) break;
+      }
+
+      const recommendedExtraCount = orderedRecommended.filter(
+        (topic: any) => !!topic.substack_id,
+      ).length;
+      const total = newestTotal + recommendedExtraCount;
+
+      return await this.buildTopicSearchResponse(
+        combined,
+        pageNumber,
+        limitNumber,
+        total,
+        user_id,
+      );
+    }
 
     const searchResult = await this.searchService.searchTopics(
-      query,
-      page,
-      limit,
+      normalizedQuery,
+      pageNumber,
+      limitNumber,
       substack_id,
     );
 
@@ -172,9 +294,35 @@ export class TopicsService {
       .map(id => topicMap.get(id))
       .filter(Boolean);
 
-    const total = searchResult.total;
+    return await this.buildTopicSearchResponse(
+      orderedTopics,
+      pageNumber,
+      limitNumber,
+      searchResult.total,
+      user_id,
+    );
+  }
 
-    const topicIds = topics.map((t: any) => t._id);
+  private async buildTopicSearchResponse(
+    orderedTopics: any[],
+    page: number,
+    limit: number,
+    total: number,
+    user_id?: string,
+  ) {
+    if (orderedTopics.length === 0) {
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    const topicIds = orderedTopics.map((topic: any) => topic._id);
 
     const [voteScores, commentsCounts, subscriptionsCounts, acceptedComments, isSubscribed] = await Promise.all([
       this.votesRepo.getVotesForTargets(topicIds, 'topic'),
@@ -185,9 +333,15 @@ export class TopicsService {
     ]);
 
     const voteScoreMap = Object.fromEntries(voteScores.map((v: any) => [v._id.toString(), v.score]));
+    const commentsMap = new Map(topicIds.map((id, index) => [id.toString(), commentsCounts[index] ?? 0]));
+    const subscriptionsMap = new Map(topicIds.map((id, index) => [id.toString(), subscriptionsCounts[index] ?? 0]));
+    const acceptedMap = new Map(topicIds.map((id, index) => [id.toString(), acceptedComments[index] ?? null]));
+    const subscribedMap = new Map(
+      topicIds.map((id, index) => [id.toString(), isSubscribed[index] ?? false]),
+    );
 
     return {
-      data: orderedTopics.map((topic: any, i: number) => ({
+      data: orderedTopics.map((topic: any) => ({
         id: topic._id,
         title: topic.title,
         body: topic.body,
@@ -198,10 +352,10 @@ export class TopicsService {
         created_at: topic.get('created_at'),
         updated_at: topic.get('updated_at'),
         vote_score: voteScoreMap[topic._id.toString()] || 0,
-        comments_count: commentsCounts[i],
-        subscriptions_count: subscriptionsCounts[i],
-        has_accepted_answer: !!acceptedComments[i],
-        is_subscribed: isSubscribed[i] || false,
+        comments_count: commentsMap.get(topic._id.toString()) || 0,
+        subscriptions_count: subscriptionsMap.get(topic._id.toString()) || 0,
+        has_accepted_answer: !!acceptedMap.get(topic._id.toString()),
+        is_subscribed: subscribedMap.get(topic._id.toString()) || false,
       })),
       pagination: {
         page,

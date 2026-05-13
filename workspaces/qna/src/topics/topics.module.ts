@@ -9,6 +9,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Topic, TopicSchema } from './schemas/topic.schema';
 import { CommentsService } from 'src/comments/comments.service';
 import { SearchModule } from 'src/search/search.module';
+import { RecommendationService } from 'src/recommendations/recommendation.service';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { SearchModule } from 'src/search/search.module';
     forwardRef(() => SearchModule),
   ],
   controllers: [TopicsController],
-  providers: [TopicsService, TopicsRepo],
+  providers: [TopicsService, TopicsRepo, RecommendationService],
   exports: [TopicsRepo],
 })
 export class TopicsModule { }
