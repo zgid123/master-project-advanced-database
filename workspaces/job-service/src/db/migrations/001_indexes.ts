@@ -131,6 +131,7 @@ export async function up(db: Db): Promise<void> {
 
   await dropIndexIfExists(db, 'job_applications', 'idx_apps_jobId');
   await dropIndexIfExists(db, 'job_applications', 'idx_apps_applicant');
+  await dropIndexIfExists(db, 'jobs', 'idx_jobs_metadata_wildcard');
   await dropIndexIfExists(db, 'job_outbox', 'idx_outbox_pending');
 
   await db.collection('jobs').createIndexes([
@@ -147,7 +148,18 @@ export async function up(db: Db): Promise<void> {
       default_language: 'english',
     },
     { key: { tags: 1, createdAt: -1 }, name: 'idx_jobs_tags_recency' },
-    { key: { 'metadata.$**': 1 }, name: 'idx_jobs_metadata_wildcard' },
+    {
+      key: { '$**': 1 },
+      name: 'idx_jobs_metadata_wildcard',
+      wildcardProjection: {
+        'metadata.remote': 1,
+        'metadata.seniority': 1,
+        'metadata.visaSponsorship': 1,
+        'metadata.salaryRangeUSD.min': 1,
+        'metadata.salaryRangeUSD.max': 1,
+        'metadata.companyInfo.industry': 1,
+      },
+    },
   ]);
 
   await db.collection('job_applications').createIndexes([
