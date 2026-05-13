@@ -4,6 +4,14 @@ import { Hono } from 'hono';
 
 import type { INotificationContextVariables } from '../../../context';
 
+function parseReadFilter(read?: string): boolean | undefined {
+  if (read === undefined) {
+    return undefined;
+  }
+
+  return read === 'true';
+}
+
 export const notificationEndpoints = new Hono<INotificationContextVariables>()
   .get('/', async (c) => {
     const { read, userId, limit } = c.req.query();
@@ -20,7 +28,7 @@ export const notificationEndpoints = new Hono<INotificationContextVariables>()
     const notifications =
       await c.var.notification.portal.getNotificationsQuery.exec({
         userId,
-        read: Boolean(read),
+        read: parseReadFilter(read),
         limit: Math.min(pagy.limit, 50),
       });
 

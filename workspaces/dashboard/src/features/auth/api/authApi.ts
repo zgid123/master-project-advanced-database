@@ -21,6 +21,19 @@ type TGatewayAuthResponse = {
   };
 };
 
+async function requestAuthAction(
+  path: string,
+  method: 'DELETE' | 'POST',
+): Promise<void> {
+  const response = await fetch(path, {
+    method,
+  });
+
+  if (!response.ok && response.status !== 204) {
+    throwAuthError('Auth action failed.', response.status);
+  }
+}
+
 export async function signIn(data: TSignIn): Promise<void> {
   const response = await fetch(`/api/auth/sign-in`, {
     method: 'POST',
@@ -85,4 +98,44 @@ export async function signOut(): Promise<void> {
   }
 
   state.clearAuth();
+}
+
+export async function refreshAuth(): Promise<void> {
+  const state = useAuthStore.getState();
+  const refreshToken = state.refreshToken;
+
+  if (!refreshToken) {
+    throwAuthError('Refresh token is missing.', 401);
+  }
+
+  const response = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: refreshToken }),
+  });
+  const parsed = (await response.json()) as TGatewayAuthResponse;
+
+  if (!response.ok || !parsed.data?.user) {
+    throwAuthError('Session refresh failed.', response.status);
+  }
+
+  state.setAuth({
+    user: parsed.data.user,
+    authToken: parsed.data.authToken ?? '',
+    refreshToken: parsed.data.refreshToken ?? '',
+  });
+}
+
+export function subscribeUser(userId: string): Promise<void> {
+  return requestAuthAction(
+    `/api/portal/auth/users/${encodeURIComponent(userId)}/subscribe`,
+    'POST',
+  );
+}
+
+export function unsubscribeUser(userId: string): Promise<void> {
+  return requestAuthAction(
+    `/api/portal/auth/users/${encodeURIComponent(userId)}/subscribe`,
+    'DELETE',
+  );
 }

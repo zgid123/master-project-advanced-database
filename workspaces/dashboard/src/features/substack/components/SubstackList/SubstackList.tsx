@@ -1,16 +1,19 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { useSession } from '#/features/auth/queries/authQueries';
 import { substackListQueryOptions } from '#/features/substack/queries';
 
 import { SubstackCard } from '../SubstackCard';
+import { SubstackFormModal } from '../SubstackForm';
 
 export function SubstackList() {
   const { data: substacks } = useSuspenseQuery(substackListQueryOptions());
   const { data: session, isPending } = useSession();
   const currentUser = session?.user;
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   if (isPending) {
     return null;
@@ -32,6 +35,7 @@ export function SubstackList() {
         {currentUser && (
           <Button
             className='h-12 rounded-xl border border-lagoon/30 bg-lagoon/14 px-5 text-sm font-bold text-lagoon-deep hover:bg-lagoon/22'
+            onClick={() => setIsCreateOpen(true)}
             type='button'
           >
             <Plus className='size-5' />
@@ -75,6 +79,11 @@ export function SubstackList() {
           />
         ))}
       </div>
+      <SubstackFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={() => setIsCreateOpen(false)}
+      />
     </>
   );
 }

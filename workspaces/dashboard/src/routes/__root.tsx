@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/security/noDangerouslySetInnerHtml: ignore */
-import type { QueryClient } from '@alphacifer/react/query';
+import type { QueryClient } from '@tanstack/react-query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import {
   createRootRouteWithContext,

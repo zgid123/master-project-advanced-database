@@ -1,14 +1,35 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
 import { Label } from '#/components/ui/label';
+import { createSubstack } from '#/features/substack/api';
+import { SUBSTACK_QUERY_KEYS } from '#/features/substack/queries/queryKeys';
 
 import { substackFormOptions, useAppForm } from './hooks';
 
-export function SubstackForm() {
+interface ISubstackFormProps {
+  onCreated?: () => void;
+}
+
+export function SubstackForm({ onCreated }: ISubstackFormProps) {
+  const queryClient = useQueryClient();
+  const createSubstackMutation = useMutation({
+    mutationFn: createSubstack,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [SUBSTACK_QUERY_KEYS.list],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [SUBSTACK_QUERY_KEYS.total],
+      });
+      onCreated?.();
+    },
+  });
   const form = useAppForm({
     ...substackFormOptions,
     onSubmit: async ({ value }) => {
-      console.log('Submitted', value);
+      await createSubstackMutation.mutateAsync(value);
     },
   });
 
@@ -60,6 +81,11 @@ export function SubstackForm() {
       <Button disabled={form.state.isSubmitting} type='submit'>
         Create Substack
       </Button>
+      {createSubstackMutation.isError && (
+        <p className='m-0 text-sm font-semibold text-[#f7c46b]'>
+          Substack creation failed.
+        </p>
+      )}
     </form>
   );
 }

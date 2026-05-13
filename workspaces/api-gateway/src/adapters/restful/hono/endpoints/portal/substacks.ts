@@ -22,4 +22,35 @@ export const substackEndpoints = new Hono<IApiGatewayContextVariables>()
     });
 
     return forwardUpstreamResponse(c, response);
+  })
+  .post('/', async (c) => {
+    const response = await c.var.authService.createSubstack({
+      authToken: c.get('authToken'),
+      body: await c.req.text(),
+      contentType: c.req.header('content-type') ?? 'application/json',
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
+  .post('/:slug/subscribe', async (c) => {
+    const response = await c.var.authService.subscribeSubstack({
+      authToken: c.get('authToken'),
+      slug: c.req.param('slug'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
+  })
+  .delete('/:slug/subscribe', async (c) => {
+    const response = await c.var.authService.unsubscribeSubstack({
+      authToken: c.get('authToken'),
+      slug: c.req.param('slug'),
+    });
+
+    return forwardUpstreamResponse(c, response, {
+      excludedHeaders: ['set-cookie'],
+    });
   });

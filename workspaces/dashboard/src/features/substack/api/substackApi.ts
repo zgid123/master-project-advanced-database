@@ -1,5 +1,5 @@
 import type { IErrorProps } from '@alphacifer/react/query';
-import type { TSubstackEntity } from '@domain/auth';
+import type { TNewSubstack, TSubstackEntity } from '@domain/auth';
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
@@ -10,6 +10,10 @@ export type TListSubstacksParams = {
 
 export type TTotalSubstacks = {
   totalSubstacks: number;
+};
+
+export type TCreateSubstackInput = TNewSubstack & {
+  slug?: string;
 };
 
 type TApiResponse<TData> = {
@@ -73,6 +77,46 @@ async function getApi<TData>(
   return payload.data as TData;
 }
 
+async function requestApi<TData>(
+  path: string,
+  {
+    body,
+    method,
+    signal,
+  }: {
+    body?: unknown;
+    method: 'DELETE' | 'POST';
+    signal?: AbortSignal;
+  },
+): Promise<TData> {
+  const headers = new Headers();
+  let requestBody: BodyInit | undefined;
+
+  if (body !== undefined) {
+    headers.set('content-type', 'application/json');
+    requestBody = JSON.stringify(body);
+  }
+
+  const response = await fetch(path, {
+    body: requestBody,
+    headers,
+    method,
+    signal,
+  });
+
+  if (response.status === 204) {
+    return undefined as TData;
+  }
+
+  const payload = await parseApiResponse<TData>(response);
+
+  if (!response.ok || !('data' in payload)) {
+    throwSubstackError(response, payload);
+  }
+
+  return payload.data as TData;
+}
+
 export async function listSubstacks({
   limit,
   signal,
@@ -122,5 +166,53 @@ export async function getSubstackBySlug({
       `/v1/substacks/${encoded}`,
     ),
     signal,
+  );
+}
+
+export async function createSubstack(
+  data: TCreateSubstackInput,
+  signal?: AbortSignal,
+): Promise<TSubstackEntity> {
+  return requestApi<TSubstackEntity>('/api/portal/substacks/', {
+    body: {
+      ...data,
+      slug: data.slug?.trim() || createSlug(data.name),
+    },
+    method: 'POST',
+    signal,
+  });
+}
+
+export async function subscribeSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}/subscribe`,
+    {
+      method: 'POST',
+      signal,
+    },
+  );
+}
+
+function createSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function unsubscribeSubstack(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await requestApi<void>(
+    `/api/portal/substacks/${encodeURIComponent(slug)}/subscribe`,
+    {
+      method: 'DELETE',
+      signal,
+    },
   );
 }

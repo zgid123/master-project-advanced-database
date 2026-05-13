@@ -7,6 +7,8 @@ export const Route = createFileRoute('/api/portal/substacks/')({
   server: {
     handlers: {
       GET: ({ request }) => proxySubstackRequest(request, '/v1/substacks'),
+      POST: ({ request }) =>
+        proxySubstackRequest(request, '/v1/substacks', 'POST'),
     },
   },
 });

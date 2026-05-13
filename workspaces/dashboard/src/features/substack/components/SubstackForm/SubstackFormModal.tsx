@@ -10,11 +10,13 @@ import { SubstackForm } from './SubstackForm';
 interface ISubstackFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: () => void;
 }
 
 export function SubstackFormModal({
   isOpen,
   onClose,
+  onCreated,
 }: ISubstackFormModalProps) {
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
@@ -23,7 +25,7 @@ export function SubstackFormModal({
           <DialogTitle>Create Substack</DialogTitle>
         </DialogHeader>
         <div className='py-4'>
-          <SubstackForm />
+          <SubstackForm onCreated={onCreated} />
         </div>
       </DialogContent>
     </Dialog>

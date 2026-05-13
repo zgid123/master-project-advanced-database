@@ -2,6 +2,11 @@ interface IListNotificationsParams {
   search?: string;
 }
 
+interface IMarkNotificationAsReadParams {
+  id: string;
+  userId: string;
+}
+
 export class NotificationService {
   readonly #baseUrl: string;
 
@@ -18,6 +23,21 @@ export class NotificationService {
 
     return fetch(upstreamUrl, {
       method: 'GET',
+    });
+  }
+
+  public async markNotificationAsRead({
+    id,
+    userId,
+  }: IMarkNotificationAsReadParams): Promise<Response> {
+    const upstreamUrl = new URL(
+      `/v1/notifications/${encodeURIComponent(id)}/read`,
+      this.#baseUrl,
+    );
+    upstreamUrl.searchParams.set('userId', userId);
+
+    return fetch(upstreamUrl, {
+      method: 'PATCH',
     });
   }
 }
