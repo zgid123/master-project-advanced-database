@@ -663,36 +663,36 @@ pnpm dev
 
 These are the main architecture-affecting findings from the current source.
 
-1. Auth sign-up still appears to double-hash passwords. `SignUpCommand` hashes
-   the password, then `UserRepository.create` hashes the already-hashed value.
-   New sign-ups may not be able to sign in.
-2. Auth and Job Service still need one canonical JWT subject contract. Job
-   Service currently requires `sub` to be a MongoDB ObjectId hex string.
-3. Notifications portal routes trust `userId` query parameters. If the service
+1. Auth and Job Service still need one canonical JWT subject contract. Job
+   Service currently requires `sub` to be a MongoDB ObjectId hex string while
+   Auth signs JWTs with the user email.
+2. Notifications portal routes trust `userId` query parameters. If the service
    is reachable directly, a caller can request or mutate another user's
    notifications.
-4. Q&A has no service-local authentication middleware. Gateway-proxied calls
+3. Q&A has no service-local authentication middleware. Gateway-proxied calls
    inject the resolved user id, but direct Q&A access still trusts
    caller-supplied `x-user-id` for ownership, voting, subscriptions, and
    deletes.
-5. Q&A still contains a hard-coded MongoDB Atlas URI with credentials in source.
-6. Q&A Elasticsearch config is hard-coded to `http://localhost:9200` and its
-   compose file is separate from the root compose stack.
-7. Q&A topic search depends on the Elasticsearch `topics` index. If the index
-   has not been created or seeded, `/topics/search` can return an upstream
-   `index_not_found_exception`.
-8. Notifications environment typing declares `MONGO_URI`, but runtime code reads
-   `MONGODB_URI`.
-9. RecSys is implemented but not integrated with source services in this repo.
-   Auth/Q&A do not push RecSys events, and API Gateway does not proxy RecSys
-   routes.
-10. RecSys `/v1/feed` trusts direct `x-user-id` input. It should only be exposed
-    behind a trusted gateway or should validate tokens directly.
-11. Job Service publishes `jobs.events`, while RecSys consumes `events:*`
-    streams. There is no bridge or consumer connecting those event models.
-12. Q&A search writes to Elasticsearch synchronously after MongoDB writes. A
-    search indexing failure can fail the user-facing topic create/update/delete
-    path unless handled intentionally.
+4. Q&A Elasticsearch compose file is separate from the root compose stack and
+   needs to be brought up independently.
+5. RecSys is implemented but only partially integrated with source services in
+   this repo. API Gateway does not yet proxy RecSys routes.
+6. RecSys `/v1/feed` trusts direct `x-user-id` input. It should only be exposed
+   behind a trusted gateway or should validate tokens directly.
+7. Job Service publishes `jobs.events`, while RecSys consumes `events:*`
+   streams. There is no bridge or consumer connecting those event models.
+
+Recently-resolved findings (kept here as history):
+
+- Auth sign-up no longer double-hashes; `SignUpCommand` passes the plaintext
+  through and `UserRepository.create` is the only hasher.
+- Q&A MongoDB and Elasticsearch URLs are environment-driven (`MONGODB_URI`,
+  `ELASTICSEARCH_URL`) with localhost fallbacks.
+- Q&A creates the Elasticsearch `topics` index on bootstrap; index/update/
+  delete and search are best-effort and no longer fail MongoDB writes on an ES
+  outage.
+- Notifications environment typing now declares `MONGODB_URI`, matching the
+  runtime read.
 
 ## Recommended Architecture Decisions
 

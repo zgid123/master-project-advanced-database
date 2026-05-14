@@ -6,15 +6,17 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "clear": "pnpm -r exec rimraf node_modules dist .turbo lib && pnpm rimraf node_modules .turbo",
-    "dev": "turbo run dev --parallel --no-cache",
-    "serve": "turbo run serve --parallel --no-cache",
-    "build": "turbo run build",
-    "docs:api": "node scripts/generate-api-docs.mjs",
+    "setup:windows": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1",
+    "sync:workspace": "node scripts/sync-workspace-node-modules.mjs",
+    "dev": "node scripts/sync-workspace-node-modules.mjs && turbo run dev --parallel --no-cache",
+    "serve": "node scripts/sync-workspace-node-modules.mjs && turbo run serve --parallel --no-cache",
+    "build": "node scripts/sync-workspace-node-modules.mjs && turbo run build",
+    "docs:api": "node scripts/sync-workspace-node-modules.mjs && node scripts/generate-api-docs.mjs",
     "update-packages": "pnpm update -i -r --latest",
-    "test": "vitest run --coverage",
-    "server:dev": "turbo run dev --filter=\"api-gateway\" --filter=\"auth\" --filter=\"notifications\" --filter=\"job-service\" --filter=\"qna\" --filter=\"recsys\" --parallel --no-cache"
+    "test": "node scripts/sync-workspace-node-modules.mjs && vitest run --coverage",
+    "server:dev": "node scripts/sync-workspace-node-modules.mjs && turbo run dev --filter=\"api-gateway\" --filter=\"auth\" --filter=\"notifications\" --filter=\"job-service\" --filter=\"qna\" --filter=\"recsys\" --parallel --no-cache"
   },
-  "packageManager": "pnpm@10.11.0",
+  "packageManager": "pnpm@10.33.4",
   "devDependencies": {
     "@alphacifer/biome": "0.0.11",
     "@alphacifer/tsconfig": "0.0.15",

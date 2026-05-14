@@ -19,7 +19,9 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TopicsIndexRouteImport } from './routes/topics/index'
 import { Route as SubstacksIndexRouteImport } from './routes/substacks/index'
+import { Route as TopicsIdRouteImport } from './routes/topics/$id'
 import { Route as SubstacksSlugRouteRouteImport } from './routes/substacks/$slug/route'
 import { Route as SubstacksSlugIndexRouteImport } from './routes/substacks/$slug/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -37,6 +39,7 @@ import { Route as ApiPortalTopicsSplatRouteImport } from './routes/api/portal/to
 import { Route as ApiPortalSubstacksTotalRouteImport } from './routes/api/portal/substacks/total'
 import { Route as ApiPortalSubstacksOwnedRouteImport } from './routes/api/portal/substacks/owned'
 import { Route as ApiPortalSubstacksSlugRouteImport } from './routes/api/portal/substacks/$slug'
+import { Route as ApiPortalQnaSplatRouteImport } from './routes/api/portal/qna/$'
 import { Route as ApiPortalNotificationsSplatRouteImport } from './routes/api/portal/notifications/$'
 import { Route as ApiPortalCommentsSplatRouteImport } from './routes/api/portal/comments/$'
 import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
@@ -92,10 +95,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TopicsRoute,
+} as any)
 const SubstacksIndexRoute = SubstacksIndexRouteImport.update({
   id: '/substacks/',
   path: '/substacks/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsIdRoute = TopicsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TopicsRoute,
 } as any)
 const SubstacksSlugRouteRoute = SubstacksSlugRouteRouteImport.update({
   id: '/substacks/$slug',
@@ -187,6 +200,11 @@ const ApiPortalSubstacksSlugRoute = ApiPortalSubstacksSlugRouteImport.update({
   path: '/api/portal/substacks/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPortalQnaSplatRoute = ApiPortalQnaSplatRouteImport.update({
+  id: '/api/portal/qna/$',
+  path: '/api/portal/qna/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPortalNotificationsSplatRoute =
   ApiPortalNotificationsSplatRouteImport.update({
     id: '/api/portal/notifications/$',
@@ -220,14 +238,17 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/signal': typeof SignalRoute
   '/signals': typeof SignalsRoute
-  '/topics': typeof TopicsRoute
+  '/topics': typeof TopicsRouteWithChildren
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
+  '/topics/$id': typeof TopicsIdRoute
   '/substacks/': typeof SubstacksIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
   '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/qna/$': typeof ApiPortalQnaSplatRoute
   '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
   '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
@@ -254,13 +275,15 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/signal': typeof SignalRoute
   '/signals': typeof SignalsRoute
-  '/topics': typeof TopicsRoute
+  '/topics/$id': typeof TopicsIdRoute
   '/substacks': typeof SubstacksIndexRoute
+  '/topics': typeof TopicsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
   '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/qna/$': typeof ApiPortalQnaSplatRoute
   '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
   '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
@@ -288,14 +311,17 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/signal': typeof SignalRoute
   '/signals': typeof SignalsRoute
-  '/topics': typeof TopicsRoute
+  '/topics': typeof TopicsRouteWithChildren
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
+  '/topics/$id': typeof TopicsIdRoute
   '/substacks/': typeof SubstacksIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/substacks/$slug/': typeof SubstacksSlugIndexRoute
   '/api/portal/auth/profile': typeof ApiPortalAuthProfileRoute
   '/api/portal/comments/$': typeof ApiPortalCommentsSplatRoute
   '/api/portal/notifications/$': typeof ApiPortalNotificationsSplatRoute
+  '/api/portal/qna/$': typeof ApiPortalQnaSplatRoute
   '/api/portal/substacks/$slug': typeof ApiPortalSubstacksSlugRouteWithChildren
   '/api/portal/substacks/owned': typeof ApiPortalSubstacksOwnedRoute
   '/api/portal/substacks/total': typeof ApiPortalSubstacksTotalRoute
@@ -326,12 +352,15 @@ export interface FileRouteTypes {
     | '/signals'
     | '/topics'
     | '/substacks/$slug'
+    | '/topics/$id'
     | '/substacks/'
+    | '/topics/'
     | '/api/auth/$'
     | '/substacks/$slug/'
     | '/api/portal/auth/profile'
     | '/api/portal/comments/$'
     | '/api/portal/notifications/$'
+    | '/api/portal/qna/$'
     | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
@@ -358,13 +387,15 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/signal'
     | '/signals'
-    | '/topics'
+    | '/topics/$id'
     | '/substacks'
+    | '/topics'
     | '/api/auth/$'
     | '/substacks/$slug'
     | '/api/portal/auth/profile'
     | '/api/portal/comments/$'
     | '/api/portal/notifications/$'
+    | '/api/portal/qna/$'
     | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
@@ -393,12 +424,15 @@ export interface FileRouteTypes {
     | '/signals'
     | '/topics'
     | '/substacks/$slug'
+    | '/topics/$id'
     | '/substacks/'
+    | '/topics/'
     | '/api/auth/$'
     | '/substacks/$slug/'
     | '/api/portal/auth/profile'
     | '/api/portal/comments/$'
     | '/api/portal/notifications/$'
+    | '/api/portal/qna/$'
     | '/api/portal/substacks/$slug'
     | '/api/portal/substacks/owned'
     | '/api/portal/substacks/total'
@@ -426,13 +460,14 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   SignalRoute: typeof SignalRoute
   SignalsRoute: typeof SignalsRoute
-  TopicsRoute: typeof TopicsRoute
+  TopicsRoute: typeof TopicsRouteWithChildren
   SubstacksSlugRouteRoute: typeof SubstacksSlugRouteRouteWithChildren
   SubstacksIndexRoute: typeof SubstacksIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPortalAuthProfileRoute: typeof ApiPortalAuthProfileRoute
   ApiPortalCommentsSplatRoute: typeof ApiPortalCommentsSplatRoute
   ApiPortalNotificationsSplatRoute: typeof ApiPortalNotificationsSplatRoute
+  ApiPortalQnaSplatRoute: typeof ApiPortalQnaSplatRoute
   ApiPortalSubstacksSlugRoute: typeof ApiPortalSubstacksSlugRouteWithChildren
   ApiPortalSubstacksOwnedRoute: typeof ApiPortalSubstacksOwnedRoute
   ApiPortalSubstacksTotalRoute: typeof ApiPortalSubstacksTotalRoute
@@ -521,12 +556,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/topics/': {
+      id: '/topics/'
+      path: '/'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
+      parentRoute: typeof TopicsRoute
+    }
     '/substacks/': {
       id: '/substacks/'
       path: '/substacks'
       fullPath: '/substacks/'
       preLoaderRoute: typeof SubstacksIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/topics/$id': {
+      id: '/topics/$id'
+      path: '/$id'
+      fullPath: '/topics/$id'
+      preLoaderRoute: typeof TopicsIdRouteImport
+      parentRoute: typeof TopicsRoute
     }
     '/substacks/$slug': {
       id: '/substacks/$slug'
@@ -647,6 +696,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPortalSubstacksSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/portal/qna/$': {
+      id: '/api/portal/qna/$'
+      path: '/api/portal/qna/$'
+      fullPath: '/api/portal/qna/$'
+      preLoaderRoute: typeof ApiPortalQnaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/portal/notifications/$': {
       id: '/api/portal/notifications/$'
       path: '/api/portal/notifications/$'
@@ -677,6 +733,19 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface TopicsRouteChildren {
+  TopicsIdRoute: typeof TopicsIdRoute
+  TopicsIndexRoute: typeof TopicsIndexRoute
+}
+
+const TopicsRouteChildren: TopicsRouteChildren = {
+  TopicsIdRoute: TopicsIdRoute,
+  TopicsIndexRoute: TopicsIndexRoute,
+}
+
+const TopicsRouteWithChildren =
+  TopicsRoute._addFileChildren(TopicsRouteChildren)
 
 interface SubstacksSlugRouteRouteChildren {
   SubstacksSlugIndexRoute: typeof SubstacksSlugIndexRoute
@@ -713,13 +782,14 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   SignalRoute: SignalRoute,
   SignalsRoute: SignalsRoute,
-  TopicsRoute: TopicsRoute,
+  TopicsRoute: TopicsRouteWithChildren,
   SubstacksSlugRouteRoute: SubstacksSlugRouteRouteWithChildren,
   SubstacksIndexRoute: SubstacksIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPortalAuthProfileRoute: ApiPortalAuthProfileRoute,
   ApiPortalCommentsSplatRoute: ApiPortalCommentsSplatRoute,
   ApiPortalNotificationsSplatRoute: ApiPortalNotificationsSplatRoute,
+  ApiPortalQnaSplatRoute: ApiPortalQnaSplatRoute,
   ApiPortalSubstacksSlugRoute: ApiPortalSubstacksSlugRouteWithChildren,
   ApiPortalSubstacksOwnedRoute: ApiPortalSubstacksOwnedRoute,
   ApiPortalSubstacksTotalRoute: ApiPortalSubstacksTotalRoute,

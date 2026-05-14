@@ -12,6 +12,7 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery, ApiOkResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiForbiddenResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import {
@@ -58,6 +59,10 @@ export class TopicsController {
   @ApiOkResponse(MessageResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async subscribeToTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.subscribeTopic(id, user_id);
   }
 
@@ -76,6 +81,10 @@ export class TopicsController {
   @ApiOkResponse(UnsubscribedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async unsubscribeFromTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.unsubscribeTopic(id, user_id);
   }
 
@@ -99,6 +108,11 @@ export class TopicsController {
   @ApiBadRequestResponse({ description: 'Invalid vote value' })
   async voteOnTopic(@Param('id') id: string, @Body() dto: VoteTopicDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.topicsService.voteTopic(id, dto);
   }
 
@@ -109,6 +123,10 @@ export class TopicsController {
   @ApiOkResponse(VoteRemovedResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async removeVoteFromTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.removeVote(id, user_id);
   }
 
@@ -132,6 +150,11 @@ export class TopicsController {
   @ApiBadRequestResponse({ description: 'Validation failed' })
   async createTopic(@Body() dto: CreateTopicDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     const topic = await this.topicsService.createTopic(dto);
     return topic;
   }
@@ -140,6 +163,10 @@ export class TopicsController {
   @ApiOperation({ summary: 'Search topics by text' })
   @ApiOkResponse(SearchTopicsResponseSwagger)
   async searchTopics(@Query() dto: SearchTopicDto, @Headers('x-user-id') user_id?: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.searchTopics(dto, user_id);
   }
 
@@ -151,6 +178,10 @@ export class TopicsController {
   @ApiNotFoundResponse({ description: 'Topic not found' })
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
   async markSolved(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.markSolved(id, user_id);
   }
 
@@ -175,6 +206,11 @@ export class TopicsController {
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
   async updateTopic(@Param('id') id: string, @Body() dto: UpdateTopicDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.topicsService.updateTopic(id, dto);
   }
 
@@ -187,6 +223,10 @@ export class TopicsController {
   @ApiForbiddenResponse({ description: 'You are not the owner of this topic' })
   @HttpCode(HttpStatus.OK)
   async deleteTopic(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.deleteTopic(id, user_id);
   }
 
@@ -205,6 +245,10 @@ export class TopicsController {
   @ApiOkResponse(GetTopicByIdResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async getTopicById(@Param('id') id: string, @Headers('x-user-id') user_id?: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+    
     return await this.topicsService.getTopicById(id, user_id);
   }
 }

@@ -2,7 +2,7 @@
 
 declare namespace NodeJS {
   export interface ProcessEnv {
-    MONGO_URI?: string;
+    MONGODB_URI?: string;
     INTERNAL_SERVICE_SECRET?: string;
     NODE_ENV: 'development' | 'production' | 'staging' | 'test';
   }

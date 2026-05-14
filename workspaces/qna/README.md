@@ -18,7 +18,8 @@ search.
 - Default port: `3005` unless `PORT` is set
 - API docs: `/docs`
 - Primary store: MongoDB through Mongoose
-- Search store: Elasticsearch at `http://localhost:9200`
+- Search store: Elasticsearch (`ELASTICSEARCH_URL`, defaults to
+  `http://localhost:9200`)
 - Notification integration: `NOTIFICATION_SERVICE_BASE_URL` plus
   `INTERNAL_SERVICE_SECRET`
 
@@ -71,6 +72,8 @@ $env:PORT='3005'; pnpm --filter qna start:dev
 | Variable | Purpose |
 | --- | --- |
 | `PORT` | Nest listen port |
+| `MONGODB_URI` | MongoDB connection string |
+| `ELASTICSEARCH_URL` | Elasticsearch node URL |
 | `NOTIFICATION_SERVICE_BASE_URL` | Notifications service base URL |
 | `INTERNAL_SERVICE_SECRET` | Shared secret for notification creation |
 
@@ -87,12 +90,12 @@ API Gateway exposes the same topic/comment surface under `/v1`:
 
 ## Architecture Notes
 
-- MongoDB is currently configured with a hard-coded Atlas connection string in
-  `src/database/mongo.module.ts`; move this to environment configuration before
-  production use.
-- Elasticsearch is hard-coded to `http://localhost:9200` in
-  `src/search/search.module.ts`.
+- MongoDB connection reads `MONGODB_URI` with a `localhost` fallback for local
+  dev (`src/database/mongo.module.ts`).
+- Elasticsearch reads `ELASTICSEARCH_URL` with a `http://localhost:9200`
+  fallback (`src/search/search.module.ts`). The `topics` index is created on
+  service bootstrap if missing.
 - The service currently trusts the caller-supplied `x-user-id` header. There
   is no JWT/auth middleware enforcing ownership at the Q&A service boundary.
-- Topic create/update/delete synchronously writes to Elasticsearch after MongoDB
-  mutations; decide whether indexing failure should fail user-facing writes.
+- Topic create/update/delete writes to Elasticsearch are best-effort: failures
+  are logged and do not fail the user-facing write.

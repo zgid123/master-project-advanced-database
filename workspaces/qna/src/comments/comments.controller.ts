@@ -12,6 +12,7 @@ import {
   ValidationPipe,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import {
@@ -41,7 +42,7 @@ export class CommentsController {
       properties: {
         user_id: { type: 'string', example: '6638e1f2c2a1b2c3d4e5f6b8' },
         point: { type: 'number', example: 1, description: '1 for upvote, -1 for downvote' }
-      },  
+      },
       required: ['user_id', 'point']
     }
   })
@@ -49,6 +50,11 @@ export class CommentsController {
   @ApiNotFoundResponse({ description: 'Comment not found' })
   async voteComment(@Param('id') id: string, @Body() dto: VoteCommentDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.commentsService.voteComment(id, dto);
   }
 
@@ -71,6 +77,11 @@ export class CommentsController {
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async createComment(@Body() dto: CreateCommentDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.commentsService.createComment(dto);
   }
 
@@ -91,6 +102,10 @@ export class CommentsController {
   @ApiNotFoundResponse({ description: 'Topic not found / Comment not found' })
   @ApiForbiddenResponse({ description: 'Comment does not belong to this topic / You are not the owner of this topic' })
   async acceptComment(@Param('id') id: string, @Body('topic_id') topic_id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.commentsService.acceptComment(id, topic_id, user_id);
   }
 
@@ -114,6 +129,11 @@ export class CommentsController {
   @ApiForbiddenResponse({ description: 'You are not the owner of this comment' })
   async updateComment(@Param('id') id: string, @Body() dto: UpdateCommentDto, @Headers('x-user-id') user_id: string) {
     dto.user_id = user_id;
+
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.commentsService.updateComment(id, dto);
   }
 
@@ -134,6 +154,10 @@ export class CommentsController {
   @ApiForbiddenResponse({ description: 'You are not the owner of this comment / Accepted answer cannot be deleted.' })
   @HttpCode(HttpStatus.OK)
   async deleteComment(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
     return await this.commentsService.deleteComment(id, user_id);
   }
 

@@ -6,8 +6,6 @@ import type {
 } from '@domain/auth';
 import type { ICommand } from '@domain/core';
 
-import { bcryptHash } from '#/infrastructure/security/hash';
-
 import { UserError } from '../../../../domain/errors';
 
 export class SignUpCommand implements ICommand<TSignUp, UserEntity> {
@@ -35,14 +33,10 @@ export class SignUpCommand implements ICommand<TSignUp, UserEntity> {
       name: 'user',
     });
 
-    const { hash } = await bcryptHash({
-      source: password,
-    });
-
     try {
       const user = await this.#userRepository.create({
         email,
-        password: hash,
+        password,
         roleId: userRole.id,
       });
 

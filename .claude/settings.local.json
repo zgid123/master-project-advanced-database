@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter qna build)",
+      "Bash(where.exe pnpm *)",
+      "Bash(ls \"/c/Program Files/nodejs/\" | grep -i pnpm)",
+      "Bash(ls \"/c/Users/ASUS/AppData/Roaming/npm/\" 2>&1 | head; ls \"/c/Users/ASUS/AppData/Local/pnpm/\" 2>&1 | head)",
+      "Bash(find \"/c/Users/ASUS/AppData\" -maxdepth 5 -name \"pnpm*\" 2>/dev/null | head)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --version)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter qna build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter auth build)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter notifications build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm -w build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter api-gateway build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter job-service build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter recsys build)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter auth --filter notifications --filter api-gateway --filter job-service --filter recsys build)",
+      "Bash(tasklist)",
+      "Bash(wmic process *)",
+      "Bash(netstat -ano)",
+      "Bash(docker exec *)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter job-service migrate)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline --workspace-concurrency=1)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline --network-concurrency=1 --child-concurrency=1)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm config get store-dir)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm config get package-import-method)",
+      "Bash(fsutil fsinfo *)",
+      "Bash(mountvol C: /L)",
+      "Bash(ls /d/Projects/backend/node_modules 2>&1 | head -3; echo \"---\"; ls /c/pnpm-modules 2>&1 | head -3)",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\node_modules\")",
+      "Bash(cmd //c \"mkdir C:\\\\pnpm-modules\\\\backend\")",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\packages\\\\@domain\\\\auth\\\\node_modules\")",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\packages\\\\@domain\\\\notification\\\\node_modules\")",
+      "Bash(cmd //c 'rmdir /s /q D:\\\\Projects\\\\backend\\\\workspaces\\\\__TRACKED_VAR__\\\\node_modules')",
+      "Bash(echo \"---exit: $?\")",
+      "WebFetch(domain:pnpm.io)"
+    ]
+  }
+}
