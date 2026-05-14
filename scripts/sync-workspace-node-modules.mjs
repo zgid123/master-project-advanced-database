@@ -45,7 +45,7 @@ for (const name of [...requiredWorkspacePackages].sort()) {
   }
 
   await fs.mkdir(path.dirname(resolvedTarget), { recursive: true });
-  await fs.rm(resolvedTarget, { recursive: true, force: true });
+  await removeExistingTarget(resolvedTarget);
   const strategy = await syncPackage(source, resolvedTarget);
 
   synced.push({ name, source, strategy });
@@ -71,6 +71,15 @@ function getLinkMode() {
   }
 
   return mode;
+}
+
+async function removeExistingTarget(target) {
+  await fs.rm(target, {
+    recursive: true,
+    force: true,
+    maxRetries: process.platform === 'win32' ? 10 : 0,
+    retryDelay: 200,
+  });
 }
 
 async function syncPackage(source, target) {

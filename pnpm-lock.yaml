@@ -206,11 +206,11 @@ importers:
         specifier: 1.30.0
         version: 1.30.0(@tanstack/react-start@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.97.1(esbuild@0.27.7)))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-query':
-        specifier: 5.100.0
-        version: 5.100.0(react@19.2.6)
+        specifier: 5.100.10
+        version: 5.100.10(react@19.2.6)
       '@tanstack/react-query-devtools':
-        specifier: 5.100.0
-        version: 5.100.0(@tanstack/react-query@5.100.0(react@19.2.6))(react@19.2.6)
+        specifier: 5.100.10
+        version: 5.100.10(@tanstack/react-query@5.100.10(react@19.2.6))(react@19.2.6)
       '@tanstack/react-router':
         specifier: 1.160.0
         version: 1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -219,7 +219,7 @@ importers:
         version: 1.160.0(@tanstack/react-router@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.160.0)(csstype@3.2.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-router-ssr-query':
         specifier: 1.160.0
-        version: 1.160.0(@tanstack/query-core@5.100.10)(@tanstack/react-query@5.100.0(react@19.2.6))(@tanstack/react-router@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.160.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        version: 1.160.0(@tanstack/query-core@5.100.10)(@tanstack/react-query@5.100.10(react@19.2.6))(@tanstack/react-router@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.160.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-start':
         specifier: 1.160.0
         version: 1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.97.1(esbuild@0.27.7))
@@ -3230,14 +3230,8 @@ packages:
     resolution: {integrity: sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w==}
     engines: {node: '>=18'}
 
-  '@tanstack/query-core@5.100.0':
-    resolution: {integrity: sha512-h/t4uMeXCDkpLR9W3esf1QAwdnFNIkdUiWcGbbMC32ncS2MoIxrImxaJJFRa5asHMDL14ef3wskUH7pt0hyvwg==}
-
   '@tanstack/query-core@5.100.10':
     resolution: {integrity: sha512-8UR0yJR+GiQ40m3lPhUr0xbfAupe6GSQiksSBSa9SM2NjezFyxXCIA69/lz8cSoNKZLrw1/PktIyQBJcVeMi3w==}
-
-  '@tanstack/query-devtools@5.100.0':
-    resolution: {integrity: sha512-6l1vHtvZSpqKVbbRokaX3HJ+MDRFaPHQ1odOVkIibWJafrLi9pMtZDtyQmno2h0J6dmLzH9PxsKKPpGf1Uh/pA==}
 
   '@tanstack/query-devtools@5.100.10':
     resolution: {integrity: sha512-3DmJf25hDPus5IpVvp6ujXv6bKV2zPzI9vpbAmpJigsL/H6DPvPjmf7/Q9yVKEke//8fgeQ45abjgnLuyYxAiw==}
@@ -3260,21 +3254,10 @@ packages:
       '@tanstack/react-start':
         optional: true
 
-  '@tanstack/react-query-devtools@5.100.0':
-    resolution: {integrity: sha512-TdDAmg6cqqPdBSZQuH7OghJPV03v8wnlEvHT9utN38D2mmD+I/Jb0bM5v7I5avNAPDerSKwlB/6AI1dWHinvug==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.100.0
-      react: ^18 || ^19
-
   '@tanstack/react-query-devtools@5.100.10':
     resolution: {integrity: sha512-zes0+o9ef5rAZXJ9f/SeaLs2nufJaeVkZkl/Or9NGrWVF41kL9Od9ED9nCwtQlgiF2VGtrzhEw5AU/igAO+aAg==}
     peerDependencies:
       '@tanstack/react-query': ^5.100.10
-      react: ^18 || ^19
-
-  '@tanstack/react-query@5.100.0':
-    resolution: {integrity: sha512-UKENFXttzk3vQgMxiWHXHsD5biQc5B+YRdMRY6nXtT3KapOu/EgJ2wZKx8IBORQiUVe6b/GiwNeImCXuiN6XyQ==}
-    peerDependencies:
       react: ^18 || ^19
 
   '@tanstack/react-query@5.100.10':
@@ -9980,11 +9963,7 @@ snapshots:
 
   '@tanstack/pacer-lite@0.1.1': {}
 
-  '@tanstack/query-core@5.100.0': {}
-
   '@tanstack/query-core@5.100.10': {}
-
-  '@tanstack/query-devtools@5.100.0': {}
 
   '@tanstack/query-devtools@5.100.10': {}
 
@@ -10011,21 +9990,10 @@ snapshots:
     transitivePeerDependencies:
       - react-dom
 
-  '@tanstack/react-query-devtools@5.100.0(@tanstack/react-query@5.100.0(react@19.2.6))(react@19.2.6)':
-    dependencies:
-      '@tanstack/query-devtools': 5.100.0
-      '@tanstack/react-query': 5.100.0(react@19.2.6)
-      react: 19.2.6
-
   '@tanstack/react-query-devtools@5.100.10(@tanstack/react-query@5.100.10(react@19.2.6))(react@19.2.6)':
     dependencies:
       '@tanstack/query-devtools': 5.100.10
       '@tanstack/react-query': 5.100.10(react@19.2.6)
-      react: 19.2.6
-
-  '@tanstack/react-query@5.100.0(react@19.2.6)':
-    dependencies:
-      '@tanstack/query-core': 5.100.0
       react: 19.2.6
 
   '@tanstack/react-query@5.100.10(react@19.2.6)':
@@ -10044,10 +10012,10 @@ snapshots:
     transitivePeerDependencies:
       - csstype
 
-  '@tanstack/react-router-ssr-query@1.160.0(@tanstack/query-core@5.100.10)(@tanstack/react-query@5.100.0(react@19.2.6))(@tanstack/react-router@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.160.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@tanstack/react-router-ssr-query@1.160.0(@tanstack/query-core@5.100.10)(@tanstack/react-query@5.100.10(react@19.2.6))(@tanstack/react-router@1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.160.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
       '@tanstack/query-core': 5.100.10
-      '@tanstack/react-query': 5.100.0(react@19.2.6)
+      '@tanstack/react-query': 5.100.10(react@19.2.6)
       '@tanstack/react-router': 1.160.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/router-ssr-query-core': 1.160.0(@tanstack/query-core@5.100.10)(@tanstack/router-core@1.160.0)
       react: 19.2.6
@@ -10508,7 +10476,7 @@ snapshots:
       magicast: 0.5.2
       obug: 2.1.1
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@20.11.17)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.1.1(@noble/hashes@1.8.0))(vite@8.0.10(@types/node@20.11.17)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.19.2)(yaml@2.9.0))
+      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@25.6.0)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.1.1(@noble/hashes@1.8.0))(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - supports-color
 
