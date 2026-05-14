@@ -39,10 +39,34 @@ pnpm docs:api
 
 ## Local Setup
 
+This repo uses `pnpm@10.33.4` through Corepack.
+
+macOS/Linux:
+
 ```sh
+corepack enable
 pnpm install
+pnpm sync:workspace
 docker compose up -d
 ```
+
+Windows on exFAT:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1
+docker compose up -d
+```
+
+The Windows setup script creates the pnpm Corepack shim in the user npm folder,
+runs an exFAT-safe install, and syncs local workspace packages into
+`node_modules`. If `pnpm` is already available, `pnpm setup:windows` runs the
+same script.
+
+`pnpm sync:workspace` is cross-platform. It links workspace packages when the
+filesystem supports links, and copies them when links are not supported. Root
+commands such as `pnpm build`, `pnpm dev`, `pnpm test`, and `pnpm server:dev`
+run this sync automatically. Run `pnpm sync:workspace` manually after editing a
+shared package if you are starting a service directly with `pnpm --filter ...`.
 
 Useful service commands:
 

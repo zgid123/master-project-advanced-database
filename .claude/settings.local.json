@@ -24,7 +24,19 @@
       "Bash(\"/c/Program Files/nodejs/corepack\" pnpm --filter job-service migrate)",
       "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline)",
       "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline --workspace-concurrency=1)",
-      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline --network-concurrency=1 --child-concurrency=1)"
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm install --prefer-offline --network-concurrency=1 --child-concurrency=1)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm config get store-dir)",
+      "Bash(\"/c/Program Files/nodejs/corepack\" pnpm config get package-import-method)",
+      "Bash(fsutil fsinfo *)",
+      "Bash(mountvol C: /L)",
+      "Bash(ls /d/Projects/backend/node_modules 2>&1 | head -3; echo \"---\"; ls /c/pnpm-modules 2>&1 | head -3)",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\node_modules\")",
+      "Bash(cmd //c \"mkdir C:\\\\pnpm-modules\\\\backend\")",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\packages\\\\@domain\\\\auth\\\\node_modules\")",
+      "Bash(cmd //c \"rmdir /s /q D:\\\\Projects\\\\backend\\\\packages\\\\@domain\\\\notification\\\\node_modules\")",
+      "Bash(cmd //c 'rmdir /s /q D:\\\\Projects\\\\backend\\\\workspaces\\\\__TRACKED_VAR__\\\\node_modules')",
+      "Bash(echo \"---exit: $?\")",
+      "WebFetch(domain:pnpm.io)"
     ]
   }
 }
