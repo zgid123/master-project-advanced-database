@@ -1,6 +1,14 @@
 import { createHmac } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 vi.mock('../../src/cache/rate-limit.js', () => ({
   rateLimitApply: vi.fn(),
@@ -27,13 +35,16 @@ vi.mock('../../src/domain/jobs/job.service.js', () => ({
   },
 }));
 
-import { rateLimitApply } from '../../src/cache/rate-limit.js';
 import { buildApp } from '../../src/app.js';
+import { rateLimitApply } from '../../src/cache/rate-limit.js';
 import { ApplicationService } from '../../src/domain/applications/application.service.js';
-import { JobService } from '../../src/domain/jobs/job.service.js';
-import { HttpError } from '../../src/domain/errors.js';
 import type { ApplicationResponse } from '../../src/domain/applications/application.types.js';
-import type { JobListResponse, JobResponse } from '../../src/domain/jobs/job.types.js';
+import { HttpError } from '../../src/domain/errors.js';
+import { JobService } from '../../src/domain/jobs/job.service.js';
+import type {
+  JobListResponse,
+  JobResponse,
+} from '../../src/domain/jobs/job.types.js';
 
 const now = '2026-05-02T08:00:00.000Z';
 const jobId = '664c4e9a5a3b2c7d1e0a1f88';
@@ -150,7 +161,7 @@ describe('job-service HTTP API', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(JobService.listOpen).toHaveBeenCalledWith(null, 1);
+    expect(JobService.listOpen).toHaveBeenCalledWith(null, 1, null, null);
     expect(response.json()).toMatchObject({
       items: [
         {
@@ -160,6 +171,46 @@ describe('job-service HTTP API', () => {
       ],
       nextCursor: null,
     });
+  });
+
+  it('filters jobs by location and jobType via GET /v1/jobs', async () => {
+    vi.mocked(JobService.listOpen).mockResolvedValue({
+      items: [jobListResponse],
+      nextCursor: null,
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/jobs?location=Remote&jobType=full_time',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JobService.listOpen).toHaveBeenCalledWith(
+      null,
+      20,
+      'Remote',
+      'full_time',
+    );
+  });
+
+  it('searches jobs with location and jobType via GET /v1/jobs?q=...', async () => {
+    vi.mocked(JobService.search).mockResolvedValue({
+      items: [jobListResponse as any],
+      nextCursor: null,
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/jobs?q=backend&location=Remote&jobType=full_time',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JobService.search).toHaveBeenCalledWith(
+      'backend',
+      'Remote',
+      'full_time',
+      20,
+    );
   });
 
   it('creates a job from POST /v1/jobs and injects the authenticated poster id', async () => {
@@ -179,12 +230,14 @@ describe('job-service HTTP API', () => {
     });
 
     expect(response.statusCode).toBe(201);
-    expect(JobService.create).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'Build and operate the job service.',
-      title: 'Backend Engineer',
-      postedByUserId: posterId,
-      status: 'open',
-    }));
+    expect(JobService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Build and operate the job service.',
+        title: 'Backend Engineer',
+        postedByUserId: posterId,
+        status: 'open',
+      }),
+    );
     expect(response.json()).toMatchObject({
       id: jobId,
       postedByUserId: posterId,
@@ -263,7 +316,11 @@ describe('job-service HTTP API', () => {
 
   it('maps service authorization failures to the route response', async () => {
     vi.mocked(JobService.update).mockRejectedValue(
-      new HttpError(403, 'FORBIDDEN', 'Only the job poster can update this job'),
+      new HttpError(
+        403,
+        'FORBIDDEN',
+        'Only the job poster can update this job',
+      ),
     );
 
     const response = await app.inject({
@@ -301,12 +358,14 @@ describe('job-service HTTP API', () => {
 
     expect(response.statusCode).toBe(201);
     expect(rateLimitApply).toHaveBeenCalledWith(applicantId);
-    expect(ApplicationService.submit).toHaveBeenCalledWith(expect.objectContaining({
-      applicantUserId: applicantId,
-      coverLetter: 'I can help build this service.',
-      idempotencyKey: 'idem-123456',
-      jobId,
-    }));
+    expect(ApplicationService.submit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicantUserId: applicantId,
+        coverLetter: 'I can help build this service.',
+        idempotencyKey: 'idem-123456',
+        jobId,
+      }),
+    );
     expect(response.json()).toMatchObject({
       id: applicationId,
       jobId,
@@ -331,7 +390,10 @@ describe('job-service HTTP API', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(ApplicationService.getForJobAndUser).toHaveBeenCalledWith(jobId, applicantId);
+    expect(ApplicationService.getForJobAndUser).toHaveBeenCalledWith(
+      jobId,
+      applicantId,
+    );
     expect(response.json()).toMatchObject({
       jobId,
       applied: true,

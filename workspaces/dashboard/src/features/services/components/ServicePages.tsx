@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Clock3,
   Loader2,
-  Radio,
   Search,
   Sparkles,
 } from 'lucide-react';
@@ -48,20 +47,6 @@ type TJob = {
 type TJobListResponse = {
   items?: TJob[];
   nextCursor?: string | null;
-};
-
-type TSignal = {
-  topicId?: string;
-  substackId?: string | null;
-  source?: string;
-  sources?: string[];
-  score?: number;
-};
-
-type TSignalsResponse = {
-  items?: TSignal[];
-  generatedAt?: string;
-  cacheHit?: boolean;
 };
 
 type TNotification = {
@@ -151,7 +136,9 @@ export function TopicsPage() {
             <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
               <div className='min-w-0'>
                 <p className='island-kicker mb-2'>
-                  {topic.substack_id ? `Substack ${topic.substack_id}` : 'Topic'}
+                  {topic.substack_id
+                    ? `Substack ${topic.substack_id}`
+                    : 'Topic'}
                 </p>
                 <h2 className='m-0 text-xl font-extrabold text-sea-ink'>
                   {topic.title}
@@ -265,90 +252,6 @@ export function JobsPage() {
               items={[
                 `${job.applicationCount ?? 0} applications`,
                 formatDate(job.createdAt),
-              ]}
-            />
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function RecommendationsPage() {
-  const [mode, setMode] = useState<'trending' | 'feed'>('trending');
-  const [state, setState] = useAsyncState<TSignalsResponse>();
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const path =
-      mode === 'feed'
-        ? '/api/services/recommendations/feed?limit=20'
-        : '/api/services/recommendations/trending?limit=20';
-
-    loadJson<TSignalsResponse>(path, setState, controller.signal);
-
-    return () => controller.abort();
-  }, [mode, setState]);
-
-  const signals = state.data?.items ?? [];
-
-  return (
-    <section className='space-y-5'>
-      <ServiceHeader
-        description='Recommendation signals from RecSys through Dashboard service routes.'
-        icon={<Radio className='size-5' />}
-        kicker='Signals'
-        title='Recommendations'
-      />
-      <section className='island-shell rounded-2xl p-5 sm:p-6'>
-        <div className='grid gap-2 sm:inline-grid sm:grid-cols-2'>
-          {(['trending', 'feed'] as const).map((item) => (
-            <Button
-              className={
-                mode === item
-                  ? 'border border-lagoon/35 bg-lagoon/16 text-lagoon-deep'
-                  : 'border border-line bg-white/5 text-sea-ink-soft hover:bg-link-bg-hover'
-              }
-              key={item}
-              onClick={() => setMode(item)}
-              type='button'
-              variant='ghost'
-            >
-              {item === 'trending' ? 'Trending' : 'Personal Feed'}
-            </Button>
-          ))}
-        </div>
-      </section>
-      <StatusBlock
-        empty={!state.loading && !state.error && signals.length === 0}
-        error={state.error}
-        loading={state.loading}
-      />
-      <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-        {signals.map((signal) => (
-          <article
-            className='island-shell rounded-2xl p-5'
-            key={`${signal.topicId}-${signal.source}`}
-          >
-            <div className='mb-4 flex items-start justify-between gap-3'>
-              <div className='min-w-0'>
-                <p className='island-kicker mb-2'>
-                  {signal.source ?? 'recommendation'}
-                </p>
-                <h2 className='m-0 break-all text-lg font-extrabold text-sea-ink'>
-                  {signal.topicId ?? 'Unknown topic'}
-                </h2>
-              </div>
-              <Badge tone='blue'>
-                {typeof signal.score === 'number'
-                  ? signal.score.toFixed(2)
-                  : '0.00'}
-              </Badge>
-            </div>
-            <MetricRow
-              items={[
-                signal.substackId ? `Substack ${signal.substackId}` : 'Global',
-                signal.sources?.join(', ') || 'single source',
               ]}
             />
           </article>

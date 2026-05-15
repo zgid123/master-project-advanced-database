@@ -7,6 +7,8 @@ type TSubstackProxyPath =
   | `/v1/substacks/${string}`
   | `/v1/substacks/${string}/subscribe`;
 
+import { getCurrentUserId } from '#/features/services/api/serviceProxy';
+
 export async function proxySubstackRequest(
   request: Request,
   path: TSubstackProxyPath,
@@ -16,10 +18,15 @@ export async function proxySubstackRequest(
   upstreamUrl.search = new URL(request.url).search;
   const isPayloadMethod = method !== 'GET' && method !== 'HEAD';
   const requestBody = isPayloadMethod ? await request.text() : undefined;
+  const userId = request.headers.get('x-user-id') || (await getCurrentUserId(request));
   const requestHeaders: Record<string, string> = {
     cookie: request.headers.get('cookie') ?? '',
     authorization: request.headers.get('authorization') ?? '',
   };
+
+  if (userId) {
+    requestHeaders['x-user-id'] = userId;
+  }
 
   if (isPayloadMethod) {
     requestHeaders['content-type'] =

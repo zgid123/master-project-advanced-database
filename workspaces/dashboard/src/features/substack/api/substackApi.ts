@@ -32,9 +32,9 @@ function throwSubstackError(
   payload: TApiResponse<unknown>,
 ) {
   const message =
-    payload.detail ??
-    payload.message ??
-    response.statusText ??
+    (Array.isArray(payload.message) ? payload.message[0] : payload.message) ||
+    payload.detail ||
+    response.statusText ||
     'Request failed';
 
   throw {
@@ -143,7 +143,7 @@ export async function listSubstacks({
 export async function getOwnedSubstacks({
   search,
   signal,
-  }: {
+}: {
   search?: string;
   signal?: AbortSignal;
 } = {}): Promise<TSubstackEntity[]> {

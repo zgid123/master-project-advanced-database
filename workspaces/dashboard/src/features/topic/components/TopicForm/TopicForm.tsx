@@ -25,12 +25,14 @@ export function TopicForm({
 }) {
   const queryClient = useQueryClient();
 
-  const createTopicCommand = useCommand(createTopic, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: topicQueryKeys.all });
-      onSuccess?.();
+  const createTopicCommand = useCommand(
+    (data: TTopicFormValues) => createTopic(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: topicQueryKeys.all });
+      },
     },
-  });
+  );
 
   const updateTopicCommand = useCommand(
     (data: TTopicFormValues) => updateTopic({ id: topic?.id || '', ...data }),
@@ -40,7 +42,6 @@ export function TopicForm({
         queryClient.invalidateQueries({
           queryKey: topicQueryKeys.detail(updatedTopic.id),
         });
-        onSuccess?.();
       },
     },
   );
@@ -64,6 +65,7 @@ export function TopicForm({
         } else {
           await createTopicCommand.mutateAsync(value);
         }
+        onSuccess?.();
       } catch {
         // Error rendered below
       }

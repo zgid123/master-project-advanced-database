@@ -1,12 +1,33 @@
-import { Int32, ObjectId, type ClientSession, type Collection, type Filter, type Sort } from 'mongodb';
+import {
+  type ClientSession,
+  type Collection,
+  type Filter,
+  Int32,
+  ObjectId,
+} from 'mongodb';
+
 import { getDb } from '../../db/mongo.js';
-import type { KeysetCursor } from '../pagination.js';
 import { objectIdOrNull, parseObjectId } from '../object-id.js';
-import type { CreateJobInput, JobDoc, JobListDoc, JobSearchDoc, UpdateJobInput } from './job.types.js';
+import type { KeysetCursor } from '../pagination.js';
+import type {
+  CreateJobInput,
+  JobDoc,
+  JobListDoc,
+  JobSearchDoc,
+  UpdateJobInput,
+} from './job.types.js';
 
-type JobMutationTarget = Pick<JobDoc, '_id' | 'postedByUserId' | 'status'>;
+type TJobMutationTarget = Pick<JobDoc, '_id' | 'postedByUserId' | 'status'>;
 
-const updateFieldNames = ['title', 'content', 'status', 'jobType', 'location', 'tags', 'metadata'] as const;
+const updateFieldNames = [
+  'title',
+  'content',
+  'status',
+  'jobType',
+  'location',
+  'tags',
+  'metadata',
+] as const;
 
 async function jobsCollection(): Promise<Collection<JobDoc>> {
   return (await getDb()).collection<JobDoc>('jobs');
@@ -35,7 +56,10 @@ export const JobRepo = {
     );
   },
 
-  async findMutationTarget(id: string, session: ClientSession): Promise<JobMutationTarget | null> {
+  async findMutationTarget(
+    id: string,
+    session: ClientSession,
+  ): Promise<TJobMutationTarget | null> {
     const _id = objectIdOrNull(id);
     if (!_id) return null;
 
@@ -49,13 +73,26 @@ export const JobRepo = {
     );
   },
 
-  async listOpenKeyset(cursor: KeysetCursor | null, limit: number): Promise<JobListDoc[]> {
+  async listOpenKeyset(
+    cursor: KeysetCursor | null,
+    limit: number,
+    location: string | null = null,
+    type: string | null = null,
+  ): Promise<JobListDoc[]> {
     const collection = await jobsCollection();
     const filter: Filter<JobDoc> = {
       status: 'open',
       deletedAt: null,
       ...keysetFilter(cursor),
     };
+
+    if (location) {
+      filter.location = location;
+    }
+
+    if (type) {
+      filter.jobType = type as NonNullable<JobDoc['jobType']>;
+    }
 
     return collection
       .find(filter, {
@@ -108,7 +145,7 @@ export const JobRepo = {
           score: { $meta: 'textScore' },
         },
       })
-      .sort({ score: { $meta: 'textScore' }, createdAt: -1, _id: -1 } as Sort)
+      .sort({ score: { $meta: 'textScore' }, createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray() as unknown as Promise<JobSearchDoc[]>;
   },
@@ -118,7 +155,10 @@ export const JobRepo = {
     const now = new Date();
     const doc: JobDoc = {
       _id: new ObjectId(),
-      postedByUserId: parseObjectId(input.postedByUserId, 'INVALID_USER_SUBJECT'),
+      postedByUserId: parseObjectId(
+        input.postedByUserId,
+        'INVALID_USER_SUBJECT',
+      ),
       title: input.title,
       content: input.content,
       location: input.location ?? null,

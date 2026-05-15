@@ -62,6 +62,7 @@ export function initHono({
     {
       fetch: app.fetch,
       port: Number(process.env.PORT ?? 3_000),
+      hostname: '0.0.0.0',
     },
     ({ port }) => {
       console.log(`Server is running on http://localhost:${port}`);

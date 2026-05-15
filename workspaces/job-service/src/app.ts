@@ -3,10 +3,11 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+
 import { jwtAlgorithms, resolveJwtSecret } from './auth/jwt-secret.js';
 import { config } from './config.js';
-import { HttpError } from './domain/errors.js';
 import { applicationRoutes } from './domain/applications/application.controller.js';
+import { HttpError } from './domain/errors.js';
 import { jobRoutes } from './domain/jobs/job.controller.js';
 
 export async function buildApp() {
@@ -38,8 +39,14 @@ export async function buildApp() {
       ],
       tags: [
         { name: 'Health', description: 'Service health checks' },
-        { name: 'Jobs', description: 'Job listing, search, creation, update, and soft delete' },
-        { name: 'Applications', description: 'Job application submission and status workflow' },
+        {
+          name: 'Jobs',
+          description: 'Job listing, search, creation, update, and soft delete',
+        },
+        {
+          name: 'Applications',
+          description: 'Job application submission and status workflow',
+        },
       ],
       components: {
         securitySchemes: {
@@ -61,16 +68,19 @@ export async function buildApp() {
     },
   });
 
-  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      await reply.code(401).send({
-        error: 'UNAUTHORIZED',
-        message: 'JWT is missing or invalid',
-      });
-    }
-  });
+  app.decorate(
+    'authenticate',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        await reply.code(401).send({
+          error: 'UNAUTHORIZED',
+          message: 'JWT is missing or invalid',
+        });
+      }
+    },
+  );
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HttpError) {
@@ -96,14 +106,18 @@ export async function buildApp() {
     if (fastifyError.validation) {
       return reply.code(400).send({
         error: 'SCHEMA_VALIDATION',
-        message: error instanceof Error ? error.message : 'Request did not match the route schema',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Request did not match the route schema',
         issues: fastifyError.validation,
       });
     }
 
     if (
-      fastifyError.code === 'FST_ERR_CTP_EMPTY_JSON_BODY'
-      || fastifyError.code === 'FST_ERR_CTP_INVALID_JSON_BODY'
+      fastifyError.code === 'FST_ERR_CTP_EMPTY_JSON_BODY' ||
+      fastifyError.code === 'FST_ERR_CTP_INVALID_JSON_BODY' ||
+      error instanceof SyntaxError
     ) {
       return reply.code(400).send({
         error: 'BAD_REQUEST',
@@ -122,25 +136,29 @@ export async function buildApp() {
     return reply.redirect('/docs');
   });
 
-  app.get('/health', {
-    schema: {
-      tags: ['Health'],
-      summary: 'Health check',
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-            service: { type: 'string' },
+  app.get(
+    '/health',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Health check',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string' },
+              service: { type: 'string' },
+            },
+            required: ['status', 'service'],
           },
-          required: ['status', 'service'],
         },
       },
     },
-  }, async () => ({
-    status: 'ok',
-    service: 'job-service',
-  }));
+    async () => ({
+      status: 'ok',
+      service: 'job-service',
+    }),
+  );
 
   await app.register(jobRoutes);
   await app.register(applicationRoutes);

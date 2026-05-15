@@ -18,14 +18,22 @@ export function SubstackForm({
 }) {
   const queryClient = useQueryClient();
 
-  const createSubstackCommand = useCommand(createSubstack, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.list] });
-      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.owned] });
-      queryClient.invalidateQueries({ queryKey: [SUBSTACK_QUERY_KEYS.total] });
-      onSuccess?.();
+  const createSubstackCommand = useCommand(
+    (data: TNewSubstack) => createSubstack(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.list],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.owned],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [SUBSTACK_QUERY_KEYS.total],
+        });
+      },
     },
-  });
+  );
 
   const updateSubstackCommand = useCommand(
     (data: TNewSubstack) => updateSubstack(substack?.slug || '', data),
@@ -46,8 +54,6 @@ export function SubstackForm({
             queryKey: [SUBSTACK_QUERY_KEYS.detail, updatedSubstack.slug],
           });
         }
-
-        onSuccess?.();
       },
     },
   );
@@ -64,6 +70,7 @@ export function SubstackForm({
         } else {
           await createSubstackCommand.mutateAsync(value);
         }
+        onSuccess?.();
       } catch {
         // Mutation error is rendered below.
       }

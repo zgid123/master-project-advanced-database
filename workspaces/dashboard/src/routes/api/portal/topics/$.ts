@@ -1,7 +1,10 @@
 /** biome-ignore-all lint/style/useNamingConvention: tanstack start api */
 import { createFileRoute } from '@tanstack/react-router';
 
-import { createUpstreamPath, proxyGatewayRequest } from '#/features/services/api';
+import {
+  createUpstreamPath,
+  proxyGatewayRequest,
+} from '#/features/services/api';
 
 const DASHBOARD_PREFIX = '/api/portal/topics';
 const UPSTREAM_PREFIX = '/v1/topics';
@@ -10,6 +13,8 @@ function proxyTopicRoute(request: Request): Promise<Response> {
   return proxyGatewayRequest(
     request,
     createUpstreamPath(request, DASHBOARD_PREFIX, UPSTREAM_PREFIX),
+    request.method,
+    { injectCurrentUserId: true },
   );
 }
 

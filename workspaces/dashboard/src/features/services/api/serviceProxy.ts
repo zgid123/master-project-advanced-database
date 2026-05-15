@@ -1,7 +1,5 @@
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 const JOB_SERVICE_URL = process.env.JOB_SERVICE_URL ?? 'http://localhost:3010';
-const RECSYS_SERVICE_URL =
-  process.env.RECSYS_SERVICE_URL ?? 'http://localhost:3020';
 const AUTH_TOKEN_COOKIE_NAME = 'solvit_authToken';
 
 type TProxyHttpOptions = {
@@ -20,7 +18,9 @@ export function createUpstreamPath(
   const pathname = new URL(request.url).pathname.replace(/\/+$/, '');
   const normalizedPrefix = dashboardPrefix.replace(/\/+$/, '');
   const suffix =
-    pathname === normalizedPrefix ? '' : pathname.slice(normalizedPrefix.length);
+    pathname === normalizedPrefix
+      ? ''
+      : pathname.slice(normalizedPrefix.length);
 
   return `${upstreamPrefix}${suffix}`;
 }
@@ -29,11 +29,13 @@ export function proxyGatewayRequest(
   request: Request,
   path: string,
   method = request.method,
+  options: TProxyHttpOptions = {},
 ): Promise<Response> {
   return proxyHttpRequest(request, API_GATEWAY_URL, path, {
     forwardAuthorization: true,
     forwardCookie: true,
     method,
+    ...options,
   });
 }
 
@@ -45,23 +47,6 @@ export function proxyJobServiceRequest(
   return proxyHttpRequest(request, JOB_SERVICE_URL, path, {
     authFromCookie: true,
     forwardAuthorization: true,
-    method,
-  });
-}
-
-export function proxyRecommendationRequest(
-  request: Request,
-  path: string,
-  {
-    injectCurrentUserId = false,
-    method = request.method,
-  }: {
-    injectCurrentUserId?: boolean;
-    method?: string;
-  } = {},
-): Promise<Response> {
-  return proxyHttpRequest(request, RECSYS_SERVICE_URL, path, {
-    injectCurrentUserId,
     method,
   });
 }
@@ -115,7 +100,9 @@ async function createUpstreamHeaders(
   if (options.forwardAuthorization || options.authFromCookie) {
     const authorization = createAuthorizationHeader(
       request.headers.get('authorization'),
-      options.authFromCookie ? getCookieValue(cookie, AUTH_TOKEN_COOKIE_NAME) : '',
+      options.authFromCookie
+        ? getCookieValue(cookie, AUTH_TOKEN_COOKIE_NAME)
+        : '',
     );
 
     if (authorization) {
@@ -150,7 +137,7 @@ function createAuthorizationHeader(
   return `Bearer ${cookieToken}`;
 }
 
-async function getCurrentUserId(request: Request): Promise<string> {
+export async function getCurrentUserId(request: Request): Promise<string> {
   const headers = new Headers();
   const cookie = request.headers.get('cookie') ?? '';
   const authorization = request.headers.get('authorization');

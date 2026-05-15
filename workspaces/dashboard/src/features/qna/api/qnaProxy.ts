@@ -1,3 +1,5 @@
+import { getCurrentUserId } from '#/features/services/api/serviceProxy';
+
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
 function toCamelCase(obj: any): any {
@@ -29,7 +31,8 @@ export async function proxyQnaRequest(request: Request): Promise<Response> {
   const contentType = request.headers.get('content-type');
   const cookie = request.headers.get('cookie');
   const authorization = request.headers.get('authorization');
-  const userId = request.headers.get('x-user-id');
+  const userId =
+    request.headers.get('x-user-id') || (await getCurrentUserId(request));
 
   if (contentType) headers.set('content-type', contentType);
   if (cookie) headers.set('cookie', cookie);
@@ -47,7 +50,8 @@ export async function proxyQnaRequest(request: Request): Promise<Response> {
     body,
   });
 
-  const upstreamContentType = upstreamResponse.headers.get('content-type') ?? '';
+  const upstreamContentType =
+    upstreamResponse.headers.get('content-type') ?? '';
   let responseBody: any;
 
   if (upstreamContentType.includes('application/json')) {

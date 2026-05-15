@@ -75,6 +75,7 @@ export async function initHono({
       port: await detect(
         isTest ? 7_000 + Number(process.env.VITEST_WORKER_ID) : 3_002,
       ),
+      hostname: '0.0.0.0',
     },
     ({ port }) => {
       console.log(`Server is running on http://localhost:${port}`);
