@@ -33,7 +33,7 @@ export class CommentsService {
 
     try {
       if (comment.user_id?.toString() !== dto.user_id) {
-        const topic = await this.topicsRepo.findById(comment.topic_id);
+        const topic = await this.topicsRepo.findById(comment.topic_id.toString());
         if (topic) {
           const notifyType = dto.point === 1 ? 'qna.answer.upvoted' : 'qna.answer.downvoted';
           await NotificationService.sendNotification({
@@ -86,7 +86,7 @@ export class CommentsService {
     }
 
     const comment = await this.commentsRepo.create({
-      topic_id: dto.topic_id,
+      topic_id: new Types.ObjectId(dto.topic_id),
       user_id: dto.user_id,
       content: dto.content,
     });

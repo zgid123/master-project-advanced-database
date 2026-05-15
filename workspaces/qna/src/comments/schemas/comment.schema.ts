@@ -6,7 +6,7 @@ export class Comment {
   _id: Types.ObjectId;
 
   @Prop({ required: true })
-  topic_id: string;
+  topic_id: Types.ObjectId;
 
   @Prop({ required: true })
   user_id: string;

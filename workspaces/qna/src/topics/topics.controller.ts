@@ -62,7 +62,7 @@ export class TopicsController {
     if (!user_id) {
       throw new BadRequestException('User ID is required in x-user-id header');
     }
-    
+
     return await this.topicsService.subscribeTopic(id, user_id);
   }
 
@@ -84,7 +84,7 @@ export class TopicsController {
     if (!user_id) {
       throw new BadRequestException('User ID is required in x-user-id header');
     }
-    
+
     return await this.topicsService.unsubscribeTopic(id, user_id);
   }
 
@@ -126,7 +126,7 @@ export class TopicsController {
     if (!user_id) {
       throw new BadRequestException('User ID is required in x-user-id header');
     }
-    
+
     return await this.topicsService.removeVote(id, user_id);
   }
 
@@ -163,10 +163,6 @@ export class TopicsController {
   @ApiOperation({ summary: 'Search topics by text' })
   @ApiOkResponse(SearchTopicsResponseSwagger)
   async searchTopics(@Query() dto: SearchTopicDto, @Headers('x-user-id') user_id?: string) {
-    if (!user_id) {
-      throw new BadRequestException('User ID is required in x-user-id header');
-    }
-    
     return await this.topicsService.searchTopics(dto, user_id);
   }
 
@@ -181,7 +177,7 @@ export class TopicsController {
     if (!user_id) {
       throw new BadRequestException('User ID is required in x-user-id header');
     }
-    
+
     return await this.topicsService.markSolved(id, user_id);
   }
 
@@ -226,7 +222,7 @@ export class TopicsController {
     if (!user_id) {
       throw new BadRequestException('User ID is required in x-user-id header');
     }
-    
+
     return await this.topicsService.deleteTopic(id, user_id);
   }
 
@@ -245,10 +241,6 @@ export class TopicsController {
   @ApiOkResponse(GetTopicByIdResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
   async getTopicById(@Param('id') id: string, @Headers('x-user-id') user_id?: string) {
-    if (!user_id) {
-      throw new BadRequestException('User ID is required in x-user-id header');
-    }
-    
     return await this.topicsService.getTopicById(id, user_id);
   }
 }
