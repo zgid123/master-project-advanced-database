@@ -19,6 +19,17 @@ export type TTopic = {
   views?: string | number;
 };
 
+export type TComment = {
+  id: string;
+  topicId: string;
+  userId: string;
+  content: string;
+  isAccepted: boolean;
+  voteScore: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TPagination = {
   page: number;
   limit: number;

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { ChevronUp, MessageSquare } from 'lucide-react';
 
 import { Button } from '#/components/ui/button';
@@ -6,6 +7,7 @@ import type { IBaseTopicCardProps } from './interface';
 
 export function CommunityTopic({ data, index = 0 }: IBaseTopicCardProps) {
   const {
+    id,
     title,
     status,
     userId,
@@ -46,7 +48,9 @@ export function CommunityTopic({ data, index = 0 }: IBaseTopicCardProps) {
           </span>
         </div>
         <h3 className='text-lg font-bold leading-tight text-sea-ink hover:text-lagoon cursor-pointer transition-colors'>
-          {title}
+          <Link params={{ id }} to='/topics/$id'>
+            {title}
+          </Link>
         </h3>
         <div className='flex flex-wrap gap-2'>
           {tags.map((tag) => (
