@@ -1,4 +1,4 @@
-import { and, eq, isNull } from '@alphacifer/drizzle/core';
+import { and, eq, isNull, sql } from '@alphacifer/drizzle/core';
 import {
   type IApproveSubstackParams,
   type ICountSubstackParams,
@@ -93,6 +93,7 @@ export class SubstackRepository implements ISubstackRepository {
   }
 
   public async count({
+    search,
     approved,
     includeDeleted = false,
   }: ICountSubstackParams & { includeDeleted?: boolean }): Promise<number> {
@@ -106,6 +107,12 @@ export class SubstackRepository implements ISubstackRepository {
       conditions.push(eq(substacks.approved, approved));
     }
 
+    if (search) {
+      conditions.push(
+        sql`${substacks.searchVector} @@ websearch_to_tsquery('english', ${search})`,
+      );
+    }
+
     return this.#drizzle.$count(
       substacks,
       conditions.length > 0 ? and(...conditions) : undefined,
@@ -114,6 +121,7 @@ export class SubstackRepository implements ISubstackRepository {
 
   public async find({
     limit,
+    search,
     ownerId,
     approved,
     includeDeleted = false,
@@ -133,6 +141,12 @@ export class SubstackRepository implements ISubstackRepository {
 
         if (ownerId !== undefined) {
           conditions.push(eq(fields.ownerId, ownerId));
+        }
+
+        if (search) {
+          conditions.push(
+            sql`${fields.searchVector} @@ websearch_to_tsquery('english', ${search})`,
+          );
         }
 
         return conditions.length > 0 ? and(...conditions) : undefined;

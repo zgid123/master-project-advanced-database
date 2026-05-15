@@ -7,17 +7,22 @@ import {
 
 import { SUBSTACK_QUERY_KEYS } from './queryKeys';
 
-export function substackListQueryOptions({ limit }: TListSubstacksParams = {}) {
+export function substackListQueryOptions({
+  limit,
+  search,
+}: TListSubstacksParams = {}) {
   return queryOptions({
     queryKey: [
       ...SUBSTACK_QUERY_KEYS.list,
       {
         limit,
+        search,
       },
     ],
     queryFn: ({ signal }) => {
       return listSubstacks({
         limit,
+        search,
         signal,
       });
     },

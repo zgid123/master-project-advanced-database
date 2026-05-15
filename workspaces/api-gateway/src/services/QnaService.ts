@@ -10,7 +10,7 @@ export class QnaService {
   readonly #baseUrl: string;
 
   constructor() {
-    this.#baseUrl = process.env.QNA_SERVICE_URL ?? 'http://localhost:3005';
+    this.#baseUrl = process.env.QNA_SERVICE_URL ?? 'http://localhost:3006';
   }
 
   public async request({

@@ -38,6 +38,13 @@ export default function Header() {
           <Link
             activeProps={{ className: 'nav-link is-active' }}
             className='nav-link'
+            to='/substacks'
+          >
+            Substacks
+          </Link>
+          <Link
+            activeProps={{ className: 'nav-link is-active' }}
+            className='nav-link'
             to='/jobs'
           >
             Jobs

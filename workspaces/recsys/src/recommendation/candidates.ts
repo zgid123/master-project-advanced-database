@@ -31,9 +31,11 @@ LIMIT $peerLimit
 MATCH (peer)-[recVote:VOTED {voteType: 1}]->(candidate:Topic)
 WHERE recVote.votedAt > $cutoff
   AND candidate.createdAt > $cutoff
+  AND candidate.authorId <> $userId
   AND NOT EXISTS { MATCH (me)-[:VOTED]->(candidate) }
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
        coalesce(candidate.hotness, 0.0) AS popularity,
@@ -53,6 +55,7 @@ WHERE candidate.substackId IN subIds
   AND NOT EXISTS { MATCH (me)-[:VOTED]->(candidate) }
 OPTIONAL MATCH (s:Substack {id: candidate.substackId})
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
        coalesce(candidate.hotness, 0.0) AS popularity,
@@ -65,32 +68,34 @@ LIMIT $limit
 
 const trendingCandidatesCypher = `
 MATCH (candidate:Topic)
-WHERE candidate.hotness > 0
+WHERE candidate.hotness >= 0
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       candidate.hotness AS popularity,
+       coalesce(candidate.hotness, 0.0) AS popularity,
        0 AS peerCount,
        coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
-ORDER BY candidate.hotness DESC
+ORDER BY popularity DESC, createdAt DESC
 LIMIT $limit
 `;
 
 const substackTrendingCandidatesCypher = `
 MATCH (candidate:Topic)
 WHERE candidate.substackId = $substackId
-  AND candidate.hotness > 0
+  AND candidate.hotness >= 0
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
-       candidate.hotness AS popularity,
+       coalesce(candidate.hotness, 0.0) AS popularity,
        0 AS peerCount,
        coalesce(s.subscriberCount, 0) AS subscriberCount,
        false AS subscribed
-ORDER BY candidate.hotness DESC
+ORDER BY popularity DESC, createdAt DESC
 LIMIT $limit
 `;
 
@@ -102,9 +107,11 @@ LIMIT $peerLimit
 MATCH (peer)-[recVote:VOTED {voteType: 1}]->(candidate:Topic)
 WHERE recVote.votedAt > $cutoff
   AND candidate.createdAt > $cutoff
+  AND candidate.authorId <> $userId
   AND NOT EXISTS { MATCH (me)-[:VOTED]->(candidate) }
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
        coalesce(candidate.hotness, 0.0) AS popularity,
@@ -126,6 +133,7 @@ WHERE candidate.id <> source.id
   AND candidate.createdAt > $cutoff
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
        coalesce(candidate.hotness, 0.0) AS popularity,
@@ -144,6 +152,7 @@ WHERE candidate.id <> source.id
   AND candidate.createdAt > $cutoff
 OPTIONAL MATCH (candidate)-[:IN_SUBSTACK]->(s:Substack)
 RETURN candidate.id AS topicId,
+       candidate.authorId AS authorId,
        coalesce(candidate.createdAt, 0) AS createdAt,
        candidate.substackId AS substackId,
        coalesce(candidate.hotness, 0.0) AS popularity,

@@ -3,6 +3,7 @@ import type { IQuery } from '@domain/core';
 
 export interface IGetSubstacksParams {
   limit?: number;
+  search?: string;
 }
 
 export class GetSubstacksQuery
@@ -16,9 +17,11 @@ export class GetSubstacksQuery
 
   public async exec({
     limit,
+    search,
   }: IGetSubstacksParams = {}): Promise<SubstackEntity[]> {
     return this.#substackRepository.find({
       limit,
+      search,
       approved: true,
     });
   }

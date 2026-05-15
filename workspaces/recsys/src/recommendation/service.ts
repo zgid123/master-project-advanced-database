@@ -73,13 +73,16 @@ export async function getPersonalizedFeed(
           subscribedSubstacks: await getUserSubscribedSubstackIds(userId),
         };
 
-        const [collaborative, similarUsers, substack, trending] =
+        const [collaborative, similarUsers, substackRaw, trendingRaw] =
           await Promise.all([
             getCollaborativeCandidates(userId, cutoff, 200),
             getSimilarUserCandidates(userId, cutoff, 200),
             getSubstackCandidates(userId, cutoff, 100),
             getTrendingCandidates(100),
           ]);
+
+        const substack = substackRaw.filter((c) => c.authorId !== userId);
+        const trending = trendingRaw.filter((c) => c.authorId !== userId);
         candidatesPerFeed.observe(
           { source: 'collaborative' },
           collaborative.length,

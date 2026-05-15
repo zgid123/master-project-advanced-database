@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: ignore */
 export function TopicListSkeleton() {
   return (
     <div className='space-y-4'>

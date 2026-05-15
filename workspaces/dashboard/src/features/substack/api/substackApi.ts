@@ -5,6 +5,7 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
 export type TListSubstacksParams = {
   limit?: number;
+  search?: string;
   signal?: AbortSignal;
 };
 
@@ -115,15 +116,20 @@ async function requestApi<TData>(
 
 export async function listSubstacks({
   limit,
+  search,
   signal,
 }: TListSubstacksParams = {}): Promise<TSubstackEntity[]> {
-  const search = new URLSearchParams();
+  const queryParams = new URLSearchParams();
 
   if (limit !== undefined) {
-    search.set('limit', String(limit));
+    queryParams.set('limit', String(limit));
   }
 
-  const query = search.toString();
+  if (search !== undefined) {
+    queryParams.set('search', search);
+  }
+
+  const query = queryParams.toString();
 
   return getApi<TSubstackEntity[]>(
     createApiUrl(
@@ -135,12 +141,25 @@ export async function listSubstacks({
 }
 
 export async function getOwnedSubstacks({
+  search,
   signal,
-}: {
+  }: {
+  search?: string;
   signal?: AbortSignal;
 } = {}): Promise<TSubstackEntity[]> {
+  const queryParams = new URLSearchParams();
+
+  if (search !== undefined) {
+    queryParams.set('search', search);
+  }
+
+  const query = queryParams.toString();
+
   return getApi<TSubstackEntity[]>(
-    createApiUrl('/api/portal/substacks/owned', '/v1/substacks/owned'),
+    createApiUrl(
+      `/api/portal/substacks/owned${query ? `?${query}` : ''}`,
+      `/v1/substacks/owned${query ? `?${query}` : ''}`,
+    ),
     signal,
   );
 }

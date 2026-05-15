@@ -9,8 +9,10 @@ interface IUnsubscribeSubstackCommandParams {
   userId: string;
 }
 
+import type { SubstackEntity } from '@domain/auth';
+
 export class UnsubscribeSubstackCommand
-  implements ICommand<IUnsubscribeSubstackCommandParams, void>
+  implements ICommand<IUnsubscribeSubstackCommandParams, { substack: SubstackEntity }>
 {
   readonly #substackRepository: ISubstackRepository;
   readonly #substackSubscriptionRepository: ISubstackSubscriptionRepository;
@@ -26,7 +28,7 @@ export class UnsubscribeSubstackCommand
   public async exec({
     slug,
     userId,
-  }: IUnsubscribeSubstackCommandParams): Promise<void> {
+  }: IUnsubscribeSubstackCommandParams): Promise<{ substack: SubstackEntity }> {
     const substack = await this.#substackRepository.findOne({
       slug,
       approved: true,
@@ -36,5 +38,7 @@ export class UnsubscribeSubstackCommand
       userId,
       substackId: substack.id,
     });
+
+    return { substack };
   }
 }

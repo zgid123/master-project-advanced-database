@@ -114,11 +114,17 @@ export class AuthService {
 
   public async listOwnedSubstacks({
     authToken,
-  }: Pick<ISubstackRequestParams, 'authToken'>): Promise<Response> {
+    search = '',
+  }: Pick<ISubstackRequestParams, 'authToken'> & {
+    search?: string;
+  }): Promise<Response> {
+    const upstreamUrl = new URL('/v1/substacks/owned', this.#baseUrl);
+    upstreamUrl.search = search;
+
     return this.#authenticatedRequest({
       authToken,
       method: 'GET',
-      path: '/v1/substacks/owned',
+      path: `${upstreamUrl.pathname}${upstreamUrl.search}`,
     });
   }
 
