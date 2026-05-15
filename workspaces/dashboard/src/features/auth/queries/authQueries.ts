@@ -4,7 +4,7 @@ import {
   useCommand,
 } from '@alphacifer/react/query';
 import type { TSignIn, TSignUp } from '@domain/auth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   getProfile,
@@ -26,37 +26,56 @@ type TAuthMutationOptions<TVariables> = Omit<
   'mutationFn'
 >;
 
+let autoSignInPromise: Promise<void> | null = null;
 let triedAutoSignIn = false;
 
 export function useSession() {
   const user = useAuthStore.use.user();
   const setAuth = useAuthStore.use.setAuth();
+  const [isChecking, setIsChecking] = useState(!user && !triedAutoSignIn);
 
   useEffect(() => {
-    if (!user && !triedAutoSignIn) {
-      triedAutoSignIn = true;
-      getProfile()
-        .then((profile) => {
+    if (user || triedAutoSignIn) {
+      if (!user && autoSignInPromise) {
+        autoSignInPromise.finally(() => {
+          setIsChecking(false);
+        });
+      } else {
+        setIsChecking(false);
+      }
+      return;
+    }
+
+    if (!autoSignInPromise) {
+      autoSignInPromise = (async () => {
+        triedAutoSignIn = true;
+        try {
+          const profile = await getProfile();
           setAuth({
             user: profile,
             authToken: '',
             refreshToken: '',
           });
-        })
-        .catch(async (error) => {
-          if (error.code === 401) {
+        } catch (error) {
+          // biome-ignore lint/suspicious/noExplicitAny: ignore
+          if ((error as any).code === 401) {
             try {
               await refresh();
             } catch {
               // Refresh also failed, user needs to login
             }
           }
-        });
+        }
+      })();
     }
+
+    autoSignInPromise.finally(() => {
+      setIsChecking(false);
+    });
   }, [user, setAuth]);
 
   return {
-    isPending: !triedAutoSignIn && !user,
+    isPending: isChecking && !user,
     data: user ? { user } : null,
   };
 }

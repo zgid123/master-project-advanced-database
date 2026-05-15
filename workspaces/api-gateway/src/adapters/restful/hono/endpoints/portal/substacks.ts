@@ -19,6 +19,7 @@ export const substackEndpoints = new Hono<IApiGatewayContextVariables>()
   .get('/owned', async (c) => {
     const response = await c.var.authService.listOwnedSubstacks({
       authToken: c.get('authToken'),
+      search: new URL(c.req.url).search,
     });
 
     return forwardUpstreamResponse(c, response, {

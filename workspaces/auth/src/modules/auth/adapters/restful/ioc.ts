@@ -16,7 +16,7 @@ import {
   UserSubscriptionRepository,
 } from '../../infrastructure/drizzle/repositories';
 import { AllowedTokenRepository } from '../../infrastructure/redis/repositories/AllowedTokenRepository';
-import { NotificationService } from '../../infrastructure/services';
+import { NotificationService, RecsysService } from '../../infrastructure/services';
 
 export interface IAuthIoC {
   portal: {
@@ -26,6 +26,7 @@ export interface IAuthIoC {
     signOutCommand: SignOutCommand;
     signUserCommand: SignUserCommand;
     notificationService: NotificationService;
+    recsysService: RecsysService;
     refreshTokenCommand: RefreshTokenCommand;
     subscribeUserCommand: SubscribeUserCommand;
     unsubscribeUserCommand: UnsubscribeUserCommand;
@@ -58,6 +59,7 @@ export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
   );
 
   const notificationService = new NotificationService();
+  const recsysService = new RecsysService();
 
   return {
     portal: {
@@ -67,6 +69,7 @@ export function registerAuthIoC({ drizzle }: IRegisterIoCParams): IAuthIoC {
       signOutCommand,
       signUserCommand,
       notificationService,
+      recsysService,
       refreshTokenCommand,
       subscribeUserCommand,
       unsubscribeUserCommand,

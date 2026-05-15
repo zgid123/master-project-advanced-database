@@ -79,8 +79,8 @@ type TNotificationsResponse = {
 };
 
 export function TopicsPage() {
-  const [query, setQuery] = useState('solvit');
-  const [submittedQuery, setSubmittedQuery] = useState('solvit');
+  const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [state, setState] = useAsyncState<TTopicSearchResponse>();
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export function TopicsPage() {
           className='grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]'
           onSubmit={(event) => {
             event.preventDefault();
-            setSubmittedQuery(query.trim() || 'solvit');
+            setSubmittedQuery(query.trim());
           }}
         >
           <label className='flex h-11 min-w-0 items-center gap-3 rounded-xl border border-line bg-chip-bg px-3 text-sea-ink-soft'>

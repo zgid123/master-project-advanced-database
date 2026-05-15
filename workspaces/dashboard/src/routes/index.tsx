@@ -11,71 +11,21 @@ import {
   Sparkles,
   UsersRound,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Suspense, useDeferredValue, useEffect, useState } from 'react';
 
 import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
 import { useSession } from '#/features/auth/queries';
 import { SubstacksIsland } from '#/features/substack/components';
-import { TopicCard } from '#/features/topic/components';
+import {
+  TopicFormModal,
+  TopicList,
+  TopicListSkeleton,
+} from '#/features/topic/components';
 
 export const Route = createFileRoute('/')({
   component: App,
 });
-
-const questions = [
-  {
-    id: '1',
-    title: 'How should we model Reddit-style subscriptions with Q&A voting?',
-    substackId: 'Database Lab',
-    body: 'I need users to subscribe to substacks, follow topics, and still keep accepted answers searchable.',
-    voteScore: 42,
-    commentsCount: 9,
-    views: '1.8k',
-    tags: ['schema-design', 'postgres', 'drizzle'],
-    status: 'Answered',
-    isSolved: true,
-    slug: 'reddit-style-subscriptions',
-    userId: 'user-1',
-    createdAt: '2023-10-01T10:00:00Z',
-    updatedAt: '2023-10-01T10:00:00Z',
-    subscriptionsCount: 5,
-  },
-  {
-    id: '2',
-    title: 'Best way to merge StackOverflow answers and threaded comments?',
-    substackId: 'System Design',
-    body: 'Answers need canonical ranking, but each answer should support discussion without diluting the main solution.',
-    voteScore: 31,
-    commentsCount: 6,
-    views: '940',
-    tags: ['qna', 'comments', 'ranking'],
-    status: 'Hot',
-    isSolved: false,
-    slug: 'merge-stackoverflow-answers',
-    userId: 'user-2',
-    createdAt: '2023-10-02T11:00:00Z',
-    updatedAt: '2023-10-02T11:00:00Z',
-    subscriptionsCount: 3,
-  },
-  {
-    id: '3',
-    title: 'Should substack moderators approve every new post?',
-    substackId: 'React Patterns',
-    body: 'We want community-level moderation, creator ownership, and low friction posting for trusted members.',
-    voteScore: 18,
-    commentsCount: 3,
-    views: '512',
-    tags: ['moderation', 'roles', 'ux'],
-    status: 'Needs review',
-    isSolved: false,
-    slug: 'substack-moderators-approve',
-    userId: 'user-3',
-    createdAt: '2023-10-03T12:00:00Z',
-    updatedAt: '2023-10-03T12:00:00Z',
-    subscriptionsCount: 1,
-  },
-];
 
 const discussions = [
   {
@@ -98,6 +48,9 @@ const discussions = [
 function App() {
   const { data: session, isPending } = useSession();
   const [mounted, setMounted] = useState(false);
+  const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     setMounted(true);
@@ -128,7 +81,9 @@ function App() {
                   authEvents.emit('open', {
                     message: 'You need to be logged in to ask a question.',
                   });
+                  return;
                 }
+                setIsModalOpen(true);
               }}
               type='button'
               variant='secondary'
@@ -142,8 +97,10 @@ function App() {
               <Search className='size-4 shrink-0' />
               <input
                 className='min-w-0 flex-1 bg-transparent text-sm text-sea-ink outline-none placeholder:text-sea-ink-soft/70'
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder='Search questions, substacks, tags'
                 type='search'
+                value={search}
               />
             </label>
             <div className='grid grid-cols-3 gap-2 text-sm font-semibold'>
@@ -161,15 +118,16 @@ function App() {
           </div>
         </div>
         <div className='space-y-3'>
-          {questions.map((question, index) => (
-            <TopicCard
-              data={question}
-              index={index}
-              key={question.title}
-              variant='feed'
-            />
-          ))}
+          <Suspense fallback={<TopicListSkeleton />}>
+            <TopicList query={deferredSearch} />
+          </Suspense>
         </div>
+
+        <TopicFormModal
+          hideSubstackId={true}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </section>
       <aside className='space-y-5'>
         <section className='island-shell rise-in rounded-2xl p-4'>

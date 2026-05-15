@@ -16,11 +16,12 @@ const MAX_SUBSTACK_LIMIT = 50;
 export const substackEndpoints = new Hono<ISubstackContextVariables>()
   .use(authenticatedUserMiddleware)
   .get('/', async (c) => {
-    const { limit } = c.req.query();
+    const { limit, search } = c.req.query();
     const pagy = limit ? parsePagy({ limit }) : undefined;
 
     const substacks = await c.var.substack.portal.getSubstacksQuery.exec({
       limit: pagy ? Math.min(pagy.limit, MAX_SUBSTACK_LIMIT) : undefined,
+      search,
     });
 
     return c.json({
@@ -38,10 +39,12 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
     });
   })
   .get('/owned', requiredUserMiddleware, async (c) => {
+    const { search } = c.req.query();
     const currentUser = c.get('currentUser');
     const substacks = await c.var.substack.portal.getSubstacksByOwnerQuery.exec(
       {
         ownerId: currentUser.id,
+        search,
       },
     );
 
@@ -83,6 +86,11 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
             error,
           );
         });
+      c.var.auth.portal.recsysService
+        .createSubscriptionEvent(currentUser.id, 'substack', substack.id)
+        .catch((error: unknown) => {
+          console.error('Failed to create recsys subscription event', error);
+        });
     }
 
     return c.body(null, 204);
@@ -90,10 +98,20 @@ export const substackEndpoints = new Hono<ISubstackContextVariables>()
   .delete('/:slug/subscribe', async (c) => {
     const currentUser = c.get('currentUser');
 
-    await c.var.substack.portal.unsubscribeSubstackCommand.exec({
+    const slug = c.req.param('slug');
+
+    const { substack } = await c.var.substack.portal.unsubscribeSubstackCommand.exec({
       userId: currentUser.id,
-      slug: c.req.param('slug'),
+      slug,
     });
+
+    if (substack) {
+      c.var.auth.portal.recsysService
+        .deleteSubscriptionEvent(currentUser.id, 'substack', substack.id)
+        .catch((error: unknown) => {
+          console.error('Failed to delete recsys subscription event', error);
+        });
+    }
 
     return c.body(null, 204);
   })

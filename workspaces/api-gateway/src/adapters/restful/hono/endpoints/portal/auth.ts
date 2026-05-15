@@ -1,5 +1,5 @@
 import { type Context, Hono } from 'hono';
-import { getCookie } from 'hono/cookie';
+import { deleteCookie, getCookie } from 'hono/cookie';
 import type { StatusCode } from 'hono/utils/http-status';
 
 import {
@@ -42,6 +42,11 @@ function setAuthCookies(c: Context, body: string): void {
       expires: '1y',
     });
   }
+}
+
+function deleteAuthCookies(c: Context): void {
+  deleteCookie(c, AUTH_TOKEN_COOKIE_NAME);
+  deleteCookie(c, REFRESH_TOKEN_COOKIE_NAME);
 }
 
 export const authEndpoints = new Hono<IApiGatewayContextVariables>()
@@ -119,12 +124,23 @@ export const authEndpoints = new Hono<IApiGatewayContextVariables>()
   })
   .post('/sign-out', async (c) => {
     const { req, var: v } = c;
+    const reqBody = await req.text();
+    let parsed: { token?: string } = {};
+    try {
+      parsed = JSON.parse(reqBody);
+    } catch {}
+
+    const token = parsed.token || getCookie(c, REFRESH_TOKEN_COOKIE_NAME);
 
     const response = await v.authService.signOut({
-      body: await req.text(),
+      body: JSON.stringify({
+        token,
+      }),
       contentType: 'application/json',
     });
     const body = await response.text();
+
+    deleteAuthCookies(c);
 
     return c.newResponse(body, {
       statusText: response.statusText,

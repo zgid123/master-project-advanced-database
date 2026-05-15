@@ -4,6 +4,7 @@ import type { IQuery } from '@domain/core';
 export interface IGetSubstacksByOwnerParams {
   limit?: number;
   ownerId: string;
+  search?: string;
 }
 
 export class GetSubstacksByOwnerQuery
@@ -18,10 +19,12 @@ export class GetSubstacksByOwnerQuery
   public async exec({
     limit,
     ownerId,
+    search,
   }: IGetSubstacksByOwnerParams): Promise<SubstackEntity[]> {
     return this.#substackRepository.find({
       limit,
       ownerId,
+      search,
       includeDeleted: false,
     });
   }

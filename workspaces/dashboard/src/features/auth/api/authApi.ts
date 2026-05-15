@@ -87,15 +87,13 @@ export async function signOut(): Promise<void> {
   const state = useAuthStore.getState();
   const refreshToken = state.refreshToken;
 
-  if (refreshToken) {
-    await fetch('/api/auth/sign-out', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: refreshToken }),
-    }).catch((error) => {
-      console.error('Failed to call api-gateway sign-out', error);
-    });
-  }
+  await fetch('/api/auth/sign-out', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: refreshToken ?? undefined }),
+  }).catch((error) => {
+    console.error('Failed to call api-gateway sign-out', error);
+  });
 
   state.clearAuth();
 }

@@ -1,5 +1,24 @@
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
 
+function toCamelCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(toCamelCase);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.hasOwn(obj, key)) {
+        const newKey = key.replace(/_([a-z])/g, (_, letter) =>
+          letter.toUpperCase(),
+        );
+        newObj[newKey] = toCamelCase(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 export async function proxyQnaRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/$/, '').replace('/api/portal/qna', '');
@@ -28,10 +47,18 @@ export async function proxyQnaRequest(request: Request): Promise<Response> {
     body,
   });
 
-  const responseBody = await upstreamResponse.text();
+  const upstreamContentType = upstreamResponse.headers.get('content-type') ?? '';
+  let responseBody: any;
+
+  if (upstreamContentType.includes('application/json')) {
+    const json = await upstreamResponse.json();
+    responseBody = JSON.stringify(toCamelCase(json));
+  } else {
+    responseBody = await upstreamResponse.text();
+  }
+
   const responseHeaders = new Headers({
-    'content-type':
-      upstreamResponse.headers.get('content-type') ?? 'application/json',
+    'content-type': upstreamContentType || 'application/json',
   });
 
   return new Response(responseBody, {

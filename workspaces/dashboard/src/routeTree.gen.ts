@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TopicsRouteImport } from './routes/topics'
 import { Route as SignalsRouteImport } from './routes/signals'
 import { Route as SignalRouteImport } from './routes/signal'
 import { Route as SignUpRouteImport } from './routes/sign-up'
@@ -18,6 +17,7 @@ import { Route as RecommendationsRouteImport } from './routes/recommendations'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as TopicsRouteRouteImport } from './routes/topics/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicsIndexRouteImport } from './routes/topics/index'
 import { Route as SubstacksIndexRouteImport } from './routes/substacks/index'
@@ -45,11 +45,6 @@ import { Route as ApiPortalCommentsSplatRouteImport } from './routes/api/portal/
 import { Route as ApiPortalAuthProfileRouteImport } from './routes/api/portal/auth/profile'
 import { Route as ApiPortalSubstacksSlugSubscribeRouteImport } from './routes/api/portal/substacks/$slug/subscribe'
 
-const TopicsRoute = TopicsRouteImport.update({
-  id: '/topics',
-  path: '/topics',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignalsRoute = SignalsRouteImport.update({
   id: '/signals',
   path: '/signals',
@@ -90,6 +85,11 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsRouteRoute = TopicsRouteRouteImport.update({
+  id: '/topics',
+  path: '/topics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -98,7 +98,7 @@ const IndexRoute = IndexRouteImport.update({
 const TopicsIndexRoute = TopicsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => TopicsRoute,
+  getParentRoute: () => TopicsRouteRoute,
 } as any)
 const SubstacksIndexRoute = SubstacksIndexRouteImport.update({
   id: '/substacks/',
@@ -108,7 +108,7 @@ const SubstacksIndexRoute = SubstacksIndexRouteImport.update({
 const TopicsIdRoute = TopicsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => TopicsRoute,
+  getParentRoute: () => TopicsRouteRoute,
 } as any)
 const SubstacksSlugRouteRoute = SubstacksSlugRouteRouteImport.update({
   id: '/substacks/$slug',
@@ -230,6 +230,7 @@ const ApiPortalSubstacksSlugSubscribeRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/topics': typeof TopicsRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/jobs': typeof JobsRoute
   '/notifications': typeof NotificationsRoute
@@ -238,7 +239,6 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/signal': typeof SignalRoute
   '/signals': typeof SignalsRoute
-  '/topics': typeof TopicsRouteWithChildren
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
   '/topics/$id': typeof TopicsIdRoute
   '/substacks/': typeof SubstacksIndexRoute
@@ -303,6 +303,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/topics': typeof TopicsRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/jobs': typeof JobsRoute
   '/notifications': typeof NotificationsRoute
@@ -311,7 +312,6 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/signal': typeof SignalRoute
   '/signals': typeof SignalsRoute
-  '/topics': typeof TopicsRouteWithChildren
   '/substacks/$slug': typeof SubstacksSlugRouteRouteWithChildren
   '/topics/$id': typeof TopicsIdRoute
   '/substacks/': typeof SubstacksIndexRoute
@@ -342,6 +342,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/topics'
     | '/about'
     | '/jobs'
     | '/notifications'
@@ -350,7 +351,6 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/signal'
     | '/signals'
-    | '/topics'
     | '/substacks/$slug'
     | '/topics/$id'
     | '/substacks/'
@@ -414,6 +414,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/topics'
     | '/about'
     | '/jobs'
     | '/notifications'
@@ -422,7 +423,6 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/signal'
     | '/signals'
-    | '/topics'
     | '/substacks/$slug'
     | '/topics/$id'
     | '/substacks/'
@@ -452,6 +452,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TopicsRouteRoute: typeof TopicsRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   JobsRoute: typeof JobsRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -460,7 +461,6 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   SignalRoute: typeof SignalRoute
   SignalsRoute: typeof SignalsRoute
-  TopicsRoute: typeof TopicsRouteWithChildren
   SubstacksSlugRouteRoute: typeof SubstacksSlugRouteRouteWithChildren
   SubstacksIndexRoute: typeof SubstacksIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -486,13 +486,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/topics': {
-      id: '/topics'
-      path: '/topics'
-      fullPath: '/topics'
-      preLoaderRoute: typeof TopicsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/signals': {
       id: '/signals'
       path: '/signals'
@@ -549,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/topics': {
+      id: '/topics'
+      path: '/topics'
+      fullPath: '/topics'
+      preLoaderRoute: typeof TopicsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -561,7 +561,7 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/topics/'
       preLoaderRoute: typeof TopicsIndexRouteImport
-      parentRoute: typeof TopicsRoute
+      parentRoute: typeof TopicsRouteRoute
     }
     '/substacks/': {
       id: '/substacks/'
@@ -575,7 +575,7 @@ declare module '@tanstack/react-router' {
       path: '/$id'
       fullPath: '/topics/$id'
       preLoaderRoute: typeof TopicsIdRouteImport
-      parentRoute: typeof TopicsRoute
+      parentRoute: typeof TopicsRouteRoute
     }
     '/substacks/$slug': {
       id: '/substacks/$slug'
@@ -734,18 +734,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface TopicsRouteChildren {
+interface TopicsRouteRouteChildren {
   TopicsIdRoute: typeof TopicsIdRoute
   TopicsIndexRoute: typeof TopicsIndexRoute
 }
 
-const TopicsRouteChildren: TopicsRouteChildren = {
+const TopicsRouteRouteChildren: TopicsRouteRouteChildren = {
   TopicsIdRoute: TopicsIdRoute,
   TopicsIndexRoute: TopicsIndexRoute,
 }
 
-const TopicsRouteWithChildren =
-  TopicsRoute._addFileChildren(TopicsRouteChildren)
+const TopicsRouteRouteWithChildren = TopicsRouteRoute._addFileChildren(
+  TopicsRouteRouteChildren,
+)
 
 interface SubstacksSlugRouteRouteChildren {
   SubstacksSlugIndexRoute: typeof SubstacksSlugIndexRoute
@@ -774,6 +775,7 @@ const ApiPortalSubstacksSlugRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TopicsRouteRoute: TopicsRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   JobsRoute: JobsRoute,
   NotificationsRoute: NotificationsRoute,
@@ -782,7 +784,6 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   SignalRoute: SignalRoute,
   SignalsRoute: SignalsRoute,
-  TopicsRoute: TopicsRouteWithChildren,
   SubstacksSlugRouteRoute: SubstacksSlugRouteRouteWithChildren,
   SubstacksIndexRoute: SubstacksIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

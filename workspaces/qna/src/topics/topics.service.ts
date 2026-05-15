@@ -214,63 +214,17 @@ export class TopicsService {
     const pageNumber = Number(page ?? 1) || 1;
     const limitNumber = Number(limit ?? 10) || 10;
 
-    if (!normalizedQuery) {
-      let recommendedIds: string[] = [];
-      if (user_id && pageNumber === 1) {
-        try {
-          recommendedIds = await RecommendationService.getPersonalizedTopicIds(
-            user_id,
-            limitNumber,
-          );
-        } catch (err) {
-          console.error('RecSys feed error:', err?.message || err);
-          recommendedIds = [];
-        }
+    let recommendedIds: string[] = [];
+    if (!normalizedQuery && !substack_id && user_id && pageNumber === 1) {
+      try {
+        recommendedIds = await RecommendationService.getPersonalizedTopicIds(
+          user_id,
+          limitNumber,
+        );
+      } catch (err) {
+        console.error('RecSys feed error:', err?.message || err);
+        recommendedIds = [];
       }
-
-      const [recommendedTopics, newestTopics, newestTotal] = await Promise.all([
-        recommendedIds.length
-          ? this.topicsRepo.findByIdsAny(recommendedIds)
-          : Promise.resolve([]),
-        this.topicsRepo.findNewestNoSubstack(pageNumber, limitNumber),
-        this.topicsRepo.countNewestNoSubstack(),
-      ]);
-
-      const recommendedMap = new Map(
-        recommendedTopics.map((topic: any) => [topic._id.toString(), topic]),
-      );
-      const orderedRecommended = recommendedIds
-        .map((id) => recommendedMap.get(id))
-        .filter(Boolean);
-
-      const combined: any[] = [];
-      const seen = new Set<string>();
-      for (const topic of orderedRecommended) {
-        const id = topic._id.toString();
-        if (seen.has(id)) continue;
-        seen.add(id);
-        combined.push(topic);
-      }
-      for (const topic of newestTopics) {
-        const id = topic._id.toString();
-        if (seen.has(id)) continue;
-        seen.add(id);
-        combined.push(topic);
-        if (combined.length >= limitNumber) break;
-      }
-
-      const recommendedExtraCount = orderedRecommended.filter(
-        (topic: any) => !!topic.substack_id,
-      ).length;
-      const total = newestTotal + recommendedExtraCount;
-
-      return await this.buildTopicSearchResponse(
-        combined,
-        pageNumber,
-        limitNumber,
-        total,
-        user_id,
-      );
     }
 
     const searchResult = await this.searchService.searchTopics(
@@ -280,25 +234,72 @@ export class TopicsService {
       substack_id,
     );
 
-    const topics = await this.topicsRepo.findByIds(
-      searchResult.ids.filter((id): id is string => typeof id === 'string'),
-      substack_id,
-    );
+    let topics: any[] = [];
+    let total = 0;
 
-    const topicMap = new Map(
-      topics.map(topic => [topic._id.toString(), topic]),
-    );
+    if (searchResult.total === 0) {
+      // Fallback to MongoDB
+      const fallback = await this.topicsRepo.getTopicsWithAggregates(
+        normalizedQuery,
+        pageNumber,
+        limitNumber,
+        substack_id,
+      );
+      topics = fallback.topics;
+      total = fallback.total;
+    } else {
+      const dbTopics = await this.topicsRepo.findByIds(
+        searchResult.ids.filter((id): id is string => typeof id === 'string'),
+        substack_id,
+      );
 
-    const orderedTopics = searchResult.ids
-      .filter((id): id is string => typeof id === 'string')
-      .map(id => topicMap.get(id))
-      .filter(Boolean);
+      const topicMap = new Map(
+        dbTopics.map(topic => [topic._id.toString(), topic]),
+      );
+
+      topics = searchResult.ids
+        .filter((id): id is string => typeof id === 'string')
+        .map(id => topicMap.get(id))
+        .filter(Boolean);
+      total = searchResult.total;
+    }
+
+    if (!normalizedQuery && recommendedIds.length > 0 && pageNumber === 1) {
+      const recommendedTopics = await this.topicsRepo.findByIdsAny(recommendedIds);
+      const recommendedMap = new Map(
+        recommendedTopics.map((topic: any) => [topic._id.toString(), topic]),
+      );
+      const orderedRecommended = recommendedIds
+        .map((id) => recommendedMap.get(id))
+        .filter(Boolean);
+
+      const combined: any[] = [];
+      const seen = new Set<string>();
+      
+      // Limit recommendations to at most 3 items to ensure diversity
+      const maxRecommendations = 3;
+      
+      for (const t of orderedRecommended) {
+        if (combined.length >= maxRecommendations) break;
+        seen.add(t._id.toString());
+        combined.push(t);
+      }
+      
+      for (const t of topics) {
+        if (!seen.has(t._id.toString())) {
+          combined.push(t);
+          if (combined.length >= limitNumber) break;
+        }
+      }
+      topics = combined;
+      total = Math.max(total, topics.length); // Rough estimate for total
+    }
 
     return await this.buildTopicSearchResponse(
-      orderedTopics,
+      topics,
       pageNumber,
       limitNumber,
-      searchResult.total,
+      total,
       user_id,
     );
   }

@@ -18,6 +18,8 @@ const PUBLIC_ROUTES = new Set([
 ]);
 
 const SUBSTACK_DETAIL_PATTERN = /^\/v1\/substacks\/[^/]+$/;
+const TOPIC_DETAIL_PATTERN = /^\/v1\/topics\/[^/]+$/;
+const TOPIC_COMMENTS_PATTERN = /^\/v1\/topics\/[^/]+\/comments$/;
 
 function getAuthToken(c: Context): string {
   const authorization = c.req.header('authorization') ?? '';
@@ -45,11 +47,19 @@ function isPublicRoute(c: Context): boolean {
     return false;
   }
 
-  if (pathname === '/v1/substacks' || pathname === '/v1/substacks/total') {
+  if (
+    pathname === '/v1/substacks' ||
+    pathname === '/v1/substacks/total' ||
+    pathname === '/v1/topics/search'
+  ) {
     return true;
   }
 
-  return SUBSTACK_DETAIL_PATTERN.test(pathname);
+  return (
+    SUBSTACK_DETAIL_PATTERN.test(pathname) ||
+    TOPIC_DETAIL_PATTERN.test(pathname) ||
+    TOPIC_COMMENTS_PATTERN.test(pathname)
+  );
 }
 
 export const authMiddleware: MiddlewareHandler<

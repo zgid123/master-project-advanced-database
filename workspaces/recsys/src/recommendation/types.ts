@@ -8,6 +8,7 @@ export type CandidateSource =
 
 export type Candidate = {
   topicId: string;
+  authorId?: string | null;
   createdAt: number;
   substackId: string | null;
   popularity: number;

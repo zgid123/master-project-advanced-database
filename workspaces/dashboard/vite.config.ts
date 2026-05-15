@@ -10,6 +10,10 @@ const config = defineConfig({
     tsconfigPaths: true,
   },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  server: {
+    port: 4000,
+    host: true,
+  },
 });
 
 export default config;

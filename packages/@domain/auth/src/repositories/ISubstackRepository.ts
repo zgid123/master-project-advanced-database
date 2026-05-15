@@ -8,12 +8,14 @@ export interface IFindOneSubstackParams {
 
 export interface IFindSubstackParams {
   limit?: number;
+  search?: string;
   ownerId?: string;
   approved?: boolean;
   includeDeleted?: boolean;
 }
 
 export interface ICountSubstackParams {
+  search?: string;
   approved?: boolean;
 }
 

@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@alphacifer/react/query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
+import { useDeferredValue, useState, Suspense } from 'react';
 
 import { Button } from '#/components/ui/button';
 import {
@@ -10,54 +11,12 @@ import {
   SubstacksIslandSkeleton,
 } from '#/features/substack/components';
 import { substackDetailQueryOptions } from '#/features/substack/queries';
-import { TopicCard } from '#/features/topic/components';
+import { TopicList, TopicListSkeleton } from '#/features/topic/components';
 
 export const Route = createFileRoute('/substacks/$slug/')({
   component: SubstackDetailPage,
   pendingComponent: SubstackDetailSkeleton,
 });
-
-const mockTopics = [
-  {
-    id: '1',
-    title: 'How to handle high-concurrency writes in Drizzle?',
-    userId: 'Alex River',
-    commentsCount: 12,
-    voteScore: 84,
-    tags: ['drizzle', 'postgres', 'performance'],
-    isSolved: true,
-    slug: 'high-concurrency-writes-drizzle',
-    createdAt: '2023-10-01T10:00:00Z',
-    updatedAt: '2023-10-01T10:00:00Z',
-    subscriptionsCount: 10,
-  },
-  {
-    id: '2',
-    title: 'Best practices for schema migrations in a monorepo?',
-    userId: 'Sam Chen',
-    commentsCount: 5,
-    voteScore: 31,
-    tags: ['migrations', 'turbo', 'dx'],
-    isSolved: false,
-    slug: 'schema-migrations-monorepo',
-    createdAt: '2023-10-02T11:00:00Z',
-    updatedAt: '2023-10-02T11:00:00Z',
-    subscriptionsCount: 4,
-  },
-  {
-    id: '3',
-    title: 'Should we use UUID or ULID for public-facing substack IDs?',
-    userId: 'Jordan Lee',
-    commentsCount: 18,
-    voteScore: 56,
-    tags: ['database', 'design', 'security'],
-    isSolved: false,
-    slug: 'uuid-or-ulid-substack-ids',
-    createdAt: '2023-10-03T12:00:00Z',
-    updatedAt: '2023-10-03T12:00:00Z',
-    subscriptionsCount: 7,
-  },
-];
 
 const contributors = [
   { name: 'Sarah Drasner', role: 'Maintainer', points: '12.4k' },
@@ -98,6 +57,9 @@ export function SubstackDetailSkeleton() {
 
 function SubstackDetailPage() {
   const { slug } = Route.useParams();
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
+
   const { data: substack } = useSuspenseQuery(
     substackDetailQueryOptions({
       slug,
@@ -137,7 +99,9 @@ function SubstackDetailPage() {
             <Search className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sea-ink-soft' />
             <input
               className='h-10 w-full rounded-xl border border-line bg-chip-bg pl-9 pr-4 text-sm outline-none placeholder:text-sea-ink-soft/50 focus:border-lagoon/50'
+              onChange={(e) => setSearch(e.target.value)}
               placeholder='Search topics...'
+              value={search}
             />
           </div>
           <Button className='h-10 gap-2 rounded-xl bg-white/5 border border-line font-bold text-sea-ink hover:bg-white/10'>
@@ -146,14 +110,13 @@ function SubstackDetailPage() {
           </Button>
         </div>
         <div className='space-y-3'>
-          {mockTopics.map((topic, i) => (
-            <TopicCard
-              data={topic}
-              index={i}
-              key={topic.title}
+          <Suspense fallback={<TopicListSkeleton />}>
+            <TopicList
+              query={deferredSearch}
+              substackId={substack.id}
               variant='community'
             />
-          ))}
+          </Suspense>
         </div>
       </main>
       <aside className='space-y-5'>

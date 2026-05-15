@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@alphacifer/react/query';
 import { Plus, Search } from 'lucide-react';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useDeferredValue, useEffect, useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { useSession } from '#/features/auth/queries/authQueries';
@@ -15,12 +15,13 @@ export function SubstackList() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [mounted, setMounted] = useState(false);
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { data: allSubstacks } = useSuspenseQuery(substackListQueryOptions());
   const { data: session, isPending } = useSession();
   const currentUser = session?.user;
 
@@ -59,8 +60,10 @@ export function SubstackList() {
           <Search className='size-5 shrink-0' />
           <input
             className='min-w-0 flex-1 bg-transparent text-base text-sea-ink outline-none placeholder:text-sea-ink-soft/70'
+            onChange={(e) => setSearch(e.target.value)}
             placeholder='Search substacks by name or description...'
             type='search'
+            value={search}
           />
         </label>
         <div className='flex gap-2'>
@@ -82,14 +85,23 @@ export function SubstackList() {
         </div>
       </div>
 
-      {selectedFilter === 'All' && <SubstackGrid substacks={allSubstacks} />}
-      {selectedFilter === 'My Substacks' && (
-        <Suspense fallback={<SubstackListSkeleton />}>
-          <MySubstackList />
-        </Suspense>
-      )}
+      <Suspense fallback={<SubstackListSkeleton />}>
+        {selectedFilter === 'All' && (
+          <AllSubstackList search={deferredSearch} />
+        )}
+        {selectedFilter === 'My Substacks' && (
+          <MySubstackList search={deferredSearch} />
+        )}
+      </Suspense>
 
       <SubstackFormModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );
+}
+
+function AllSubstackList({ search }: { search: string }) {
+  const { data: allSubstacks } = useSuspenseQuery(
+    substackListQueryOptions({ search }),
+  );
+  return <SubstackGrid substacks={allSubstacks} />;
 }
