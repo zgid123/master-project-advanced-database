@@ -1,5 +1,7 @@
-import { closeMongo, getDb } from '../src/db/mongo.js';
+import 'dotenv/config';
+
 import { down, up } from '../src/db/migrations/001_indexes.js';
+import { closeMongo, getDb } from '../src/db/mongo.js';
 
 const action = process.argv[2] ?? 'up';
 

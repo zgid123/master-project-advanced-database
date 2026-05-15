@@ -7,9 +7,9 @@ import { SUBSTACK_QUERY_KEYS } from './queryKeys';
 export function useDeleteSubstackCommand() {
   const queryClient = useQueryClient();
 
-  return useCommand(deleteSubstack, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+  return useCommand((slug: string) => deleteSubstack(slug), {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: SUBSTACK_QUERY_KEYS.root,
       });
     },

@@ -12,7 +12,9 @@ export class NotificationService {
 
   constructor() {
     this.#baseUrl =
-      process.env.NOTIFICATIONS_SERVICE_URL ?? 'http://localhost:3002';
+      process.env.NOTIFICATIONS_SERVICE_URL ??
+      process.env.NOTIFICATION_SERVICE_URL ??
+      'http://localhost:3002';
   }
 
   public async listNotifications({

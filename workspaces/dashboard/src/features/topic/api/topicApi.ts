@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: ignore */
 import type { IErrorProps } from '@alphacifer/react/query';
 
 import type { TSearchTopicsResponse, TTopic } from '../types';
@@ -26,9 +27,9 @@ function createApiUrl(dashboardPath: string, gatewayPath: string): string {
 
 function throwTopicError(response: Response, payload: TApiResponse<unknown>) {
   const message =
-    payload.detail ??
-    payload.message ??
-    response.statusText ??
+    (Array.isArray(payload.message) ? payload.message[0] : payload.message) ||
+    payload.detail ||
+    response.statusText ||
     'Request failed';
 
   throw {
@@ -134,11 +135,7 @@ export async function getTopicDetail({
     throwTopicError(response, payload);
   }
 
-  if (!payload.data) {
-    throwTopicError(new Response(null, { status: 404 }), payload);
-  }
-
-  return payload.data as TTopic;
+  return (payload.data ?? payload) as TTopic;
 }
 
 export async function createTopic({
@@ -169,11 +166,7 @@ export async function createTopic({
     throwTopicError(response, payload);
   }
 
-  if (!payload.data) {
-    throwTopicError(new Response(null, { status: 400 }), payload);
-  }
-
-  return payload.data as TTopic;
+  return (payload.data ?? payload) as TTopic;
 }
 
 export async function updateTopic({
@@ -203,11 +196,7 @@ export async function updateTopic({
     throwTopicError(response, payload);
   }
 
-  if (!payload.data) {
-    throwTopicError(new Response(null, { status: 400 }), payload);
-  }
-
-  return payload.data as TTopic;
+  return (payload.data ?? payload) as TTopic;
 }
 
 export async function deleteTopic(id: string): Promise<void> {
@@ -237,11 +226,7 @@ export async function solveTopic(id: string): Promise<TTopic> {
     throwTopicError(response, payload);
   }
 
-  if (!payload.data) {
-    throwTopicError(new Response(null, { status: 400 }), payload);
-  }
-
-  return payload.data as TTopic;
+  return (payload.data ?? payload) as TTopic;
 }
 
 export async function voteTopic({

@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2026-05-13T15:23:40.289Z
+Generated: 2026-05-15T17:22:19.710Z
 
 ## Tool Run
 
@@ -19,11 +19,11 @@ Generated: 2026-05-13T15:23:40.289Z
 | Component | Files scanned | REST/server routes | Exported function/class APIs | Main role |
 | --- | ---: | ---: | ---: | --- |
 | API Gateway | 20 | 35 | 37 | Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes. |
-| Auth Service | 77 | 18 | 136 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
-| Dashboard | 93 | 33 | 100 | TanStack Start UI plus server proxy routes for auth, substacks, topics, notifications, jobs, and recommendations. |
-| Job Service | 25 | 12 | 44 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
+| Auth Service | 78 | 18 | 139 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
+| Dashboard | 126 | 35 | 137 | TanStack Start UI plus server proxy routes for auth, substacks, topics, notifications, jobs, and recommendations. |
+| Job Service | 26 | 12 | 44 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 39 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
-| Q&A Service | 44 | 17 | 130 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
+| Q&A Service | 45 | 17 | 138 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
 | Recommendation Service | 29 | 19 | 81 | Fastify recommendation routes, Redis stream ingestion, Neo4j graph logic, ranking/scoring, BullMQ jobs, metrics. |
 | Shared Domain - Auth | 30 | 0 | 66 | Auth/substack/user schemas, entities, repository contracts, and domain errors. |
 | Shared Domain - Notification | 7 | 0 | 6 | Notification schema, entity, and repository contract. |
@@ -101,6 +101,10 @@ Generated: 2026-05-13T15:23:40.289Z
 - `POST /api/portal/comments/$`
 - `GET /api/portal/notifications`
 - `PATCH /api/portal/notifications/$`
+- `DELETE /api/portal/qna/$`
+- `GET /api/portal/qna/$`
+- `PATCH /api/portal/qna/$`
+- `POST /api/portal/qna/$`
 - `GET /api/portal/substacks`
 - `POST /api/portal/substacks`
 - `DELETE /api/portal/substacks/$slug`
@@ -124,8 +128,6 @@ Generated: 2026-05-13T15:23:40.289Z
 - `PATCH /api/services/jobs/$`
 - `POST /api/services/jobs/$`
 - `GET /api/services/me/applications`
-- `GET /api/services/recommendations`
-- `GET /api/services/recommendations/$`
 
 ### Job Service
 
@@ -230,26 +232,26 @@ Representative callable/class APIs from the generated inventory:
 - `authenticatedUserMiddleware`
 - `AuthError`
 - `AuthError.invalidCredentials`
-- Additional generated callable APIs: 124. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 127. See `API_INVENTORY.md` for the full list.
 
 ### Dashboard
 
 TanStack Start UI plus server proxy routes for auth, substacks, topics, notifications, jobs, and recommendations.
 
 Representative callable/class APIs from the generated inventory:
+- `acceptComment`
 - `AUTH_MUTATION_KEYS`
 - `authEvents`
 - `AuthForm`
 - `AuthModal`
 - `BetterAuthHeader`
 - `cn`
+- `CommentForm`
+- `CommentListSkeleton`
+- `commentsQueryOptions`
 - `CommunityTopic`
-- `createSubstack`
-- `createUpstreamPath`
-- `deleteSubstack`
-- `FeedTopic`
-- `Footer`
-- Additional generated callable APIs: 88. See `API_INVENTORY.md` for the full list.
+- `createComment`
+- Additional generated callable APIs: 125. See `API_INVENTORY.md` for the full list.
 
 ### Job Service
 
@@ -306,7 +308,7 @@ Representative callable/class APIs from the generated inventory:
 - `CommentResponseDto`
 - `CommentSchema`
 - `CommentsController`
-- Additional generated callable APIs: 118. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 126. See `API_INVENTORY.md` for the full list.
 
 ### Recommendation Service
 
@@ -379,7 +381,7 @@ Representative callable/class APIs from the generated inventory:
 
 ## Architecture-Relevant Conclusions From API Surface
 
-1. The current generated surface is 139 REST/server routes and 646 exported function/class APIs.
+1. The current generated surface is 141 REST/server routes and 694 exported function/class APIs.
 2. API Gateway fronts Auth, Notifications, public Substacks, and Q&A topic/comment routes.
 3. Dashboard now provides server proxy routes for Auth, Substacks, Q&A topics/comments, Notifications, Job Service, and Recommendation Service.
 4. Job Service and RecSys remain standalone upstream services; Dashboard proxies them directly rather than through API Gateway.

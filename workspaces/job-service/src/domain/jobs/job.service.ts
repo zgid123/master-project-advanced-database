@@ -1,4 +1,10 @@
-import { delKeys, getJsonWithTtl, setJson, shouldRefreshEarly, singleFlight } from '../../cache/job-cache.js';
+import {
+  delKeys,
+  getJsonWithTtl,
+  setJson,
+  shouldRefreshEarly,
+  singleFlight,
+} from '../../cache/job-cache.js';
 import { withMongoTransaction } from '../../db/mongo.js';
 import { logger } from '../../observability/logger.js';
 import { HttpError } from '../errors.js';
@@ -6,15 +12,15 @@ import type { KeysetCursor } from '../pagination.js';
 import { encodeCursor } from '../pagination.js';
 import { JobRepo } from './job.repo.js';
 import {
-  serializeJob,
-  serializeJobListItem,
-  serializeJobSearchItem,
   type CreateJobInput,
   type JobDoc,
   type JobListDoc,
   type JobResponse,
   type JobSearchDoc,
   type JobStatus,
+  serializeJob,
+  serializeJobListItem,
+  serializeJobSearchItem,
   type UpdateJobInput,
 } from './job.types.js';
 
@@ -29,19 +35,26 @@ const allowedJobTransitions: Record<JobStatus, JobStatus[]> = {
 
 function assertStatusTransition(from: JobStatus, to: JobStatus): void {
   if (from === to) {
-    throw new HttpError(400, 'NOOP_STATUS_TRANSITION', 'Job status is already set to that value');
+    throw new HttpError(
+      400,
+      'NOOP_STATUS_TRANSITION',
+      'Job status is already set to that value',
+    );
   }
 
   if (!allowedJobTransitions[from].includes(to)) {
-    throw new HttpError(409, 'INVALID_STATUS_TRANSITION', `Cannot change job status from ${from} to ${to}`);
+    throw new HttpError(
+      409,
+      'INVALID_STATUS_TRANSITION',
+      `Cannot change job status from ${from} to ${to}`,
+    );
   }
 }
 
-function pageResponse<T extends { createdAt: Date; _id: { toHexString(): string } }, R>(
-  rows: T[],
-  limit: number,
-  serialize: (row: T) => R,
-) {
+function pageResponse<
+  T extends { createdAt: Date; _id: { toHexString(): string } },
+  R,
+>(rows: T[], limit: number, serialize: (row: T) => R) {
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
 
@@ -55,25 +68,44 @@ export const JobService = {
   async getById(id: string): Promise<JobResponse | null> {
     const cacheKey = `job:${id}`;
     const cached = await getJsonWithTtl<JobResponse>(cacheKey);
-    if (cached.value && !shouldRefreshEarly(cached.ttlMs, jobCacheTtlSeconds)) return cached.value;
+    if (cached.value && !shouldRefreshEarly(cached.ttlMs, jobCacheTtlSeconds))
+      return cached.value;
 
     try {
-      return await singleFlight(`lock:${cacheKey}`, cacheKey, async () => {
-        const doc = await JobRepo.findById(id);
-        const response = doc ? serializeJob(doc) : null;
-        if (response) await setJson(cacheKey, response, jobCacheTtlSeconds);
-        return response;
-      }, { forceRefresh: Boolean(cached.value) });
+      return await singleFlight(
+        `lock:${cacheKey}`,
+        cacheKey,
+        async () => {
+          const doc = await JobRepo.findById(id);
+          const response = doc ? serializeJob(doc) : null;
+          if (response) await setJson(cacheKey, response, jobCacheTtlSeconds);
+          return response;
+        },
+        { forceRefresh: Boolean(cached.value) },
+      );
     } catch (error) {
-      logger.warn({ error, id }, 'job cache single-flight failed; falling back to database');
+      logger.warn(
+        { error, id },
+        'job cache single-flight failed; falling back to database',
+      );
       if (cached.value) return cached.value;
       const doc = await JobRepo.findById(id);
       return doc ? serializeJob(doc) : null;
     }
   },
 
-  async listOpen(cursor: KeysetCursor | null, limit: number) {
-    const rows = await JobRepo.listOpenKeyset(cursor, limit + 1);
+  async listOpen(
+    cursor: KeysetCursor | null,
+    limit: number,
+    location: string | null = null,
+    type: string | null = null,
+  ) {
+    const rows = await JobRepo.listOpenKeyset(
+      cursor,
+      limit + 1,
+      location,
+      type,
+    );
     return pageResponse<JobListDoc, ReturnType<typeof serializeJobListItem>>(
       rows,
       limit,
@@ -81,7 +113,12 @@ export const JobService = {
     );
   },
 
-  async search(q: string, location: string | null, type: string | null, limit: number) {
+  async search(
+    q: string,
+    location: string | null,
+    type: string | null,
+    limit: number,
+  ) {
     const rows = await JobRepo.fullTextSearch(q, location, type, limit);
     return {
       items: rows.map((row: JobSearchDoc) => serializeJobSearchItem(row)),
@@ -103,10 +140,18 @@ export const JobService = {
     return serializeJob(doc);
   },
 
-  async update(id: string, patch: UpdateJobInput, actorUserId: string): Promise<JobResponse> {
+  async update(
+    id: string,
+    patch: UpdateJobInput,
+    actorUserId: string,
+  ): Promise<JobResponse> {
     if (patch.status) {
       if (!patch.expectedStatus) {
-        throw new HttpError(400, 'EXPECTED_STATUS_REQUIRED', 'expectedStatus is required for status updates');
+        throw new HttpError(
+          400,
+          'EXPECTED_STATUS_REQUIRED',
+          'expectedStatus is required for status updates',
+        );
       }
       assertStatusTransition(patch.expectedStatus, patch.status);
     }
@@ -118,16 +163,28 @@ export const JobService = {
       }
 
       if (target.postedByUserId.toHexString() !== actorUserId) {
-        throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can update this job');
+        throw new HttpError(
+          403,
+          'FORBIDDEN',
+          'Only the job poster can update this job',
+        );
       }
 
       if (patch.expectedStatus && target.status !== patch.expectedStatus) {
-        throw new HttpError(409, 'JOB_UPDATE_CONFLICT', 'Job status precondition failed');
+        throw new HttpError(
+          409,
+          'JOB_UPDATE_CONFLICT',
+          'Job status precondition failed',
+        );
       }
 
       const row = await JobRepo.updateCAS(id, patch, session);
       if (!row) {
-        throw new HttpError(409, 'JOB_UPDATE_CONFLICT', 'Job was not found or status precondition failed');
+        throw new HttpError(
+          409,
+          'JOB_UPDATE_CONFLICT',
+          'Job was not found or status precondition failed',
+        );
       }
 
       if (patch.status) {
@@ -153,7 +210,11 @@ export const JobService = {
       }
 
       if (target.postedByUserId.toHexString() !== actorUserId) {
-        throw new HttpError(403, 'FORBIDDEN', 'Only the job poster can delete this job');
+        throw new HttpError(
+          403,
+          'FORBIDDEN',
+          'Only the job poster can delete this job',
+        );
       }
 
       const row = await JobRepo.softDelete(id, session);

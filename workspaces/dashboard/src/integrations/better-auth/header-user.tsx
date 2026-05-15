@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { LogOut, UserRound } from 'lucide-react';
+import { Bell, LogOut, UserRound } from 'lucide-react';
 
 import { Button } from '#/components/ui/button';
 import { useSession, useSignOutCommand } from '#/features/auth/queries';
@@ -24,6 +24,15 @@ export default function BetterAuthHeader() {
 
     return (
       <div className='flex items-center gap-2'>
+        <Link
+          activeProps={{
+            className: 'bg-lagoon/16 text-lagoon-deep border-lagoon/35',
+          }}
+          className='inline-flex size-9 items-center justify-center rounded-full border border-chip-line bg-chip-bg text-sea-ink hover:bg-link-bg-hover'
+          to='/notifications'
+        >
+          <Bell className='size-4' />
+        </Link>
         <div className='hidden max-w-45 items-center gap-2 rounded-full border border-chip-line bg-chip-bg px-3 py-1.5 text-sm font-semibold text-sea-ink sm:flex'>
           <UserRound className='size-4' />
           <span className='truncate'>{displayName}</span>

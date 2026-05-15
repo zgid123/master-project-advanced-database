@@ -40,7 +40,6 @@ proxy routes that keep gateway tokens in HTTP-only cookies.
 | `POST`, `PATCH`, `DELETE` | `/api/portal/comments/*` | Proxy to Gateway Q&A comment routes |
 | `GET`, `PATCH` | `/api/portal/notifications/*` | Proxy to Gateway notification list/read routes |
 | `GET`, `POST`, `PATCH`, `DELETE` | `/api/services/jobs/*` | Proxy to Job Service public and protected job/application routes |
-| `GET` | `/api/services/recommendations/*` | Proxy to RecSys feed/discovery routes |
 
 The complete generated API inventory is in `../../API_REPORT.md`.
 
@@ -69,7 +68,6 @@ pnpm --filter dashboard dev
 | --- | --- | --- |
 | `API_GATEWAY_URL` | `http://localhost:3000` | Gateway base URL for server proxy calls |
 | `JOB_SERVICE_URL` | `http://localhost:3010` | Job Service base URL for dashboard server proxy calls |
-| `RECSYS_SERVICE_URL` | `http://localhost:3020` | RecSys base URL for dashboard server proxy calls |
 | `BETTER_AUTH_URL` | `http://localhost:4000` | Better Auth local base URL |
 | `BETTER_AUTH_SECRET` | development fallback | Better Auth signing secret |
 
@@ -82,8 +80,7 @@ pnpm --filter dashboard dev
   backed by the dashboard substack API wrapper.
 - `/substacks` renders the substack list, and `/substacks/$slug` renders a
   substack detail page backed by the dashboard substack API/query layer.
-- `/topics`, `/notifications`, `/jobs`, `/recommendations`, `/signal`, and
-  `/signals` expose service consoles for Q&A, Notifications, Job Service, and
-  RecSys.
+- `/topics`, `/notifications`, and `/jobs` expose service consoles for Q&A,
+  Notifications, and Job Service.
 - Job Service protected mutations are wired, but the architecture still needs a
   canonical JWT subject contract before they can work reliably with Auth tokens.

@@ -1,17 +1,28 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { CreateTopicDto } from './dto/create-topic.dto';
-import { NotificationService } from '../notifications/notification.service';
-import { UpdateTopicDto } from './dto/update-topic.dto';
-import { TopicsRepo } from './topic.repo';
-import { VoteTopicDto } from './dto/vote-topic.dto';
-import { VotesRepo } from '../votes/votes.repo';
-import { TopicSubscriptionsRepo } from '../topic_subscriptions/topic_subscriptions.repo';
-import { CommentsRepo } from '../comments/comments.repo';
+import { randomUUID } from 'node:crypto';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
-import { SearchTopicDto } from './dto/search-topic.dto';
-import { SearchService } from 'src/search/search.service';
-import { randomUUID } from 'crypto';
 import { RecommendationService } from 'src/recommendations/recommendation.service';
+// biome-ignore lint/style/useImportType: NestJS needs the class value for dependency injection
+import { SearchService } from 'src/search/search.service';
+
+// biome-ignore lint/style/useImportType: NestJS needs the class value for dependency injection
+import { CommentsRepo } from '../comments/comments.repo';
+import { NotificationService } from '../notifications/notification.service';
+// biome-ignore lint/style/useImportType: NestJS needs the class value for dependency injection
+import { TopicSubscriptionsRepo } from '../topic_subscriptions/topic_subscriptions.repo';
+// biome-ignore lint/style/useImportType: NestJS needs the class value for dependency injection
+import { VotesRepo } from '../votes/votes.repo';
+import type { CreateTopicDto } from './dto/create-topic.dto';
+import type { SearchTopicDto } from './dto/search-topic.dto';
+import type { UpdateTopicDto } from './dto/update-topic.dto';
+import type { VoteTopicDto } from './dto/vote-topic.dto';
+// biome-ignore lint/style/useImportType: NestJS needs the class value for dependency injection
+import { TopicsRepo } from './topic.repo';
 
 function slugify(text: string): string {
   return text
@@ -30,11 +41,12 @@ export class TopicsService {
     private readonly topicSubscriptionsRepo: TopicSubscriptionsRepo,
     private readonly commentsRepo: CommentsRepo,
     private readonly searchService: SearchService,
-  ) { }
+  ) {}
 
   async voteTopic(topicId: string, dto: VoteTopicDto) {
     const topic = await this.topicsRepo.findById(topicId);
-    if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
+    if (!topic || topic.deleted_at)
+      throw new NotFoundException('Topic not found');
 
     if (![1, -1].includes(dto.point)) {
       throw new ForbiddenException('Invalid vote point');
@@ -65,8 +77,10 @@ export class TopicsService {
     }
 
     try {
-      const subscribers = await this.topicSubscriptionsRepo.getSubscribers(topicId);
-      const notifyType = dto.point === 1 ? 'qna.topic.upvoted' : 'qna.topic.downvoted';
+      const subscribers =
+        await this.topicSubscriptionsRepo.getSubscribers(topicId);
+      const notifyType =
+        dto.point === 1 ? 'qna.topic.upvoted' : 'qna.topic.downvoted';
       for (const sub of subscribers) {
         const subscriberId = sub.user_id?.toString();
         if (!subscriberId || subscriberId === dto.user_id) continue;
@@ -87,16 +101,17 @@ export class TopicsService {
     return { message: 'Vote recorded' };
   }
 
-  async removeVote(topicId: string, user_id: string) {
+  async removeVote(topicId: string, userId: string) {
     const topic = await this.topicsRepo.findById(topicId);
-    if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
+    if (!topic || topic.deleted_at)
+      throw new NotFoundException('Topic not found');
 
-    await this.votesRepo.removeVote(topicId, user_id);
+    await this.votesRepo.removeVote(topicId, userId);
 
     try {
       await RecommendationService.sendVoteEvent({
         type: 'vote.deleted',
-        userId: user_id,
+        userId: userId,
         targetType: 'topic',
         targetId: topicId,
       });
@@ -107,16 +122,17 @@ export class TopicsService {
     return { message: 'Vote removed' };
   }
 
-  async removeTopicVote(topicId: string, user_id: string) {
+  async removeTopicVote(topicId: string, userId: string) {
     const topic = await this.topicsRepo.findById(topicId);
-    if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
+    if (!topic || topic.deleted_at)
+      throw new NotFoundException('Topic not found');
 
-    await this.votesRepo.removeVote(topicId, user_id);
+    await this.votesRepo.removeVote(topicId, userId);
 
     try {
       await RecommendationService.sendVoteEvent({
         type: 'vote.deleted',
-        userId: user_id,
+        userId: userId,
         targetType: 'topic',
         targetId: topicId,
       });
@@ -127,19 +143,23 @@ export class TopicsService {
     return { message: 'Vote removed' };
   }
 
-  async subscribeTopic(topicId: string, user_id: string) {
+  async subscribeTopic(topicId: string, userId: string) {
     const topic = await this.topicsRepo.findById(topicId);
-    if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
+    if (!topic || topic.deleted_at)
+      throw new NotFoundException('Topic not found');
 
-    const existing = await this.topicSubscriptionsRepo.isSubscribed(topicId, user_id);
+    const existing = await this.topicSubscriptionsRepo.isSubscribed(
+      topicId,
+      userId,
+    );
     if (existing) return { message: 'Already subscribed' };
 
-    await this.topicSubscriptionsRepo.subscribe(topicId, user_id);
+    await this.topicSubscriptionsRepo.subscribe(topicId, userId);
 
     try {
       await RecommendationService.sendSubscriptionEvent({
         type: 'subscription.created',
-        userId: user_id,
+        userId: userId,
         targetType: 'topic',
         targetId: topicId,
       });
@@ -150,19 +170,23 @@ export class TopicsService {
     return { message: 'Subscribed' };
   }
 
-  async unsubscribeTopic(topicId: string, user_id: string) {
+  async unsubscribeTopic(topicId: string, userId: string) {
     const topic = await this.topicsRepo.findById(topicId);
-    if (!topic || topic.deleted_at) throw new NotFoundException('Topic not found');
+    if (!topic || topic.deleted_at)
+      throw new NotFoundException('Topic not found');
 
-    const existing = await this.topicSubscriptionsRepo.isSubscribed(topicId, user_id);
+    const existing = await this.topicSubscriptionsRepo.isSubscribed(
+      topicId,
+      userId,
+    );
     if (!existing) return { message: 'Not subscribed' };
 
-    await this.topicSubscriptionsRepo.unsubscribe(topicId, user_id);
+    await this.topicSubscriptionsRepo.unsubscribe(topicId, userId);
 
     try {
       await RecommendationService.sendSubscriptionEvent({
         type: 'subscription.deleted',
-        userId: user_id,
+        userId: userId,
         targetType: 'topic',
         targetId: topicId,
       });
@@ -177,12 +201,15 @@ export class TopicsService {
     const topic = await this.topicsRepo.getTopicDetails(topicId);
     if (!topic) throw new NotFoundException('Topic not found');
 
-    const [vote_score, comments_count, subscriptions_count, accepted_comment] = await Promise.all([
-      this.votesRepo.getVotesForTargets([new Types.ObjectId(topicId)], 'topic').then(res => res[0]?.score || 0),
-      this.commentsRepo.countByTopic(topicId),
-      this.topicSubscriptionsRepo.countByTopic(topicId),
-      this.commentsRepo.getAcceptedComment(topicId),
-    ]);
+    const [voteScore, commentsCount, subscriptionsCount, acceptedComment] =
+      await Promise.all([
+        this.votesRepo
+          .getVotesForTargets([new Types.ObjectId(topicId)], 'topic')
+          .then((res) => res[0]?.score || 0),
+        this.commentsRepo.countByTopic(topicId),
+        this.topicSubscriptionsRepo.countByTopic(topicId),
+        this.commentsRepo.getAcceptedComment(topicId),
+      ]);
 
     return {
       id: topic._id,
@@ -194,31 +221,31 @@ export class TopicsService {
       substack_id: topic.substack_id,
       created_at: topic.get('created_at'),
       updated_at: topic.get('updated_at'),
-      vote_score,
-      comments_count,
-      subscriptions_count,
-      accepted_comment: accepted_comment
+      vote_score: voteScore,
+      comments_count: commentsCount,
+      subscriptions_count: subscriptionsCount,
+      accepted_comment: acceptedComment
         ? {
-          id: accepted_comment._id,
-          content: accepted_comment.content,
-          user_id: accepted_comment.user_id,
-          created_at: accepted_comment.get('created_at'),
-        }
+            id: acceptedComment._id,
+            content: acceptedComment.content,
+            user_id: acceptedComment.user_id,
+            created_at: acceptedComment.get('created_at'),
+          }
         : null,
     };
   }
 
-  async searchTopics(dto: SearchTopicDto, user_id?: string) {
+  async searchTopics(dto: SearchTopicDto, userId?: string) {
     const { query, page, limit, substack_id } = dto;
     const normalizedQuery = (query ?? '').toString().trim();
     const pageNumber = Number(page ?? 1) || 1;
     const limitNumber = Number(limit ?? 10) || 10;
 
     let recommendedIds: string[] = [];
-    if (!normalizedQuery && !substack_id && user_id && pageNumber === 1) {
+    if (!normalizedQuery && !substack_id && userId && pageNumber === 1) {
       try {
         recommendedIds = await RecommendationService.getPersonalizedTopicIds(
-          user_id,
+          userId,
           limitNumber,
         );
       } catch (err) {
@@ -237,8 +264,8 @@ export class TopicsService {
     let topics: any[] = [];
     let total = 0;
 
-    if (searchResult.total === 0) {
-      // Fallback to MongoDB
+    if (!normalizedQuery) {
+      // Use MongoDB for general feed to ensure all topics are visible
       const fallback = await this.topicsRepo.getTopicsWithAggregates(
         normalizedQuery,
         pageNumber,
@@ -248,24 +275,44 @@ export class TopicsService {
       topics = fallback.topics;
       total = fallback.total;
     } else {
-      const dbTopics = await this.topicsRepo.findByIds(
-        searchResult.ids.filter((id): id is string => typeof id === 'string'),
+      const searchResult = await this.searchService.searchTopics(
+        normalizedQuery,
+        pageNumber,
+        limitNumber,
         substack_id,
       );
 
-      const topicMap = new Map(
-        dbTopics.map(topic => [topic._id.toString(), topic]),
-      );
+      if (searchResult.total === 0) {
+        // Fallback to MongoDB if ES returns nothing for a query
+        const fallback = await this.topicsRepo.getTopicsWithAggregates(
+          normalizedQuery,
+          pageNumber,
+          limitNumber,
+          substack_id,
+        );
+        topics = fallback.topics;
+        total = fallback.total;
+      } else {
+        const dbTopics = await this.topicsRepo.findByIds(
+          searchResult.ids.filter((id): id is string => typeof id === 'string'),
+          substack_id,
+        );
 
-      topics = searchResult.ids
-        .filter((id): id is string => typeof id === 'string')
-        .map(id => topicMap.get(id))
-        .filter(Boolean);
-      total = searchResult.total;
+        const topicMap = new Map(
+          dbTopics.map((topic) => [topic._id.toString(), topic]),
+        );
+
+        topics = searchResult.ids
+          .filter((id): id is string => typeof id === 'string')
+          .map((id) => topicMap.get(id))
+          .filter(Boolean);
+        total = searchResult.total;
+      }
     }
 
     if (!normalizedQuery && recommendedIds.length > 0 && pageNumber === 1) {
-      const recommendedTopics = await this.topicsRepo.findByIdsAny(recommendedIds);
+      const recommendedTopics =
+        await this.topicsRepo.findByIdsAny(recommendedIds);
       const recommendedMap = new Map(
         recommendedTopics.map((topic: any) => [topic._id.toString(), topic]),
       );
@@ -275,16 +322,16 @@ export class TopicsService {
 
       const combined: any[] = [];
       const seen = new Set<string>();
-      
+
       // Limit recommendations to at most 3 items to ensure diversity
       const maxRecommendations = 3;
-      
+
       for (const t of orderedRecommended) {
         if (combined.length >= maxRecommendations) break;
         seen.add(t._id.toString());
         combined.push(t);
       }
-      
+
       for (const t of topics) {
         if (!seen.has(t._id.toString())) {
           combined.push(t);
@@ -300,7 +347,7 @@ export class TopicsService {
       pageNumber,
       limitNumber,
       total,
-      user_id,
+      userId,
     );
   }
 
@@ -309,7 +356,7 @@ export class TopicsService {
     page: number,
     limit: number,
     total: number,
-    user_id?: string,
+    userId?: string,
   ) {
     if (orderedTopics.length === 0) {
       return {
@@ -325,20 +372,53 @@ export class TopicsService {
 
     const topicIds = orderedTopics.map((topic: any) => topic._id);
 
-    const [voteScores, commentsCounts, subscriptionsCounts, acceptedComments, isSubscribed] = await Promise.all([
+    const [
+      voteScores,
+      commentsCounts,
+      subscriptionsCounts,
+      acceptedComments,
+      isSubscribed,
+    ] = await Promise.all([
       this.votesRepo.getVotesForTargets(topicIds, 'topic'),
-      Promise.all(topicIds.map(id => this.commentsRepo.countByTopic(id))),
-      Promise.all(topicIds.map(id => this.topicSubscriptionsRepo.countByTopic(id))),
-      Promise.all(topicIds.map(id => this.commentsRepo.getAcceptedComment(id))),
-      user_id ? Promise.all(topicIds.map(id => this.topicSubscriptionsRepo.isSubscribed(id, user_id))) : Promise.resolve([]),
+      Promise.all(topicIds.map((id) => this.commentsRepo.countByTopic(id))),
+      Promise.all(
+        topicIds.map((id) => this.topicSubscriptionsRepo.countByTopic(id)),
+      ),
+      Promise.all(
+        topicIds.map((id) => this.commentsRepo.getAcceptedComment(id)),
+      ),
+      userId
+        ? Promise.all(
+            topicIds.map((id) =>
+              this.topicSubscriptionsRepo.isSubscribed(id, userId),
+            ),
+          )
+        : Promise.resolve([]),
     ]);
 
-    const voteScoreMap = Object.fromEntries(voteScores.map((v: any) => [v._id.toString(), v.score]));
-    const commentsMap = new Map(topicIds.map((id, index) => [id.toString(), commentsCounts[index] ?? 0]));
-    const subscriptionsMap = new Map(topicIds.map((id, index) => [id.toString(), subscriptionsCounts[index] ?? 0]));
-    const acceptedMap = new Map(topicIds.map((id, index) => [id.toString(), acceptedComments[index] ?? null]));
+    const voteScoreMap = Object.fromEntries(
+      voteScores.map((v: any) => [v._id.toString(), v.score]),
+    );
+    const commentsMap = new Map(
+      topicIds.map((id, index) => [id.toString(), commentsCounts[index] ?? 0]),
+    );
+    const subscriptionsMap = new Map(
+      topicIds.map((id, index) => [
+        id.toString(),
+        subscriptionsCounts[index] ?? 0,
+      ]),
+    );
+    const acceptedMap = new Map(
+      topicIds.map((id, index) => [
+        id.toString(),
+        acceptedComments[index] ?? null,
+      ]),
+    );
     const subscribedMap = new Map(
-      topicIds.map((id, index) => [id.toString(), isSubscribed[index] ?? false]),
+      topicIds.map((id, index) => [
+        id.toString(),
+        isSubscribed[index] ?? false,
+      ]),
     );
 
     return {
@@ -370,7 +450,7 @@ export class TopicsService {
   async createTopic(dto: CreateTopicDto) {
     const baseSlug = slugify(dto.title);
 
-    let slug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
+    const slug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
 
     const topic = await this.topicsRepo.create({
       title: dto.title,
@@ -434,12 +514,12 @@ export class TopicsService {
     };
   }
 
-  async deleteTopic(id: string, user_id: string) {
+  async deleteTopic(id: string, userId: string) {
     const topic = await this.topicsRepo.findById(id);
     if (!topic || topic.deleted_at) {
       throw new NotFoundException('Topic not found');
     }
-    if (topic.user_id.toString() !== user_id) {
+    if (topic.user_id.toString() !== userId) {
       throw new ForbiddenException('You are not the owner of this topic');
     }
 
@@ -450,18 +530,28 @@ export class TopicsService {
     return { message: 'Topic deleted successfully' };
   }
 
-  async getTopicById(id: string, user_id?: string) {
+  async getTopicById(id: string, userId?: string) {
     const topic = await this.topicsRepo.findById(id);
     if (!topic || topic.deleted_at) {
       throw new NotFoundException('Topic not found');
     }
 
-    const [voteScore, commentsCount, subscriptionsCount, acceptedComment, isSubscribed] = await Promise.all([
-      this.votesRepo.getVotesForTargets([new Types.ObjectId(id)], 'topic').then(res => res[0]?.score || 0),
+    const [
+      voteScore,
+      commentsCount,
+      subscriptionsCount,
+      acceptedComment,
+      isSubscribed,
+    ] = await Promise.all([
+      this.votesRepo
+        .getVotesForTargets([new Types.ObjectId(id)], 'topic')
+        .then((res) => res[0]?.score || 0),
       this.commentsRepo.countByTopic(id),
       this.topicSubscriptionsRepo.countByTopic(id),
       this.commentsRepo.getAcceptedComment(id),
-      user_id ? this.topicSubscriptionsRepo.isSubscribed(id, user_id) : Promise.resolve(false),
+      userId
+        ? this.topicSubscriptionsRepo.isSubscribed(id, userId)
+        : Promise.resolve(false),
     ]);
 
     return {
@@ -517,13 +607,13 @@ export class TopicsService {
   //   }));
   // }
 
-  async markSolved(id: string, user_id: string) {
+  async markSolved(id: string, userId: string) {
     const topic = await this.topicsRepo.findById(id);
     if (!topic || topic.deleted_at) {
       throw new NotFoundException('Topic not found');
     }
 
-    if (topic.user_id.toString() !== user_id) {
+    if (topic.user_id.toString() !== userId) {
       throw new ForbiddenException('You are not the owner of this topic');
     }
 
