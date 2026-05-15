@@ -11,6 +11,7 @@ search.
 - Track topic/comment votes and topic subscriptions.
 - Send internal notification requests for Q&A activity.
 - Index topic documents in Elasticsearch for search.
+- Pull personalized topic recommendations from RecSys when search is empty.
 
 ## Runtime And Storage
 
@@ -22,6 +23,8 @@ search.
   `http://localhost:9200`)
 - Notification integration: `NOTIFICATION_SERVICE_BASE_URL` plus
   `INTERNAL_SERVICE_SECRET`
+- RecSys integration: `RECSYS_SERVICE_BASE_URL` plus
+  `RECSYS_INTERNAL_SERVICE_SECRET`
 
 API Gateway proxies Q&A through `QNA_SERVICE_URL`, which defaults to
 `http://localhost:3005`.
@@ -31,7 +34,7 @@ API Gateway proxies Q&A through `QNA_SERVICE_URL`, which defaults to
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/` | Service root |
-| `GET` | `/topics/search` | Search topics through Elasticsearch |
+| `GET` | `/topics/search` | Search topics through Elasticsearch or fallback to RecSys + newest topics |
 | `POST` | `/topics` | Create topic |
 | `GET` | `/topics/:id` | Get topic details |
 | `PATCH` | `/topics/:id` | Update topic |
@@ -76,6 +79,8 @@ $env:PORT='3005'; pnpm --filter qna start:dev
 | `ELASTICSEARCH_URL` | Elasticsearch node URL |
 | `NOTIFICATION_SERVICE_BASE_URL` | Notifications service base URL |
 | `INTERNAL_SERVICE_SECRET` | Shared secret for notification creation |
+| `RECSYS_SERVICE_BASE_URL` | RecSys base URL for personalized feed lookups |
+| `RECSYS_INTERNAL_SERVICE_SECRET` | Shared secret for RecSys internal events |
 
 Elasticsearch is provided by `workspaces/qna/docker-compose.yml`.
 
@@ -97,5 +102,8 @@ API Gateway exposes the same topic/comment surface under `/v1`:
   service bootstrap if missing.
 - The service currently trusts the caller-supplied `x-user-id` header. There
   is no JWT/auth middleware enforcing ownership at the Q&A service boundary.
-- Topic create/update/delete writes to Elasticsearch are best-effort: failures
-  are logged and do not fail the user-facing write.
+- Topic create/update/delete synchronously writes to Elasticsearch after MongoDB
+  mutations; decide whether indexing failure should fail user-facing writes.
+- Empty `/topics/search` queries pull RecSys feed items (when available) and
+  then fill with newest non-substack topics. RecSys failures are silently
+  ignored to avoid breaking search.
