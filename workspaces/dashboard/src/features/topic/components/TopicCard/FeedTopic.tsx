@@ -1,8 +1,11 @@
+import { Link } from '@tanstack/react-router';
+
 import type { IBaseTopicCardProps } from './interface';
 import { Metric } from './Metric';
 
 export function FeedTopic({ data, index = 0 }: IBaseTopicCardProps) {
   const {
+    id,
     body,
     title,
     status,
@@ -41,7 +44,9 @@ export function FeedTopic({ data, index = 0 }: IBaseTopicCardProps) {
           )}
         </div>
         <h3 className='m-0 text-lg font-bold leading-snug text-sea-ink hover:text-lagoon cursor-pointer transition-colors'>
-          {title}
+          <Link params={{ id }} to='/topics/$id'>
+            {title}
+          </Link>
         </h3>
         <p className='my-2 text-sm leading-6 text-sea-ink-soft'>{body}</p>
         <div className='flex flex-wrap gap-2'>

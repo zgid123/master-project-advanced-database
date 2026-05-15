@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: ignore */
 import type { IErrorProps } from '@alphacifer/react/query';
 
 import type { TComment } from '../types';
@@ -213,9 +214,11 @@ export async function acceptComment({
     throwQnaError(response, payload);
   }
 
-  if (!payload.data) {
+  const { data } = payload;
+
+  if (!data) {
     throwQnaError(new Response(null, { status: 400 }), payload);
   }
 
-  return payload.data;
+  return data as TComment;
 }
