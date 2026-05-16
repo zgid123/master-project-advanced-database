@@ -221,10 +221,13 @@ function generateCommentBody() {
 ========================= */
 
 async function ensureIndex() {
-  try {
-    await elastic.indices.delete({ index: ELASTICSEARCH_INDEX });
-  } catch (_) {}
+  const exists = await elastic.indices.exists({ index: ELASTICSEARCH_INDEX });
+  if (exists) {
+    console.log(`Index ${ELASTICSEARCH_INDEX} already exists. Skipping creation.`);
+    return;
+  }
 
+  console.log(`Creating index ${ELASTICSEARCH_INDEX}...`);
   await elastic.indices.create({
     index: ELASTICSEARCH_INDEX,
     mappings: {
@@ -282,7 +285,7 @@ async function seed() {
   const currentCount = await TopicModel.countDocuments();
   if (currentCount >= TOTAL_TOPICS) {
     console.log(
-      `Already have ${currentCount} topics (>= ${TOTAL_TOPICS}). Skipping seed.`,
+      `Already have ${currentCount} topics (>= ${TOTAL_TOPICS}). Skipping seeding and re-indexing.`,
     );
     return;
   }

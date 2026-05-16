@@ -3,7 +3,9 @@ import type { IErrorProps } from '@alphacifer/react/query';
 
 import type { TSearchTopicsResponse, TTopic } from '../types';
 
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
+const API_GATEWAY_URL =
+  (typeof process !== 'undefined' ? process.env.API_GATEWAY_URL : undefined) ??
+  'http://localhost:3000';
 
 type TApiResponse<TData> = {
   data?: TData;
@@ -94,7 +96,7 @@ export async function searchTopics({
 
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/topics/search?${params.toString()}`,
+      `/api/portal/topics/search?${params.toString()}`,
       `/v1/topics/search?${params.toString()}`,
     ),
     { signal },
@@ -125,7 +127,7 @@ export async function getTopicDetail({
   signal?: AbortSignal;
 }): Promise<TTopic> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/topics/${id}`, `/v1/topics/${id}`),
+    createApiUrl(`/api/portal/topics/${id}`, `/v1/topics/${id}`),
     { signal },
   );
 
@@ -148,7 +150,7 @@ export async function createTopic({
   substackId?: string;
 }): Promise<TTopic> {
   const response = await fetch(
-    createApiUrl('/api/portal/qna/topics', '/v1/topics'),
+    createApiUrl('/api/portal/topics', '/v1/topics'),
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -173,19 +175,22 @@ export async function updateTopic({
   id,
   title,
   body,
+  substackId,
 }: {
   id: string;
   title?: string;
   body?: string;
+  substackId?: string;
 }): Promise<TTopic> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/topics/${id}`, `/v1/topics/${id}`),
+    createApiUrl(`/api/portal/topics/${id}`, `/v1/topics/${id}`),
     {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         title,
         body,
+        substack_id: substackId,
       }),
     },
   );
@@ -201,7 +206,7 @@ export async function updateTopic({
 
 export async function deleteTopic(id: string): Promise<void> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/topics/${id}`, `/v1/topics/${id}`),
+    createApiUrl(`/api/portal/topics/${id}`, `/v1/topics/${id}`),
     { method: 'DELETE' },
   );
 
@@ -213,10 +218,7 @@ export async function deleteTopic(id: string): Promise<void> {
 
 export async function solveTopic(id: string): Promise<TTopic> {
   const response = await fetch(
-    createApiUrl(
-      `/api/portal/qna/topics/${id}/solve`,
-      `/v1/topics/${id}/solve`,
-    ),
+    createApiUrl(`/api/portal/topics/${id}/solve`, `/v1/topics/${id}/solve`),
     { method: 'PATCH' },
   );
 
@@ -237,7 +239,7 @@ export async function voteTopic({
   point: 1 | -1;
 }): Promise<void> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/topics/${id}/vote`, `/v1/topics/${id}/vote`),
+    createApiUrl(`/api/portal/topics/${id}/vote`, `/v1/topics/${id}/vote`),
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -253,7 +255,7 @@ export async function voteTopic({
 
 export async function removeTopicVote(id: string): Promise<void> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/topics/${id}/vote`, `/v1/topics/${id}/vote`),
+    createApiUrl(`/api/portal/topics/${id}/vote`, `/v1/topics/${id}/vote`),
     { method: 'DELETE' },
   );
 
@@ -266,7 +268,7 @@ export async function removeTopicVote(id: string): Promise<void> {
 export async function subscribeTopic(id: string): Promise<void> {
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/topics/${id}/subscribe`,
+      `/api/portal/topics/${id}/subscribe`,
       `/v1/topics/${id}/subscribe`,
     ),
     { method: 'POST' },
@@ -281,7 +283,7 @@ export async function subscribeTopic(id: string): Promise<void> {
 export async function unsubscribeTopic(id: string): Promise<void> {
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/topics/${id}/unsubscribe`,
+      `/api/portal/topics/${id}/unsubscribe`,
       `/v1/topics/${id}/unsubscribe`,
     ),
     { method: 'POST' },

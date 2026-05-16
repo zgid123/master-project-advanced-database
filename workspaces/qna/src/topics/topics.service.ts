@@ -66,7 +66,7 @@ export class TopicsService {
     try {
       await RecommendationService.sendVoteEvent({
         type: 'vote.created',
-        userId: dto.user_id,
+        userId: dto.user_id as string,
         targetType: 'topic',
         targetId: topicId,
         voteType: dto.point === 1 ? 'up' : 'down',
@@ -114,6 +114,7 @@ export class TopicsService {
         userId: userId,
         targetType: 'topic',
         targetId: topicId,
+        substackId: topic.substack_id?.toString?.() ?? undefined,
       });
     } catch (err) {
       console.error('RecSys vote event error:', err?.message || err);
@@ -135,6 +136,7 @@ export class TopicsService {
         userId: userId,
         targetType: 'topic',
         targetId: topicId,
+        substackId: topic.substack_id?.toString?.() ?? undefined,
       });
     } catch (err) {
       console.error('RecSys vote event error:', err?.message || err);
@@ -378,6 +380,7 @@ export class TopicsService {
       subscriptionsCounts,
       acceptedComments,
       isSubscribed,
+      userVotes,
     ] = await Promise.all([
       this.votesRepo.getVotesForTargets(topicIds, 'topic'),
       Promise.all(topicIds.map((id) => this.commentsRepo.countByTopic(id))),
@@ -394,10 +397,16 @@ export class TopicsService {
             ),
           )
         : Promise.resolve([]),
+      userId
+        ? this.votesRepo.getVotesByUserIds(topicIds, userId, 'topic')
+        : Promise.resolve([]),
     ]);
 
     const voteScoreMap = Object.fromEntries(
       voteScores.map((v: any) => [v._id.toString(), v.score]),
+    );
+    const userVoteMap = Object.fromEntries(
+      (userVotes as any[]).map((v: any) => [v.target_id.toString(), v.point]),
     );
     const commentsMap = new Map(
       topicIds.map((id, index) => [id.toString(), commentsCounts[index] ?? 0]),
@@ -433,6 +442,7 @@ export class TopicsService {
         created_at: topic.get('created_at'),
         updated_at: topic.get('updated_at'),
         vote_score: voteScoreMap[topic._id.toString()] || 0,
+        user_vote: userVoteMap[topic._id.toString()] || 0,
         comments_count: commentsMap.get(topic._id.toString()) || 0,
         subscriptions_count: subscriptionsMap.get(topic._id.toString()) || 0,
         has_accepted_answer: !!acceptedMap.get(topic._id.toString()),
@@ -461,6 +471,18 @@ export class TopicsService {
     });
 
     await this.searchService.indexTopic(topic);
+
+    try {
+      await RecommendationService.sendTopicEvent({
+        type: 'topic.upsert',
+        topicId: topic._id.toString(),
+        authorId: topic.user_id.toString(),
+        substackId: topic.substack_id?.toString(),
+        createdAt: topic.get('created_at')?.getTime?.() ?? Date.now(),
+      });
+    } catch (err) {
+      console.error('RecSys topic event error:', err?.message || err);
+    }
 
     return {
       id: topic._id,
@@ -492,6 +514,9 @@ export class TopicsService {
     }
     if (dto.body !== undefined) {
       updateData.body = dto.body;
+    }
+    if (dto.substack_id !== undefined) {
+      updateData.substack_id = dto.substack_id;
     }
 
     const updated = await this.topicsRepo.update(id, updateData);
@@ -542,6 +567,7 @@ export class TopicsService {
       subscriptionsCount,
       acceptedComment,
       isSubscribed,
+      userVote,
     ] = await Promise.all([
       this.votesRepo
         .getVotesForTargets([new Types.ObjectId(id)], 'topic')
@@ -552,6 +578,11 @@ export class TopicsService {
       userId
         ? this.topicSubscriptionsRepo.isSubscribed(id, userId)
         : Promise.resolve(false),
+      userId
+        ? this.votesRepo
+            .getVoteByUser(id, userId, 'topic')
+            .then((v) => v?.point || 0)
+        : Promise.resolve(0),
     ]);
 
     return {
@@ -565,6 +596,7 @@ export class TopicsService {
       created_at: topic.get('created_at'),
       updated_at: topic.get('updated_at'),
       vote_score: voteScore || 0,
+      user_vote: userVote || 0,
       comments_count: commentsCount,
       subscriptions_count: subscriptionsCount,
       has_accepted_answer: !!acceptedComment,

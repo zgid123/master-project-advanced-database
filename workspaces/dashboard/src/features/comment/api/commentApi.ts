@@ -3,7 +3,9 @@ import type { IErrorProps } from '@alphacifer/react/query';
 
 import type { TComment } from '../types';
 
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
+const API_GATEWAY_URL =
+  (typeof process !== 'undefined' ? process.env.API_GATEWAY_URL : undefined) ??
+  'http://localhost:3000';
 
 type TApiResponse<TData> = {
   data?: TData;
@@ -76,19 +78,20 @@ export async function getTopicComments({
 }): Promise<TComment[]> {
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/topics/${topicId}/comments`,
+      `/api/portal/topics/${topicId}/comments`,
       `/v1/topics/${topicId}/comments`,
     ),
     { signal },
   );
 
-  const payload = await parseApiResponse<TComment[]>(response);
+  const payload = await parseApiResponse<any>(response);
 
   if (!response.ok) {
     throwQnaError(response, payload);
   }
 
-  return payload.data ?? [];
+  const data = payload.data ?? payload;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createComment({
@@ -99,7 +102,7 @@ export async function createComment({
   content: string;
 }): Promise<TComment> {
   const response = await fetch(
-    createApiUrl('/api/portal/qna/comments', '/v1/comments'),
+    createApiUrl('/api/portal/comments', '/v1/comments'),
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -110,17 +113,19 @@ export async function createComment({
     },
   );
 
-  const payload = await parseApiResponse<TComment>(response);
+  const payload = await parseApiResponse<any>(response);
 
   if (!response.ok) {
     throwQnaError(response, payload);
   }
 
-  if (!payload.data) {
+  const data = payload.data ?? payload;
+
+  if (!data || typeof data !== 'object') {
     throwQnaError(new Response(null, { status: 400 }), payload);
   }
 
-  return payload.data as TComment;
+  return data as TComment;
 }
 
 export async function updateComment({
@@ -131,7 +136,7 @@ export async function updateComment({
   content: string;
 }): Promise<TComment> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/comments/${id}`, `/v1/comments/${id}`),
+    createApiUrl(`/api/portal/comments/${id}`, `/v1/comments/${id}`),
     {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -139,22 +144,24 @@ export async function updateComment({
     },
   );
 
-  const payload = await parseApiResponse<TComment>(response);
+  const payload = await parseApiResponse<any>(response);
 
   if (!response.ok) {
     throwQnaError(response, payload);
   }
 
-  if (!payload.data) {
+  const data = payload.data ?? payload;
+
+  if (!data || typeof data !== 'object') {
     throwQnaError(new Response(null, { status: 400 }), payload);
   }
 
-  return payload.data as TComment;
+  return data as TComment;
 }
 
 export async function deleteComment(id: string): Promise<void> {
   const response = await fetch(
-    createApiUrl(`/api/portal/qna/comments/${id}`, `/v1/comments/${id}`),
+    createApiUrl(`/api/portal/comments/${id}`, `/v1/comments/${id}`),
     { method: 'DELETE' },
   );
 
@@ -173,7 +180,7 @@ export async function voteComment({
 }): Promise<void> {
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/comments/${id}/vote`,
+      `/api/portal/comments/${id}/vote`,
       `/v1/comments/${id}/vote`,
     ),
     {
@@ -181,6 +188,21 @@ export async function voteComment({
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ point }),
     },
+  );
+
+  if (!response.ok) {
+    const payload = await parseApiResponse<unknown>(response);
+    throwQnaError(response, payload);
+  }
+}
+
+export async function deleteCommentVote(id: string): Promise<void> {
+  const response = await fetch(
+    createApiUrl(
+      `/api/portal/comments/${id}/vote`,
+      `/v1/comments/${id}/vote`,
+    ),
+    { method: 'DELETE' },
   );
 
   if (!response.ok) {
@@ -198,7 +220,7 @@ export async function acceptComment({
 }): Promise<TComment> {
   const response = await fetch(
     createApiUrl(
-      `/api/portal/qna/comments/${commentId}/accept`,
+      `/api/portal/comments/${commentId}/accept`,
       `/v1/comments/${commentId}/accept`,
     ),
     {
@@ -208,15 +230,15 @@ export async function acceptComment({
     },
   );
 
-  const payload = await parseApiResponse<TComment>(response);
+  const payload = await parseApiResponse<any>(response);
 
   if (!response.ok) {
     throwQnaError(response, payload);
   }
 
-  const { data } = payload;
+  const data = payload.data ?? payload;
 
-  if (!data) {
+  if (!data || typeof data !== 'object') {
     throwQnaError(new Response(null, { status: 400 }), payload);
   }
 

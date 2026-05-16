@@ -4,21 +4,29 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Eye,
   MessageSquare,
-  ThumbsUp,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 import { Suspense } from 'react';
 
+import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries';
 import {
   CommentForm,
+  CommentList,
   CommentListSkeleton,
-} from '#/features/topic/components';
+} from '#/features/comment/components';
 import {
-  commentsQueryOptions,
   topicDetailQueryOptions,
-  useCreateComment,
+  useRemoveTopicVote,
+  useSubscribeTopic,
+  useUnsubscribeTopic,
+  useVoteTopic,
 } from '#/features/topic/queries';
 
 export const Route = createFileRoute('/topics/$id')({
@@ -27,7 +35,47 @@ export const Route = createFileRoute('/topics/$id')({
 
 function TopicDetailRoute() {
   const { id: topicId } = Route.useParams();
+  const { data: session } = useSession();
   const { data: topic } = useSuspenseQuery(topicDetailQueryOptions(topicId));
+  const voteTopicCommand = useVoteTopic();
+  const removeVoteCommand = useRemoveTopicVote();
+  const subscribeTopicCommand = useSubscribeTopic();
+  const unsubscribeTopicCommand = useUnsubscribeTopic();
+
+  const currentUser = session?.user;
+
+  const handleVote = (point: 1 | -1) => {
+    if (!currentUser) {
+      authEvents.emit('open', {
+        message: 'You need to be logged in to vote.',
+      });
+      return;
+    }
+
+    if (topic.userVote === point) {
+      removeVoteCommand.mutate(topicId);
+    } else {
+      voteTopicCommand.mutate({ id: topicId, point });
+    }
+  };
+
+  const handleSubscribe = () => {
+    if (!currentUser) {
+      authEvents.emit('open', {
+        message: 'You need to be logged in to subscribe.',
+      });
+      return;
+    }
+
+    if (topic.isSubscribed) {
+      unsubscribeTopicCommand.mutate(topicId);
+    } else {
+      subscribeTopicCommand.mutate(topicId);
+    }
+  };
+
+  const isVotePending = voteTopicCommand.isPending || removeVoteCommand.isPending;
+  const isSubscribePending = subscribeTopicCommand.isPending || unsubscribeTopicCommand.isPending;
 
   return (
     <div className='mx-auto max-w-5xl space-y-8 pb-20'>
@@ -118,7 +166,7 @@ function TopicDetailRoute() {
             </div>
 
             <Suspense fallback={<CommentListSkeleton />}>
-              <CommentsList topicId={topicId} />
+              <CommentList topicId={topicId} />
             </Suspense>
 
             <div className='island-shell rounded-2xl p-6'>
@@ -152,12 +200,61 @@ function TopicDetailRoute() {
               </div>
             </div>
 
+            <div className='flex gap-2'>
+              <div className='flex flex-1 items-center rounded-xl bg-sea-ink/5 p-1'>
+                <Button
+                  className={`flex-1 h-10 gap-2 rounded-lg font-bold shadow-none ${
+                    topic.userVote === 1
+                      ? 'bg-lagoon text-white hover:bg-lagoon-deep'
+                      : 'bg-transparent text-sea-ink-soft hover:bg-sea-ink/5 hover:text-sea-ink'
+                  }`}
+                  disabled={isVotePending}
+                  onClick={() => handleVote(1)}
+                  type='button'
+                  variant='ghost'
+                >
+                  <ChevronUp className='size-5' />
+                  Upvote
+                </Button>
+                <div className='w-px h-4 bg-line/50' />
+                <Button
+                  className={`flex-1 h-10 gap-2 rounded-lg font-bold shadow-none ${
+                    topic.userVote === -1
+                      ? 'bg-destructive text-white hover:bg-destructive/90'
+                      : 'bg-transparent text-sea-ink-soft hover:bg-sea-ink/5 hover:text-sea-ink'
+                  }`}
+                  disabled={isVotePending}
+                  onClick={() => handleVote(-1)}
+                  type='button'
+                  variant='ghost'
+                >
+                  <ChevronDown className='size-5' />
+                  Downvote
+                </Button>
+              </div>
+            </div>
+
             <Button
-              className='w-full h-12 gap-2 rounded-xl bg-lagoon font-bold text-white hover:bg-lagoon-deep shadow-lg shadow-lagoon/20'
+              className={`w-full h-12 gap-2 rounded-xl font-bold shadow-lg shadow-lagoon/20 ${
+                topic.isSubscribed
+                  ? 'bg-sea-ink/5 text-sea-ink-soft hover:bg-sea-ink/10 shadow-none'
+                  : 'bg-lagoon text-white hover:bg-lagoon-deep'
+              }`}
+              disabled={isSubscribePending}
+              onClick={handleSubscribe}
               type='button'
             >
-              <ThumbsUp className='size-4' />
-              Upvote Topic
+              {topic.isSubscribed ? (
+                <>
+                  <BellOff className='size-4' />
+                  Unsubscribe
+                </>
+              ) : (
+                <>
+                  <Bell className='size-4' />
+                  Subscribe
+                </>
+              )}
             </Button>
 
             <div className='border-t border-line pt-6 space-y-4'>
@@ -184,65 +281,5 @@ function TopicDetailRoute() {
 }
 
 function TopicCommentForm({ topicId }: { topicId: string }) {
-  const createComment = useCreateComment(topicId);
-
-  return (
-    <CommentForm
-      isSubmitting={createComment.isPending}
-      onSubmit={(content) => createComment.mutate({ topicId, content })}
-      submitLabel='Post Answer'
-    />
-  );
-}
-
-function CommentsList({ topicId }: { topicId: string }) {
-  const { data: comments } = useSuspenseQuery(commentsQueryOptions(topicId));
-
-  if (!comments || comments.length === 0) {
-    return (
-      <div className='rounded-2xl border-2 border-dashed border-line p-10 text-center'>
-        <p className='text-sea-ink-soft'>
-          No comments yet. Be the first to answer!
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className='space-y-4'>
-      {comments.map((comment) => (
-        <div className='island-shell rise-in rounded-2xl p-6' key={comment.id}>
-          <div className='mb-3 flex items-center gap-2'>
-            <div className='flex size-5 items-center justify-center rounded bg-sea-ink/10 text-[10px] font-bold'>
-              {comment.userId?.[0] ?? '?'}
-            </div>
-            <span className='text-xs font-bold text-sea-ink-soft'>
-              {comment.userId}
-            </span>
-            <span className='text-[10px] text-sea-ink-soft/40'>
-              • {new Date(comment.createdAt).toLocaleDateString()}
-            </span>
-            {comment.isAccepted && (
-              <span className='ml-auto flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600'>
-                <CheckCircle2 className='size-3' />
-                Accepted Answer
-              </span>
-            )}
-          </div>
-          <p className='text-sm leading-relaxed text-sea-ink/80'>
-            {comment.content}
-          </p>
-          <div className='mt-4 flex items-center gap-4 border-t border-line/30 pt-4'>
-            <button
-              className='flex items-center gap-1.5 text-xs font-bold text-sea-ink-soft hover:text-lagoon transition-colors'
-              type='button'
-            >
-              <ThumbsUp className='size-3.5' />
-              {comment.voteScore ?? 0}
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <CommentForm topicId={topicId} />;
 }

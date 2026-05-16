@@ -27,6 +27,7 @@ type TVoteEvent =
         userId: string;
         targetType: 'topic' | 'comment';
         targetId: string;
+        substackId?: string | null;
     };
 
 type TSubscriptionEvent =
@@ -42,6 +43,22 @@ type TSubscriptionEvent =
         targetType: 'topic' | 'substack';
         targetId: string;
     };
+
+type TTopicEvent = {
+    type: 'topic.upsert' | 'topic.deleted';
+    topicId: string;
+    substackId?: string | null;
+    authorId?: string;
+    createdAt?: number;
+};
+
+type TCommentEvent = {
+    type: 'comment.upsert' | 'comment.deleted';
+    commentId: string;
+    topicId: string;
+    authorId?: string;
+    createdAt?: number;
+};
 
 export class RecommendationService {
     private static getBaseUrl() {
@@ -113,6 +130,42 @@ export class RecommendationService {
             });
         } catch (err) {
             console.error('RecSys subscription event error:', err?.message || err);
+        }
+    }
+
+    static async sendTopicEvent(event: TTopicEvent) {
+        const baseUrl = RecommendationService.getBaseUrl();
+        const secret = RecommendationService.getInternalSecret();
+        if (!baseUrl || !secret) return;
+
+        try {
+            await axios.post(`${baseUrl}/v1/internal/events/topic`, event, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-service-secret': secret,
+                },
+                timeout: 2000,
+            });
+        } catch (err) {
+            console.error('RecSys topic event error:', err?.message || err);
+        }
+    }
+
+    static async sendCommentEvent(event: TCommentEvent) {
+        const baseUrl = RecommendationService.getBaseUrl();
+        const secret = RecommendationService.getInternalSecret();
+        if (!baseUrl || !secret) return;
+
+        try {
+            await axios.post(`${baseUrl}/v1/internal/events/comment`, event, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-service-secret': secret,
+                },
+                timeout: 2000,
+            });
+        } catch (err) {
+            console.error('RecSys comment event error:', err?.message || err);
         }
     }
 }

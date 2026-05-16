@@ -1,7 +1,7 @@
 import { useCommand, useQueryClient } from '@alphacifer/react/query';
 
-import { createComment } from '../api';
-import { topicQueryKeys } from './queryKeys';
+import { createComment } from '../api/commentApi';
+import { commentQueryKeys } from './queryKeys';
 
 export function useCreateComment(topicId: string) {
   const queryClient = useQueryClient();
@@ -9,7 +9,7 @@ export function useCreateComment(topicId: string) {
     mutationKey: ['mk_createComment', topicId],
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: topicQueryKeys.comments(topicId),
+        queryKey: commentQueryKeys.byTopic(topicId),
       });
     },
   });

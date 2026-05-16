@@ -25,7 +25,7 @@ import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { VoteCommentDto } from './dto/vote-comment.dto';
-import { VoteRecordedResponseSwagger } from 'src/topics/topics.swagger';
+import { VoteRecordedResponseSwagger, VoteRemovedResponseSwagger } from 'src/topics/topics.swagger';
 
 @ApiTags('Comments')
 @Controller('comments')
@@ -56,6 +56,19 @@ export class CommentsController {
     }
 
     return await this.commentsService.voteComment(id, dto);
+  }
+
+  @Delete(':id/vote')
+  @ApiOperation({ summary: 'Remove vote from a comment' })
+  @ApiParam({ name: 'id', description: 'Comment ID' })
+  @ApiOkResponse(VoteRemovedResponseSwagger)
+  @ApiNotFoundResponse({ description: 'Comment not found' })
+  async removeCommentVote(@Param('id') id: string, @Headers('x-user-id') user_id: string) {
+    if (!user_id) {
+      throw new BadRequestException('User ID is required in x-user-id header');
+    }
+
+    return await this.commentsService.removeCommentVote(id, user_id);
   }
 
   @Post()

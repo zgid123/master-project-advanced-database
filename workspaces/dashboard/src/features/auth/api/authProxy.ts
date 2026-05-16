@@ -1,4 +1,6 @@
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
+const API_GATEWAY_URL =
+  (typeof process !== 'undefined' ? process.env.API_GATEWAY_URL : undefined) ??
+  'http://localhost:3000';
 const REFRESH_TOKEN_COOKIE_NAME = 'solvit_refreshToken';
 
 export async function proxyAuthPayload(

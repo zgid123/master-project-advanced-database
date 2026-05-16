@@ -3,7 +3,9 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import { useDeferredValue, useState, Suspense } from 'react';
 
+import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries';
 import {
   SubstackBanner,
   SubstackBannerSkeleton,
@@ -11,7 +13,11 @@ import {
   SubstacksIslandSkeleton,
 } from '#/features/substack/components';
 import { substackDetailQueryOptions } from '#/features/substack/queries';
-import { TopicList, TopicListSkeleton } from '#/features/topic/components';
+import {
+  TopicFormModal,
+  TopicList,
+  TopicListSkeleton,
+} from '#/features/topic/components';
 
 export const Route = createFileRoute('/substacks/$slug/')({
   component: SubstackDetailPage,
@@ -58,6 +64,8 @@ export function SubstackDetailSkeleton() {
 function SubstackDetailPage() {
   const { slug } = Route.useParams();
   const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: session } = useSession();
   const deferredSearch = useDeferredValue(search);
 
   const { data: substack } = useSuspenseQuery(
@@ -104,7 +112,18 @@ function SubstackDetailPage() {
               value={search}
             />
           </div>
-          <Button className='h-10 gap-2 rounded-xl bg-white/5 border border-line font-bold text-sea-ink hover:bg-white/10'>
+          <Button
+            className='h-10 gap-2 rounded-xl bg-white/5 border border-line font-bold text-sea-ink hover:bg-white/10'
+            onClick={() => {
+              if (!session?.user) {
+                authEvents.emit('open', {
+                  message: 'You need to be logged in to ask a question.',
+                });
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+          >
             <Plus className='size-4' />
             Ask Question
           </Button>
@@ -118,6 +137,13 @@ function SubstackDetailPage() {
             />
           </Suspense>
         </div>
+
+        <TopicFormModal
+          hideSubstackId={true}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          substackId={substack.id}
+        />
       </main>
       <aside className='space-y-5'>
         <section className='island-shell rise-in rounded-2xl p-5'>
