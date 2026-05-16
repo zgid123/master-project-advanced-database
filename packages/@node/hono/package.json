@@ -7,6 +7,7 @@
     "./middlewares": "./src/middlewares/index.ts"
   },
   "dependencies": {
+    "@alphacifer/hono": "0.0.6",
     "hono": "4.12.18"
   }
 }

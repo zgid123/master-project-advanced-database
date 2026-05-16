@@ -1,6 +1,6 @@
 import type { Env } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
+import { HonoError } from '@alphacifer/hono/core';
 
 const INTERNAL_SERVICE_SECRET_HEADER = 'x-internal-service-secret';
 
@@ -15,7 +15,10 @@ export function internalAuthMiddleware({
     const providedSecret = c.req.header(INTERNAL_SERVICE_SECRET_HEADER);
 
     if (!secret || providedSecret !== secret) {
-      throw new HTTPException(401, {
+      throw new HonoError({
+        status: 401,
+        code: 10_002,
+        name: 'UNAUTHORIZED_INTERNAL_SERVICE',
         message: 'Unauthorized internal service',
       });
     }

@@ -27,7 +27,7 @@ normalizes auth cookies.
 - Upstreams:
   - Auth: `AUTH_SERVICE_URL`, default `http://localhost:3001`
   - Notifications: `NOTIFICATIONS_SERVICE_URL`, default `http://localhost:3002`
-  - Q&A: `QNA_SERVICE_URL`, default `http://localhost:3005`
+  - Q&A: `QNA_SERVICE_URL`, default `http://localhost:3006`
 
 ## API Surface
 
@@ -95,7 +95,7 @@ pnpm --filter api-gateway dev
 | `PORT` | `3000` | Gateway listen port |
 | `AUTH_SERVICE_URL` | `http://localhost:3001` | Auth upstream base URL |
 | `NOTIFICATIONS_SERVICE_URL` | `http://localhost:3002` | Notifications upstream base URL |
-| `QNA_SERVICE_URL` | `http://localhost:3005` | Q&A upstream base URL |
+| `QNA_SERVICE_URL` | `http://localhost:3006` | Q&A upstream base URL |
 
 ## Architecture Notes
 

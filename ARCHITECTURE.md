@@ -24,7 +24,7 @@ flowchart LR
   Dashboard --> RecSys["recsys\nFastify :3020"]
   Gateway --> Auth["auth\nHono :3001"]
   Gateway --> Notifications["notifications\nHono :3002"]
-  Gateway --> Qna["qna\nNestJS :3005"]
+  Gateway --> Qna["qna\nNestJS :3006"]
 
   Auth --> AuthPg["PostgreSQL\nAuth schema"]
   Auth --> Redis["Redis"]
@@ -54,7 +54,7 @@ flowchart LR
 | Q&A | `workspaces/qna` | NestJS | MongoDB, Elasticsearch, Notifications | Topics, comments, votes, topic subscriptions, search |
 | Job Service | `workspaces/job-service` | Fastify | MongoDB, Redis | Jobs, applications, job/application outbox events |
 | RecSys | `workspaces/recsys` | Fastify | Neo4j, Redis, BullMQ | Personalized feed, similar topics/users, graph ingestion |
-| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Job Service, RecSys, Better Auth wrapper | Frontend shell plus auth, substack, Q&A, notification, job, and recommendation proxy routes |
+| Dashboard | `workspaces/dashboard` | TanStack Start | API Gateway, Job Service, Better Auth wrapper | Frontend shell plus auth, substack, Q&A, notification, and job proxy routes |
 
 Shared packages:
 
@@ -83,29 +83,30 @@ Generated API surface counts:
 | Component | REST/server routes | Exported function/class APIs |
 | --- | ---: | ---: |
 | API Gateway | 35 | 37 |
-| Auth Service | 18 | 136 |
-| Dashboard | 33 | 100 |
+| Auth Service | 18 | 139 |
+| Dashboard | 35 | 134 |
 | Job Service | 12 | 44 |
 | Notifications Service | 5 | 39 |
-| Q&A Service | 17 | 130 |
+| Q&A Service | 17 | 138 |
 | Recommendation Service | 19 | 81 |
 | Shared domain/node packages | 0 | 79 |
 
 Architecture conclusions from the generated report:
 
-1. The current generated surface is 139 REST/server routes and 646 exported
+1. The current generated surface is 141 REST/server routes and 691 exported
    callable/class APIs.
 2. API Gateway now fronts Auth, Notifications, public Substacks, and Q&A
    topic/comment routes.
 3. Auth remains the owner of users, follows, substacks, and token lifecycle;
    recent frontend auth work moved more browser workflows through Dashboard and
    Gateway.
-4. Dashboard now includes auth, substack, topic/comment, notification, job, and
-   recommendation server proxy routes.
+4. Dashboard now includes auth, substack, topic/comment, notification, and job
+   server proxy routes.
 5. Q&A is integrated through Gateway for topics/comments, but it still owns its
    NestJS controllers, MongoDB models, and Elasticsearch indexing.
 6. RecSys remains a standalone recommendation service with internal event
-   ingestion; Dashboard proxies browser-facing recommendation routes directly.
+   ingestion; Dashboard no longer proxies browser-facing RecSys routes after the
+   topics rework removed the recommendation/signal consoles.
 7. Shared packages expose domain schemas/entities/repository contracts, but
    cross-service runtime contracts such as JWT subject, current user
    propagation, and event envelopes still need one canonical definition.
@@ -328,6 +329,8 @@ Search behavior:
 
 - Topic create/update/delete writes to Elasticsearch.
 - `GET /topics/search` queries Elasticsearch, then loads matching MongoDB topics by id.
+- Empty/global search can supplement with RecSys recommendations when a user id
+  is available, then fills with newest MongoDB topics.
 - `substack_id` filters search results.
 
 ## Job Service
@@ -479,7 +482,9 @@ Path: `workspaces/dashboard`
 
 The dashboard is a TanStack Start app on port `4000`. It includes auth UI,
 server routes, a Better Auth wrapper, service console pages, and frontend
-feature slices that proxy through Dashboard server routes.
+feature slices that proxy through Dashboard server routes. In this Windows
+hoisted-install checkout, the verified local serving path is `pnpm --filter
+dashboard build` followed by `pnpm --filter dashboard preview`.
 
 Main UI routes:
 
@@ -487,12 +492,10 @@ Main UI routes:
 - `/about`
 - `/jobs`
 - `/notifications`
-- `/recommendations`
-- `/signal`
-- `/signals`
 - `/substacks`
 - `/substacks/$slug`
 - `/topics`
+- `/topics/$id`
 - `/sign-in`
 - `/sign-up`
 
@@ -509,6 +512,7 @@ Server/API routes:
 - `/api/portal/substacks/total`: direct server proxy to gateway `/v1/substacks/total`.
 - `/api/portal/topics/*`: direct server proxy to gateway `/v1/topics/*`.
 - `/api/portal/comments/*`: direct server proxy to gateway `/v1/comments/*`.
+- `/api/portal/qna/*`: generic direct server proxy to gateway Q&A routes.
 - `/api/portal/notifications/*`: direct server proxy to gateway
   `/v1/notifications/*`.
 - `/api/services/jobs/*`: direct server proxy to Job Service `/v1/jobs/*`.
@@ -516,7 +520,6 @@ Server/API routes:
   `/v1/applications/*`.
 - `/api/services/me/applications`: direct server proxy to Job Service
   `/v1/me/applications`.
-- `/api/services/recommendations/*`: direct server proxy to RecSys `/v1/*`.
 
 Important files:
 
@@ -525,12 +528,10 @@ Important files:
 - `src/routes/index.tsx`
 - `src/routes/sign-in.tsx`
 - `src/routes/sign-up.tsx`
-- `src/routes/topics.tsx`
+- `src/routes/topics/index.tsx`
+- `src/routes/topics/$id.tsx`
 - `src/routes/jobs.tsx`
 - `src/routes/notifications.tsx`
-- `src/routes/recommendations.tsx`
-- `src/routes/signal.tsx`
-- `src/routes/signals.tsx`
 - `src/routes/api/auth/$.ts`
 - `src/routes/api/portal/auth/*`
 - `src/routes/api/portal/substacks/*`
@@ -572,8 +573,6 @@ Current auth boundaries:
 - Dashboard stores auth tokens in HTTP-only cookies through server-side proxy routes.
 - Dashboard forwards authenticated browser requests to API Gateway and maps the
   auth cookie to bearer tokens for direct Job Service proxy calls.
-- Dashboard injects the resolved current user id into RecSys `/v1/feed`
-  requests.
 - Job Service validates JWTs itself and expects `sub` to be a MongoDB ObjectId
   hex string.
 - Q&A does not currently validate JWTs itself; gateway-proxied routes inject
@@ -645,18 +644,21 @@ Root `docker-compose.yml` provides:
 - Neo4j 5 on `7474` and `7687`
 - RecSys container on `3020`
 
-Q&A also has a workspace-level `docker-compose.yml` for Elasticsearch on
-`9200`; this is separate from the root compose file.
+Elasticsearch is required by Q&A search on `9200`, but it is not currently
+defined in the root Compose file and there is no committed Q&A Compose file.
+Provide it separately, for example with a local single-node container named
+`elasticsearch`.
 
 Useful local commands:
 
 ```sh
-docker compose up -d
+docker compose up -d postgres pgbouncer redis neo4j mongodb mongo-express
+docker start elasticsearch
 pnpm --filter job-service migrate
 pnpm --filter recsys migrate
-pnpm --filter recsys consume-events
-pnpm --filter recsys worker
-pnpm dev
+pnpm server:dev
+pnpm --filter dashboard build
+pnpm --filter dashboard preview
 ```
 
 ## Architecture Review Notes
@@ -673,8 +675,9 @@ These are the main architecture-affecting findings from the current source.
    inject the resolved user id, but direct Q&A access still trusts
    caller-supplied `x-user-id` for ownership, voting, subscriptions, and
    deletes.
-4. Q&A Elasticsearch compose file is separate from the root compose stack and
-   needs to be brought up independently.
+4. Q&A Elasticsearch is outside the root compose stack and currently has no
+   committed compose file, so local setup needs a separate Elasticsearch
+   container on `9200`.
 5. RecSys is implemented but only partially integrated with source services in
    this repo. API Gateway does not yet proxy RecSys routes.
 6. RecSys `/v1/feed` trusts direct `x-user-id` input. It should only be exposed
@@ -693,6 +696,9 @@ Recently-resolved findings (kept here as history):
   outage.
 - Notifications environment typing now declares `MONGODB_URI`, matching the
   runtime read.
+- Shared internal Hono auth now returns a structured `401` for missing or
+  invalid internal service secrets instead of falling through to a generic
+  `500`.
 
 ## Recommended Architecture Decisions
 

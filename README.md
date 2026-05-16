@@ -13,7 +13,7 @@ organized as service workspaces plus shared domain/node packages.
 | `workspaces/qna` | NestJS | Topics, comments, votes, subscriptions, search |
 | `workspaces/job-service` | Fastify | Jobs, applications, MongoDB outbox, Redis publishing |
 | `workspaces/recsys` | Fastify | Recommendation APIs, Neo4j graph, Redis stream ingestion |
-| `workspaces/dashboard` | TanStack Start | Frontend shell plus auth, substack, Q&A, notification, job, and recommendation proxies |
+| `workspaces/dashboard` | TanStack Start | Frontend shell plus auth, substack, Q&A, notification, and job proxies |
 
 Shared packages live under `packages/`:
 
@@ -47,20 +47,21 @@ macOS/Linux:
 corepack enable
 pnpm install
 pnpm sync:workspace
-docker compose up -d
+docker compose up -d postgres pgbouncer redis neo4j mongodb mongo-express
 ```
 
 Windows on exFAT:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1
-docker compose up -d
+docker compose up -d postgres pgbouncer redis neo4j mongodb mongo-express
 ```
 
 The Windows setup script creates the pnpm Corepack shim in the user npm folder,
-runs an exFAT-safe install, and syncs local workspace packages into
-`node_modules`. If `pnpm` is already available, `pnpm setup:windows` runs the
-same script.
+runs an exFAT-safe hoisted install, and syncs local workspace packages into
+`node_modules`. The repo-level `.npmrc` also sets `node-linker=hoisted` so a
+plain `pnpm install` does not try to create symlinks on exFAT. If `pnpm` is
+already available, `pnpm setup:windows` runs the same script.
 
 `pnpm sync:workspace` is cross-platform. It links workspace packages when the
 filesystem supports links, and copies them when links are not supported. Root
@@ -71,15 +72,28 @@ shared package if you are starting a service directly with `pnpm --filter ...`.
 Useful service commands:
 
 ```sh
-pnpm --filter auth db:migrate
 pnpm --filter job-service migrate
 pnpm --filter recsys migrate
-pnpm --filter api-gateway dev
-pnpm --filter auth dev
-pnpm --filter notifications dev
-pnpm --filter qna start:dev
-pnpm --filter qna seed:topics
-pnpm --filter dashboard dev
+pnpm server:dev
+pnpm --filter dashboard build
+pnpm --filter dashboard preview
+```
+
+`pnpm server:dev` starts API Gateway, Auth, Notifications, Q&A, Job Service,
+and RecSys as local Node processes. Use the infrastructure-only Compose command
+above so the Compose RecSys container does not compete with local RecSys on
+port `3020`.
+
+Q&A search expects Elasticsearch on `9200`, but Elasticsearch is not currently
+defined in the root Compose file. Start an existing local container with
+`docker start elasticsearch`, or create one:
+
+```sh
+docker run -d --name elasticsearch \
+  -p 9200:9200 \
+  -e discovery.type=single-node \
+  -e xpack.security.enabled=false \
+  docker.elastic.co/elasticsearch/elasticsearch:8.13.4
 ```
 
 Build all workspaces:
@@ -95,7 +109,7 @@ pnpm -w build
 | API Gateway | `3000` |
 | Auth | `3001` |
 | Notifications | `3002` |
-| Q&A | `3005` |
+| Q&A | `3006` |
 | Job Service | `3010` |
 | RecSys | `3020` |
 | Dashboard | `4000` |
@@ -107,5 +121,5 @@ pnpm -w build
 | Elasticsearch | `9200` |
 | Neo4j HTTP/Bolt | `7474` / `7687` |
 
-Q&A defaults to `3005`. API Gateway proxies it through `QNA_SERVICE_URL`,
-which also defaults to `http://localhost:3005`.
+Q&A defaults to `3006`. API Gateway proxies it through `QNA_SERVICE_URL`,
+which also defaults to `http://localhost:3006`.

@@ -29,7 +29,8 @@ requests from other Solvit services.
 | `POST` | `/internal/v1/notifications` | Internal single system notification |
 | `POST` | `/internal/v1/notifications/batch` | Internal batch system notifications |
 
-Internal routes require `x-internal-service-secret`.
+Internal routes require `x-internal-service-secret`; missing or invalid secrets
+return `401`.
 
 The complete generated API inventory is in `../../API_REPORT.md`.
 
@@ -53,5 +54,7 @@ pnpm --filter notifications start
 - Portal routes currently trust `userId` query parameters. Prefer gateway
   injection of the authenticated user id before exposing this service directly.
 - Both runtime code and the environment type declaration use `MONGODB_URI`.
+- Internal auth uses the shared Hono error type so failed internal auth is
+  returned as `401` instead of a generic `500`.
 - `read` query parsing treats an omitted value as no read filter and parses
   `read=true` / `read=false` explicitly.

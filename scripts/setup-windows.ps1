@@ -15,7 +15,7 @@ try {
   corepack enable --install-directory $shimDir pnpm
 
   pnpm -v
-  pnpm install --frozen-lockfile --config.symlink=false
+  pnpm install --frozen-lockfile --config.node-linker=hoisted
   node scripts\sync-workspace-node-modules.mjs
 
   Write-Host ''

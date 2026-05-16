@@ -11,8 +11,7 @@ proxy routes that keep gateway tokens in HTTP-only cookies.
 - Proxy substack list, detail, total-count, create, and subscription requests
   to the API Gateway.
 - Proxy Q&A topic/comment and notification workflows to the API Gateway.
-- Proxy Job Service and Recommendation Service browser-facing APIs through
-  dashboard server routes.
+- Proxy Job Service browser-facing APIs through dashboard server routes.
 - Store `solvit_authToken` and `solvit_refreshToken` as HTTP-only cookies.
 - Expose Better Auth-compatible routes for the local auth client.
 
@@ -38,6 +37,7 @@ proxy routes that keep gateway tokens in HTTP-only cookies.
 | `POST`, `DELETE` | `/api/portal/substacks/$slug/subscribe` | Proxy to Gateway substack membership |
 | `GET`, `POST`, `PATCH`, `DELETE` | `/api/portal/topics/*` | Proxy to Gateway Q&A topic routes |
 | `POST`, `PATCH`, `DELETE` | `/api/portal/comments/*` | Proxy to Gateway Q&A comment routes |
+| `GET`, `POST`, `PATCH`, `DELETE` | `/api/portal/qna/*` | Generic Q&A gateway proxy |
 | `GET`, `PATCH` | `/api/portal/notifications/*` | Proxy to Gateway notification list/read routes |
 | `GET`, `POST`, `PATCH`, `DELETE` | `/api/services/jobs/*` | Proxy to Job Service public and protected job/application routes |
 
@@ -52,14 +52,20 @@ pnpm --filter dashboard preview
 pnpm --filter dashboard test
 ```
 
+For the currently verified local UI path, build and then run preview. The
+preview script binds `0.0.0.0:4000` and serves the TanStack Start SSR output:
+
+```sh
+pnpm --filter dashboard build
+pnpm --filter dashboard preview
+```
+
 Run the gateway and its upstreams before using authenticated flows:
 
 ```sh
-pnpm --filter auth dev
-pnpm --filter notifications dev
-pnpm --filter qna start:dev
-pnpm --filter api-gateway dev
-pnpm --filter dashboard dev
+pnpm server:dev
+pnpm --filter dashboard build
+pnpm --filter dashboard preview
 ```
 
 ## Configuration
@@ -82,5 +88,8 @@ pnpm --filter dashboard dev
   substack detail page backed by the dashboard substack API/query layer.
 - `/topics`, `/notifications`, and `/jobs` expose service consoles for Q&A,
   Notifications, and Job Service.
+- Vite preview is the smoke-tested way to serve the app in this Windows
+  hoisted-install checkout; `dev` still starts the Vite development server for
+  HMR-oriented frontend work.
 - Job Service protected mutations are wired, but the architecture still needs a
   canonical JWT subject contract before they can work reliably with Auth tokens.

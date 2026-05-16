@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2026-05-15T17:22:19.710Z
+Generated: 2026-05-16T05:29:24.948Z
 
 ## Tool Run
 
@@ -20,7 +20,7 @@ Generated: 2026-05-15T17:22:19.710Z
 | --- | ---: | ---: | ---: | --- |
 | API Gateway | 20 | 35 | 37 | Public proxy for Auth, Notifications, public substacks, and Q&A topic/comment routes. |
 | Auth Service | 78 | 18 | 139 | Identity, JWT/refresh lifecycle, user follows, substacks, repositories, seeds, and notification integration. |
-| Dashboard | 126 | 35 | 137 | TanStack Start UI plus server proxy routes for auth, substacks, topics, notifications, jobs, and recommendations. |
+| Dashboard | 118 | 35 | 134 | TanStack Start UI plus server proxy routes for auth, substacks, topics, notifications, jobs, and recommendations. |
 | Job Service | 26 | 12 | 44 | Fastify app, job/application routes, MongoDB access, JWT validation, Redis outbox publisher. |
 | Notifications Service | 27 | 5 | 39 | Portal/internal notification routes, notification commands/queries, Mongo repository, system notification mapping. |
 | Q&A Service | 45 | 17 | 138 | Nest controllers/services/DTOs/schemas for topics, comments, voting, subscriptions, MongoDB, and Elasticsearch search. |
@@ -251,7 +251,7 @@ Representative callable/class APIs from the generated inventory:
 - `commentsQueryOptions`
 - `CommunityTopic`
 - `createComment`
-- Additional generated callable APIs: 125. See `API_INVENTORY.md` for the full list.
+- Additional generated callable APIs: 122. See `API_INVENTORY.md` for the full list.
 
 ### Job Service
 
@@ -381,7 +381,7 @@ Representative callable/class APIs from the generated inventory:
 
 ## Architecture-Relevant Conclusions From API Surface
 
-1. The current generated surface is 141 REST/server routes and 694 exported function/class APIs.
+1. The current generated surface is 141 REST/server routes and 691 exported function/class APIs.
 2. API Gateway fronts Auth, Notifications, public Substacks, and Q&A topic/comment routes.
 3. Dashboard now provides server proxy routes for Auth, Substacks, Q&A topics/comments, Notifications, Job Service, and Recommendation Service.
 4. Job Service and RecSys remain standalone upstream services; Dashboard proxies them directly rather than through API Gateway.

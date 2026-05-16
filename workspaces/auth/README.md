@@ -49,11 +49,14 @@ The complete generated API inventory is in `../../API_REPORT.md`.
 ## Local Commands
 
 ```sh
-pnpm --filter auth db:migrate
 pnpm --filter auth dev
 pnpm --filter auth build
 pnpm --filter auth start
 ```
+
+`pnpm --filter auth dev` loads `.env.local`, runs Drizzle migrations, and seeds
+roles/users/substacks before binding the first available port from `3001`.
+The `db:migrate` script is still available for `.env`-based environments.
 
 ## Configuration
 
