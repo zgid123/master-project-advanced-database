@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { parseArgs } from 'node:util';
 import { Int32, ObjectId, type AnyBulkWriteOperation } from 'mongodb';
 import { closeMongo, getDb } from '../src/db/mongo.js';

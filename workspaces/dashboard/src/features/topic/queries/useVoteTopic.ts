@@ -7,8 +7,8 @@ export function useVoteTopic() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: voteTopic,
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: topicQueryKeys.detail(id) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: topicQueryKeys.all });
     },
   });
 }

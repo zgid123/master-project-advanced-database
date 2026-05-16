@@ -78,7 +78,7 @@ export async function ensureConsumerGroups(redis: Redis): Promise<void> {
           'CREATE',
           stream,
           config.events.consumerGroup,
-          '$',
+          '0',
           'MKSTREAM',
         );
       } catch (error) {

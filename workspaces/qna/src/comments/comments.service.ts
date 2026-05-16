@@ -7,6 +7,7 @@ import { TopicsRepo } from '../topics/topic.repo';
 import { VoteCommentDto } from './dto/vote-comment.dto';
 import { VotesRepo } from '../votes/votes.repo';
 import { Types } from 'mongoose';
+import { RecommendationService } from 'src/recommendations/recommendation.service';
 
 @Injectable()
 export class CommentsService {
@@ -52,21 +53,66 @@ export class CommentsService {
       console.error('Notification error:', err?.message || err);
     }
 
+    if (!dto.user_id) {
+      throw new ForbiddenException('User ID is required');
+    }
+
+    try {
+      const topic = await this.topicsRepo.findById(comment.topic_id.toString());
+      await RecommendationService.sendVoteEvent({
+        type: 'vote.created',
+        userId: dto.user_id,
+        targetType: 'comment',
+        targetId: commentId,
+        voteType: dto.point === 1 ? 'up' : 'down',
+        substackId: topic?.substack_id?.toString(),
+      });
+    } catch (err) {
+      console.error('RecSys vote event error:', err?.message || err);
+    }
+
     return { message: 'Vote recorded' };
   }
 
-  async removeCommentVote(commentId: string, user_id: string) {
+  async removeCommentVote(commentId: string, userId: string) {
     const comment = await this.commentsRepo.findById(commentId);
     if (!comment || comment.deleted_at) throw new NotFoundException('Comment not found');
-    await this.votesRepo.removeVote(commentId, user_id);
+    await this.votesRepo.removeVote(commentId, userId);
+
+    try {
+      const topic = await this.topicsRepo.findById(comment.topic_id.toString());
+      await RecommendationService.sendVoteEvent({
+        type: 'vote.deleted',
+        userId: userId,
+        targetType: 'comment',
+        targetId: commentId,
+        substackId: topic?.substack_id?.toString(),
+      });
+    } catch (err) {
+      console.error('RecSys remove vote event error:', err?.message || err);
+    }
+
     return { message: 'Vote removed' };
   }
 
-  async getCommentsByTopic(topicId: string) {
+  async getCommentsByTopic(topicId: string, userId?: string) {
     const comments = await this.commentsRepo.getCommentsWithAggregates(topicId);
     const commentIds = comments.map((c: any) => c._id);
-    const voteScores = await this.votesRepo.getVotesForTargets(commentIds, 'comment');
-    const voteScoreMap = Object.fromEntries(voteScores.map((v: any) => [v._id.toString(), v.score]));
+
+    const [voteScores, userVotes] = await Promise.all([
+      this.votesRepo.getVotesForTargets(commentIds, 'comment'),
+      userId
+        ? this.votesRepo.getVotesByUserIds(commentIds, userId, 'comment')
+        : Promise.resolve([]),
+    ]);
+
+    const voteScoreMap = Object.fromEntries(
+      voteScores.map((v: any) => [v._id.toString(), v.score]),
+    );
+    const userVoteMap = Object.fromEntries(
+      userVotes.map((v: any) => [v.target_id.toString(), v.point]),
+    );
+
     return comments.map((comment: any) => ({
       id: comment._id,
       topic_id: comment.topic_id,
@@ -76,6 +122,7 @@ export class CommentsService {
       created_at: comment.get('created_at'),
       updated_at: comment.get('updated_at'),
       vote_score: voteScoreMap[comment._id.toString()] || 0,
+      user_vote: userVoteMap[comment._id.toString()] || 0,
     }));
   }
 
@@ -90,6 +137,18 @@ export class CommentsService {
       user_id: dto.user_id,
       content: dto.content,
     });
+
+    try {
+      await RecommendationService.sendCommentEvent({
+        type: 'comment.upsert',
+        commentId: comment._id.toString(),
+        topicId: dto.topic_id,
+        authorId: dto.user_id,
+        createdAt: comment.get('created_at')?.getTime?.() ?? Date.now(),
+      });
+    } catch (err) {
+      console.error('RecSys comment event error:', err?.message || err);
+    }
 
     return {
       id: comment._id,

@@ -231,8 +231,8 @@ export class TopicsController {
   @ApiParam({ name: 'id', description: 'Topic ID' })
   @ApiOkResponse(GetCommentsByTopicResponseSwagger)
   @ApiNotFoundResponse({ description: 'Topic not found' })
-  async getCommentsByTopic(@Param('id') id: string) {
-    return await this.commentsService.getCommentsByTopic(id);
+  async getCommentsByTopic(@Param('id') id: string, @Headers('x-user-id') user_id?: string) {
+    return await this.commentsService.getCommentsByTopic(id, user_id);
   }
 
   @Get(':id')

@@ -10,6 +10,8 @@ function proxyCommentRoute(request: Request): Promise<Response> {
   return proxyGatewayRequest(
     request,
     createUpstreamPath(request, DASHBOARD_PREFIX, UPSTREAM_PREFIX),
+    request.method,
+    { injectCurrentUserId: true },
   );
 }
 
@@ -17,6 +19,7 @@ export const Route = createFileRoute('/api/portal/comments/$')({
   server: {
     handlers: {
       DELETE: ({ request }) => proxyCommentRoute(request),
+      GET: ({ request }) => proxyCommentRoute(request),
       PATCH: ({ request }) => proxyCommentRoute(request),
       POST: ({ request }) => proxyCommentRoute(request),
     },

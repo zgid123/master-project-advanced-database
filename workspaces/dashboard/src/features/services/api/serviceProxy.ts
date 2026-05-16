@@ -1,5 +1,9 @@
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:3000';
-const JOB_SERVICE_URL = process.env.JOB_SERVICE_URL ?? 'http://localhost:3010';
+const API_GATEWAY_URL =
+  (typeof process !== 'undefined' ? process.env.API_GATEWAY_URL : undefined) ??
+  'http://localhost:3000';
+const JOB_SERVICE_URL =
+  (typeof process !== 'undefined' ? process.env.JOB_SERVICE_URL : undefined) ??
+  'http://localhost:3010';
 const AUTH_TOKEN_COOKIE_NAME = 'solvit_authToken';
 
 type TProxyHttpOptions = {

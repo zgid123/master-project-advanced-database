@@ -23,13 +23,25 @@ export class VotesRepo {
 
     async removeVote(targetId: string, userId: string) {
         return this.model.deleteOne({
-            target_id: targetId,
+            target_id: new Types.ObjectId(targetId),
             user_id: userId,
         });
     }
 
     async getVoteByUser(targetId: string, userId: string, targetType: string) {
-        return this.model.findOne({ target_id: targetId, user_id: userId, target_type: targetType });
+        return this.model.findOne({
+            target_id: new Types.ObjectId(targetId),
+            user_id: userId,
+            target_type: targetType,
+        });
+    }
+
+    async getVotesByUserIds(targetIds: Types.ObjectId[], userId: string, targetType: string) {
+        return this.model.find({
+            target_id: { $in: targetIds },
+            user_id: userId,
+            target_type: targetType,
+        });
     }
 
     async getVotesForTargets(targetIds: Types.ObjectId[], targetType: string) {

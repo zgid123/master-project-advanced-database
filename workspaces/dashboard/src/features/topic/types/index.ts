@@ -9,6 +9,7 @@ export type TTopic = {
   createdAt: string;
   updatedAt: string;
   voteScore: number;
+  userVote: number;
   commentsCount: number;
   subscriptionsCount: number;
   hasAcceptedAnswer: boolean;
@@ -17,17 +18,6 @@ export type TTopic = {
   tags?: string[];
   status?: string;
   views?: string | number;
-};
-
-export type TComment = {
-  id: string;
-  topicId: string;
-  userId: string;
-  content: string;
-  isAccepted: boolean;
-  voteScore: number;
-  createdAt: string;
-  updatedAt: string;
 };
 
 export type TPagination = {

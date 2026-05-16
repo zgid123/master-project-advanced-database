@@ -1,8 +1,11 @@
 import { Link } from '@tanstack/react-router';
-import { ChevronUp, MessageSquare } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 
+import { authEvents } from '#/components/AuthModal';
 import { Button } from '#/components/ui/button';
+import { useSession } from '#/features/auth/queries';
 
+import { useRemoveTopicVote, useVoteTopic } from '../../queries';
 import type { IBaseTopicCardProps } from './interface';
 
 export function CommunityTopic({ data, index = 0 }: IBaseTopicCardProps) {
@@ -14,9 +17,34 @@ export function CommunityTopic({ data, index = 0 }: IBaseTopicCardProps) {
     isSolved,
     createdAt,
     voteScore,
+    userVote,
     tags = [],
     commentsCount,
   } = data;
+
+  const { data: session } = useSession();
+  const voteTopicCommand = useVoteTopic();
+  const removeVoteCommand = useRemoveTopicVote();
+
+  const currentUser = session?.user;
+
+  const handleVote = (point: 1 | -1) => {
+    if (!currentUser) {
+      authEvents.emit('open', {
+        message: 'You need to be logged in to vote.',
+      });
+      return;
+    }
+
+    if (userVote === point) {
+      removeVoteCommand.mutate(id);
+    } else {
+      voteTopicCommand.mutate({ id, point });
+    }
+  };
+
+  const isVotePending =
+    voteTopicCommand.isPending || removeVoteCommand.isPending;
 
   const animationDelay = `${index * 80}ms`;
 
@@ -29,13 +57,34 @@ export function CommunityTopic({ data, index = 0 }: IBaseTopicCardProps) {
     >
       <div className='flex flex-col items-center gap-1'>
         <Button
-          className='size-8 text-sea-ink-soft hover:text-lagoon'
+          className={`size-8 transition-colors ${
+            userVote === 1
+              ? 'bg-lagoon text-white hover:bg-lagoon-deep'
+              : 'text-sea-ink-soft hover:bg-sea-ink/5 hover:text-lagoon'
+          }`}
+          disabled={isVotePending}
+          onClick={() => handleVote(1)}
           size='icon'
           variant='ghost'
         >
           <ChevronUp className='size-5' />
         </Button>
+
         <span className='text-sm font-black text-sea-ink'>{voteScore}</span>
+
+        <Button
+          className={`size-8 transition-colors ${
+            userVote === -1
+              ? 'bg-destructive text-white hover:bg-destructive/90'
+              : 'text-sea-ink-soft hover:bg-sea-ink/5 hover:text-destructive'
+          }`}
+          disabled={isVotePending}
+          onClick={() => handleVote(-1)}
+          size='icon'
+          variant='ghost'
+        >
+          <ChevronDown className='size-5' />
+        </Button>
       </div>
       <div className='flex-1 space-y-2'>
         <div className='flex items-center gap-2'>

@@ -18,4 +18,9 @@ export class UpdateTopicDto {
     @IsOptional()
     @IsString()
     user_id?: string;
+
+    @ApiProperty({ example: '6638e1f2c2a1b2c3d4e5f6b8', description: 'Substack ID (optional)', required: false })
+    @IsOptional()
+    @IsString()
+    substack_id?: string;
 }

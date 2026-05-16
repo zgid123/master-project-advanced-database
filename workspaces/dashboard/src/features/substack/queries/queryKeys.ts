@@ -1,5 +1,3 @@
-import type { TQueryKey } from '@alphacifer/react/query';
-
 export const SUBSTACK_QUERY_KEYS = {
   root: ['substack'] as const,
   list: ['substack', 'list'] as const,

@@ -7,8 +7,8 @@ export function useRemoveTopicVote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: removeTopicVote,
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: topicQueryKeys.detail(id) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: topicQueryKeys.all });
     },
   });
 }
